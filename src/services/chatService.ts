@@ -56,9 +56,18 @@ function toRoom(id: string, data: Record<string, unknown>): ChatRoom {
 }
 
 export async function getChatRoom(roomId: string): Promise<ChatRoom | null> {
-  const snap = await getDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, roomId));
-  if (!snap.exists()) return null;
-  return toRoom(snap.id, snap.data());
+  try {
+    const snap = await getDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, roomId));
+    if (!snap.exists()) return null;
+    return toRoom(snap.id, snap.data());
+  } catch (err) {
+    // Missing topic rooms return permission-denied until rules allow null reads;
+    // treat as not found so create flow can proceed (matches Android).
+    if (err instanceof Error && err.message.includes("permission-denied")) {
+      return null;
+    }
+    throw err;
+  }
 }
 
 export async function getChatRoomsForInbox(): Promise<ChatRoom[]> {
@@ -329,8 +338,10 @@ export async function getOrCreateTopicRoom(
     locked: false,
   };
 
+  const { id: _id, ...roomData } = room;
+
   try {
-    await setDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, roomId), room);
+    await setDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, roomId), roomData);
     return room;
   } catch (err) {
     const fallback = await findTopicRoomByName(name);
