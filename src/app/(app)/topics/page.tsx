@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { mapFirestoreError } from "@/lib/utils";
-import { getCreateCategoryNames, searchTopics } from "@/services/categoryService";
-import { getOrCreateTopicRoomByName } from "@/services/chatService";
+import { ensureTopicChatRoom, getCreateCategoryNames, searchTopics } from "@/services/categoryService";
 
 export default function TopicsPage() {
   const router = useRouter();
@@ -109,7 +108,7 @@ export default function TopicsPage() {
                     setOpening(name);
                     setError("");
                     try {
-                      const room = await getOrCreateTopicRoomByName(name);
+                      const room = await ensureTopicChatRoom(name);
                       router.push(`/chat/${room.id}`);
                     } catch (err) {
                       setError(

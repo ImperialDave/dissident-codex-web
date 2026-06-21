@@ -15,7 +15,8 @@ import { ALL_CATEGORY_LABEL, COLLECTIONS } from "@/lib/constants";
 import { canModerate, type BannedTopic, type PostCategory } from "@/models";
 import { fetchUser } from "./authService";
 import { normalizeCategoryName, resolveRole } from "@/lib/utils";
-import { getOrCreateTopicRoomByName } from "./chatService";
+import { getOrCreateTopicRoom } from "./chatService";
+import type { ChatRoom } from "@/models";
 
 export async function getCategories(): Promise<PostCategory[]> {
   const snap = await getDocs(collection(getFirebaseDb(), COLLECTIONS.CATEGORIES));
@@ -109,7 +110,13 @@ export async function createCategory(name: string): Promise<PostCategory> {
     );
     if (!existing.empty) {
       const docSnap = existing.docs[0]!;
-      return { id: docSnap.id, ...(docSnap.data() as Omit<PostCategory, "id">) };
+      const category = { id: docSnap.id, ...(docSnap.data() as Omit<PostCategory, "id">) };
+      try {
+        await getOrCreateTopicRoom(category.id, category.name || trimmed);
+      } catch {
+        // non-fatal
+      }
+      return category;
     }
   } catch {
     // continue with create
@@ -125,29 +132,57 @@ export async function createCategory(name: string): Promise<PostCategory> {
   });
   const category: PostCategory = { id: ref.id, name: trimmed, createdAt: now };
   try {
-    await getOrCreateTopicRoomByName(trimmed);
+    await getOrCreateTopicRoom(ref.id, trimmed);
   } catch {
     // non-fatal
   }
   return category;
 }
 
-export async function resolveOrCreateCategory(name: string): Promise<string> {
+async function findCategoryByName(name: string): Promise<PostCategory | null> {
   const trimmed = name.trim();
-  if (!trimmed) throw new Error("Category is required");
+  if (!trimmed) return null;
+  const normalized = normalizeCategoryName(trimmed);
+  const db = getFirebaseDb();
+
+  try {
+    const normSnap = await getDocs(
+      query(collection(db, COLLECTIONS.CATEGORIES), where("normalizedName", "==", normalized), limit(1))
+    );
+    if (!normSnap.empty) {
+      const docSnap = normSnap.docs[0]!;
+      return { id: docSnap.id, ...(docSnap.data() as Omit<PostCategory, "id">) };
+    }
+  } catch {
+    // non-fatal
+  }
+
   const existing = (await getCategories()).find(
     (c) => c.name.toLowerCase() === trimmed.toLowerCase()
   );
+  return existing ?? null;
+}
+
+export async function resolveOrCreateCategory(name: string): Promise<PostCategory> {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Category is required");
+
+  const existing = await findCategoryByName(trimmed);
   if (existing) {
     try {
-      await getOrCreateTopicRoomByName(existing.name);
+      await getOrCreateTopicRoom(existing.id, existing.name);
     } catch {
       // non-fatal
     }
-    return existing.name;
+    return existing;
   }
-  await createCategory(trimmed);
-  return trimmed;
+
+  return createCategory(trimmed);
+}
+
+export async function ensureTopicChatRoom(categoryName: string): Promise<ChatRoom> {
+  const category = await resolveOrCreateCategory(categoryName);
+  return getOrCreateTopicRoom(category.id, category.name);
 }
 
 export async function banTopic(name: string): Promise<void> {

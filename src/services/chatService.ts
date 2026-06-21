@@ -216,8 +216,20 @@ export async function getOrCreateDmRoom(otherUserId: string): Promise<ChatRoom> 
 
 async function resolveTopicCategoryId(categoryName: string): Promise<string> {
   const name = categoryName.trim();
+  const normalized = normalizeCategoryName(name);
+  const db = getFirebaseDb();
+
   try {
-    const snap = await getDocs(collection(getFirebaseDb(), COLLECTIONS.CATEGORIES));
+    const normSnap = await getDocs(
+      query(collection(db, COLLECTIONS.CATEGORIES), where("normalizedName", "==", normalized), limit(1))
+    );
+    if (!normSnap.empty) return normSnap.docs[0]!.id;
+  } catch {
+    // non-fatal
+  }
+
+  try {
+    const snap = await getDocs(collection(db, COLLECTIONS.CATEGORIES));
     const match = snap.docs.find(
       (d) => (d.data().name as string | undefined)?.toLowerCase() === name.toLowerCase()
     );
@@ -225,7 +237,12 @@ async function resolveTopicCategoryId(categoryName: string): Promise<string> {
   } catch {
     // Registered categories optional — fall back to normalized slug.
   }
-  return normalizeCategoryName(name);
+  return normalized;
+}
+
+function topicRoomCandidateIds(categoryId: string, categoryName: string): string[] {
+  const normalized = normalizeCategoryName(categoryName);
+  return [...new Set([categoryId, normalized].filter(Boolean))];
 }
 
 async function isTopicBanned(categoryName: string): Promise<boolean> {
@@ -242,6 +259,9 @@ async function isTopicBanned(categoryName: string): Promise<boolean> {
 async function findTopicRoomByName(categoryName: string): Promise<ChatRoom | null> {
   const name = categoryName.trim();
   if (!name) return null;
+
+  const slugRoom = await getChatRoom(topicRoomId(normalizeCategoryName(name)));
+  if (slugRoom) return slugRoom;
 
   const db = getFirebaseDb();
   const exactSnap = await getDocs(
@@ -283,13 +303,15 @@ export async function getOrCreateTopicRoom(
     throw new Error("This topic is banned by moderators.");
   }
 
-  const roomId = topicRoomId(categoryId);
-  const existing = await getChatRoom(roomId);
-  if (existing) return existing;
+  for (const id of topicRoomCandidateIds(categoryId, name)) {
+    const existing = await getChatRoom(topicRoomId(id));
+    if (existing) return existing;
+  }
 
   const byName = await findTopicRoomByName(name);
   if (byName) return byName;
 
+  const roomId = topicRoomId(categoryId);
   const now = Timestamp.now();
   const room: ChatRoom = {
     id: roomId,
@@ -311,7 +333,10 @@ export async function getOrCreateTopicRoom(
     await setDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, roomId), room);
     return room;
   } catch (err) {
-    throw new Error(mapFirestoreError(err instanceof Error ? err.message : "Could not open topic chat"));
+    const fallback = await findTopicRoomByName(name);
+    if (fallback) return fallback;
+    const message = err instanceof Error ? err.message : "Could not open topic chat";
+    throw new Error(mapFirestoreError(message));
   }
 }
 
