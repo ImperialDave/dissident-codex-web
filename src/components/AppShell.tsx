@@ -7,20 +7,25 @@ import clsx from "clsx";
 import { useAuthStore } from "@/stores/authStore";
 import { listenNotifications } from "@/services/notificationService";
 
-const NAV = [
+const MOBILE_NAV = [
   { href: "/feed", label: "Feed", icon: "📰" },
   { href: "/chats", label: "Chats", icon: "💬" },
+  { href: "/chess", label: "Chess", icon: "♟️" },
   { href: "/create", label: "Create", icon: "✏️" },
-  { href: "/notifications", label: "Alerts", icon: "🔔" },
   { href: "/profile", label: "Profile", icon: "👤" },
 ];
 
-const EXTRA = [
+const DESKTOP_NAV = [
+  { href: "/feed", label: "Feed" },
+  { href: "/chats", label: "Chats" },
+  { href: "/friends", label: "Friends" },
+  { href: "/chess", label: "Chess" },
   { href: "/search", label: "Search" },
   { href: "/topics", label: "Topics" },
   { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/friends", label: "Friends" },
-  { href: "/chess", label: "Chess" },
+  { href: "/create", label: "Create" },
+  { href: "/notifications", label: "Alerts" },
+  { href: "/profile", label: "Profile" },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -59,12 +64,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[var(--color-primary)] text-slate-100">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[var(--color-primary)]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link href="/feed" className="text-xl font-bold text-[var(--color-accent)]">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+          <Link href="/feed" className="shrink-0 text-xl font-bold text-[var(--color-accent)]">
             Codex
           </Link>
-          <nav className="hidden gap-4 text-sm md:flex">
-            {EXTRA.map((item) => (
+          <nav className="hidden flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm lg:flex">
+            {DESKTOP_NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -74,6 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 )}
               >
                 {item.label}
+                {item.href === "/notifications" && unread > 0 ? ` (${unread})` : ""}
               </Link>
             ))}
             {isModerator() && (
@@ -89,18 +95,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
           <button
             onClick={() => logout().then(() => router.replace("/login"))}
-            className="rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-white/5"
+            className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-white/5"
           >
             Log out
           </button>
         </div>
+        <nav className="flex gap-2 overflow-x-auto border-t border-white/5 px-4 py-2 text-sm lg:hidden">
+          {DESKTOP_NAV.slice(0, 6).map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={clsx(
+                "whitespace-nowrap rounded-full px-3 py-1",
+                pathname.startsWith(item.href)
+                  ? "bg-[var(--color-accent)]/20 text-[var(--color-accent)]"
+                  : "text-slate-400 hover:text-slate-200"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 lg:pb-6">{children}</main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--color-surface)] md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--color-surface)] lg:hidden">
         <div className="mx-auto flex max-w-6xl justify-around py-2">
-          {NAV.map((item) => (
+          {MOBILE_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -111,11 +133,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <span className="text-lg">{item.icon}</span>
               {item.label}
-              {item.href === "/notifications" && unread > 0 && (
-                <span className="absolute right-0 top-0 rounded-full bg-red-500 px-1.5 text-[10px] text-white">
-                  {unread}
-                </span>
-              )}
             </Link>
           ))}
         </div>
