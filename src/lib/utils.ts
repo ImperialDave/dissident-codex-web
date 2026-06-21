@@ -71,7 +71,40 @@ export function resolveMediaType(
 ): string | undefined {
   if (mediaType?.trim()) return mediaType.trim();
   if (!url?.trim()) return undefined;
+  const lower = url.toLowerCase();
+  if (
+    lower.includes(".mp4") ||
+    lower.includes(".webm") ||
+    lower.includes(".mov") ||
+    lower.includes("video")
+  ) {
+    return "video";
+  }
   return containsGifUrl(url) ? "gif" : "image";
+}
+
+export function chatMessageType(
+  mediaType?: string | null,
+  imageUrl?: string | null
+): string {
+  const resolved = resolveMediaType(mediaType, imageUrl);
+  if (resolved === "gif") return "gif";
+  if (resolved === "video") return "video";
+  if (resolved === "image" && imageUrl?.trim()) return "image";
+  return "text";
+}
+
+export function chatMessagePreview(
+  text: string,
+  mediaType?: string | null
+): string {
+  const trimmed = text.trim();
+  if (trimmed) return trimmed.slice(0, 120);
+  const mt = mediaType?.toLowerCase();
+  if (mt === "gif") return "[GIF]";
+  if (mt === "video") return "[Video]";
+  if (mt === "image") return "[Photo]";
+  return "[Media]";
 }
 
 export function normalizeCategoryName(name: string): string {

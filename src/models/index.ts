@@ -138,6 +138,8 @@ export interface ChatMessage {
   authorPhotoUrl?: string | null;
   authorRole: string;
   text: string;
+  imageUrl?: string | null;
+  mediaType?: string | null;
   createdAt?: Timestamp | null;
   type: string;
 }
