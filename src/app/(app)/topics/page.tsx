@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { mapFirestoreError } from "@/lib/utils";
 import { getCreateCategoryNames, searchTopics } from "@/services/categoryService";
 import { getOrCreateTopicRoomByName } from "@/services/chatService";
 
 export default function TopicsPage() {
+  const router = useRouter();
   const [topics, setTopics] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -108,7 +110,7 @@ export default function TopicsPage() {
                     setError("");
                     try {
                       const room = await getOrCreateTopicRoomByName(name);
-                      window.location.href = `/chat/${room.id}`;
+                      router.push(`/chat/${room.id}`);
                     } catch (err) {
                       setError(
                         err instanceof Error

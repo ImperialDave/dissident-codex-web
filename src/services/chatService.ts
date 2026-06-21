@@ -17,7 +17,14 @@ import {
 } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_CHAT_MESSAGE } from "@/lib/constants";
-import { containsGifUrl, dmRoomId, mapFirestoreError, resolveRole, topicRoomId } from "@/lib/utils";
+import {
+  containsGifUrl,
+  dmRoomId,
+  mapFirestoreError,
+  normalizeCategoryName,
+  resolveRole,
+  topicRoomId,
+} from "@/lib/utils";
 import {
   CHAT_TYPE_DM,
   CHAT_TYPE_TOPIC,
@@ -207,29 +214,110 @@ export async function getOrCreateDmRoom(otherUserId: string): Promise<ChatRoom> 
   }
 }
 
-export async function getOrCreateTopicRoomByName(categoryName: string): Promise<ChatRoom> {
+async function resolveTopicCategoryId(categoryName: string): Promise<string> {
   const name = categoryName.trim();
-  const roomId = topicRoomId(name.toLowerCase().replace(/\s+/g, "_"));
+  try {
+    const snap = await getDocs(collection(getFirebaseDb(), COLLECTIONS.CATEGORIES));
+    const match = snap.docs.find(
+      (d) => (d.data().name as string | undefined)?.toLowerCase() === name.toLowerCase()
+    );
+    if (match) return match.id;
+  } catch {
+    // Registered categories optional — fall back to normalized slug.
+  }
+  return normalizeCategoryName(name);
+}
+
+async function isTopicBanned(categoryName: string): Promise<boolean> {
+  const lower = categoryName.trim().toLowerCase();
+  if (!lower) return false;
+  try {
+    const snap = await getDocs(collection(getFirebaseDb(), COLLECTIONS.HIDDEN_TOPICS));
+    return snap.docs.some((d) => (d.data().name as string | undefined)?.toLowerCase() === lower);
+  } catch {
+    return false;
+  }
+}
+
+async function findTopicRoomByName(categoryName: string): Promise<ChatRoom | null> {
+  const name = categoryName.trim();
+  if (!name) return null;
+
+  const db = getFirebaseDb();
+  const exactSnap = await getDocs(
+    query(
+      collection(db, COLLECTIONS.CHAT_ROOMS),
+      where("type", "==", CHAT_TYPE_TOPIC),
+      where("topicName", "==", name),
+      limit(1)
+    )
+  );
+  if (!exactSnap.empty) {
+    const docSnap = exactSnap.docs[0]!;
+    return toRoom(docSnap.id, docSnap.data());
+  }
+
+  const lower = name.toLowerCase();
+  const topicSnap = await getDocs(
+    query(collection(db, COLLECTIONS.CHAT_ROOMS), where("type", "==", CHAT_TYPE_TOPIC), limit(100))
+  );
+  const match = topicSnap.docs.find((d) => {
+    const data = d.data();
+    const topicName = (data.topicName as string) || (data.title as string) || "";
+    return topicName.toLowerCase() === lower;
+  });
+  if (!match) return null;
+  return toRoom(match.id, match.data());
+}
+
+export async function getOrCreateTopicRoom(
+  categoryId: string,
+  categoryName: string
+): Promise<ChatRoom> {
+  const name = categoryName.trim();
+  if (!name) throw new Error("Topic name required");
+
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) throw new Error("Not logged in");
+  if (await isTopicBanned(name)) {
+    throw new Error("This topic is banned by moderators.");
+  }
+
+  const roomId = topicRoomId(categoryId);
   const existing = await getChatRoom(roomId);
   if (existing) return existing;
 
-  const uid = getFirebaseAuth().currentUser?.uid || "system";
+  const byName = await findTopicRoomByName(name);
+  if (byName) return byName;
+
+  const now = Timestamp.now();
   const room: ChatRoom = {
     id: roomId,
     type: CHAT_TYPE_TOPIC,
     title: name,
     topicName: name,
-    topicId: roomId,
+    topicId: categoryId,
     memberIds: [],
     createdBy: uid,
-    createdAt: Timestamp.now(),
+    createdAt: now,
+    lastMessageAt: now,
     lastMessagePreview: "",
     lastMessageAuthorId: "",
     messageCount: 0,
     locked: false,
   };
-  await setDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, roomId), room);
-  return room;
+
+  try {
+    await setDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, roomId), room);
+    return room;
+  } catch (err) {
+    throw new Error(mapFirestoreError(err instanceof Error ? err.message : "Could not open topic chat"));
+  }
+}
+
+export async function getOrCreateTopicRoomByName(categoryName: string): Promise<ChatRoom> {
+  const categoryId = await resolveTopicCategoryId(categoryName);
+  return getOrCreateTopicRoom(categoryId, categoryName);
 }
 
 export async function toggleFavoriteRoom(roomId: string): Promise<boolean> {
