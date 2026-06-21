@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #0f172a;
+  --color-surface: #1e2937;
+  --color-accent: #14b8a6;
+  --color-on-surface: #e2e8f0;
+}
+
+body {
+  background: var(--color-primary);
+  color: var(--color-on-surface);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
