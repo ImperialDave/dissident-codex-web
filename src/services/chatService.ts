@@ -18,10 +18,13 @@ import {
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_CHAT_MESSAGE } from "@/lib/constants";
 import {
+  chatMessagePreview,
+  chatMessageType,
   containsGifUrl,
   dmRoomId,
   mapFirestoreError,
   normalizeCategoryName,
+  resolveMediaType,
   resolveRole,
   topicRoomId,
 } from "@/lib/utils";
@@ -146,7 +149,11 @@ export function listenMessages(
   );
 }
 
-export async function sendChatMessage(roomId: string, text: string): Promise<ChatMessage> {
+export async function sendChatMessage(
+  roomId: string,
+  text: string,
+  options?: { imageUrl?: string | null; mediaType?: string | null }
+): Promise<ChatMessage> {
   const auth = getFirebaseAuth();
   const fbUser = auth.currentUser;
   if (!fbUser) throw new Error("Not logged in");
@@ -157,9 +164,16 @@ export async function sendChatMessage(roomId: string, text: string): Promise<Cha
   if (!canPost(role)) throw new Error("You cannot send messages at this time.");
 
   const t = text.trim();
-  if (!t) throw new Error("Message cannot be empty");
+  const imageUrl = options?.imageUrl?.trim() || null;
+  const resolvedMediaType = imageUrl
+    ? resolveMediaType(options?.mediaType, imageUrl) || "image"
+    : null;
+
+  if (!t && !imageUrl) throw new Error("Message cannot be empty");
   if (t.length > MAX_CHAT_MESSAGE) throw new Error(`Message too long (max ${MAX_CHAT_MESSAGE})`);
-  if (containsGifUrl(t)) throw new Error("GIFs and image links are not allowed in chat.");
+  if (t && containsGifUrl(t)) {
+    throw new Error("GIFs and image links are not allowed in message text. Use attach instead.");
+  }
 
   const room = await getChatRoom(roomId);
   if (room?.locked && !canModerate(role)) {
@@ -177,15 +191,18 @@ export async function sendChatMessage(roomId: string, text: string): Promise<Cha
     authorPhotoUrl: user.photoUrl,
     authorRole: user.role,
     text: t,
+    ...(imageUrl ? { imageUrl, mediaType: resolvedMediaType } : {}),
     createdAt: now,
-    type: "text",
+    type: chatMessageType(resolvedMediaType, imageUrl),
   };
+
+  const preview = chatMessagePreview(t, resolvedMediaType);
 
   const batch = writeBatch(db);
   batch.set(msgRef, message);
   batch.update(roomRef, {
     lastMessageAt: now,
-    lastMessagePreview: t.slice(0, 120),
+    lastMessagePreview: preview,
     lastMessageAuthorId: fbUser.uid,
     messageCount: increment(1),
   });
