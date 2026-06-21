@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { timeAgo } from "@/lib/utils";
+import { mapFirestoreError, timeAgo } from "@/lib/utils";
 import { getFavoriteRoomIds, listenChatRooms } from "@/services/chatService";
 import type { ChatRoom } from "@/models";
 
 export default function ChatsPage() {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [error, setError] = useState("");
 
   useEffect(() => {
     getFavoriteRoomIds().then(setFavorites);
-    return listenChatRooms(setRooms);
+    return listenChatRooms(setRooms, (err) =>
+      setError(mapFirestoreError(err.message))
+    );
   }, []);
 
   const sorted = [...rooms].sort((a, b) => {
@@ -30,6 +33,7 @@ export default function ChatsPage() {
           New message
         </Link>
       </div>
+      {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
       {sorted.length === 0 ? (
         <p className="text-slate-400">No chats yet. Start a DM or join a topic room.</p>
       ) : (

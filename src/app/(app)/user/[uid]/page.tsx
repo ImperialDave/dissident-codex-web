@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { fetchUser } from "@/services/authService";
+import { getOrCreateDmRoom } from "@/services/chatService";
 import { getPostsByUser } from "@/services/postService";
 import { getFriendshipStatus, sendFriendRequest } from "@/services/friendService";
 import { startChessGame } from "@/services/chessService";
@@ -16,6 +17,8 @@ export default function UserProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [friendStatus, setFriendStatus] = useState<string>("none");
+  const [busy, setBusy] = useState<"message" | "chess" | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchUser(uid).then(setUser);
@@ -24,6 +27,32 @@ export default function UserProfilePage() {
   }, [uid]);
 
   if (!user) return <p className="text-slate-400">Loading profile...</p>;
+
+  async function openChat() {
+    setError("");
+    setBusy("message");
+    try {
+      const room = await getOrCreateDmRoom(uid);
+      router.push(`/chat/${room.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not open chat");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function playChess() {
+    setError("");
+    setBusy("chess");
+    try {
+      const game = await startChessGame(uid);
+      router.push(`/chess/game/${game.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start chess game");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -39,10 +68,15 @@ export default function UserProfilePage() {
         </div>
       </div>
 
+      {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+
       <div className="flex flex-wrap gap-2">
         {friendStatus === "none" && (
           <button
-            onClick={async () => { await sendFriendRequest(uid); setFriendStatus("pending_out"); }}
+            onClick={async () => {
+              await sendFriendRequest(uid);
+              setFriendStatus("pending_out");
+            }}
             className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black"
           >
             Add friend
@@ -51,13 +85,18 @@ export default function UserProfilePage() {
         {friendStatus === "pending_out" && <span className="text-sm text-slate-400">Request sent</span>}
         {friendStatus === "friends" && <span className="text-sm text-green-400">Friends</span>}
         <button
-          onClick={async () => {
-            const game = await startChessGame(uid);
-            router.push(`/chess/game/${game.id}`);
-          }}
-          className="rounded-lg border border-white/15 px-4 py-2 text-sm"
+          onClick={openChat}
+          disabled={busy !== null}
+          className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
         >
-          Play chess
+          {busy === "message" ? "Opening..." : "Message"}
+        </button>
+        <button
+          onClick={playChess}
+          disabled={busy !== null}
+          className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+        >
+          {busy === "chess" ? "Starting..." : "Play chess"}
         </button>
       </div>
 

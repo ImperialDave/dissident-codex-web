@@ -17,7 +17,7 @@ import {
 } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_CHAT_MESSAGE } from "@/lib/constants";
-import { containsGifUrl, dmRoomId, resolveRole, topicRoomId } from "@/lib/utils";
+import { containsGifUrl, dmRoomId, mapFirestoreError, resolveRole, topicRoomId } from "@/lib/utils";
 import {
   CHAT_TYPE_DM,
   CHAT_TYPE_TOPIC,
@@ -199,8 +199,12 @@ export async function getOrCreateDmRoom(otherUserId: string): Promise<ChatRoom> 
     lastMessageAuthorId: "",
     messageCount: 0,
   };
-  await setDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, roomId), room);
-  return room;
+  try {
+    await setDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, roomId), room);
+    return room;
+  } catch (err) {
+    throw new Error(mapFirestoreError(err instanceof Error ? err.message : "Could not create chat"));
+  }
 }
 
 export async function getOrCreateTopicRoomByName(categoryName: string): Promise<ChatRoom> {
