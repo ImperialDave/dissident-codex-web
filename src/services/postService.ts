@@ -98,7 +98,7 @@ export async function createPost(
     id: postRef.id,
     authorId: fbUser.uid,
     authorName,
-    authorPhotoUrl: user.photoUrl,
+    ...(user.photoUrl ? { authorPhotoUrl: user.photoUrl } : {}),
     authorRole,
     title: t,
     body: b,
