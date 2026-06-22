@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import clsx from "clsx";
+import { ModerationMenu } from "@/components/ModerationMenu";
 import { useAuthStore } from "@/stores/authStore";
 import { listenNotifications } from "@/services/notificationService";
 
@@ -33,6 +34,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, loading, logout, isModerator, isFounder } = useAuthStore();
   const [unread, setUnread] = useState(0);
+  const showStaffNav = isModerator() || isFounder();
 
   useEffect(() => {
     if (!user) return;
@@ -61,6 +63,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (!user) return null;
 
+  const mobileScrollNav = [
+    ...DESKTOP_NAV.slice(0, 6),
+    ...(showStaffNav
+      ? [
+          ...(isModerator() ? [{ href: "/mod", label: "Mod" }] : []),
+          ...(isFounder() ? [{ href: "/founder", label: "Founder" }] : []),
+        ]
+      : []),
+  ];
+
   return (
     <div className="min-h-screen bg-[var(--color-primary)] text-slate-100">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[var(--color-primary)]/95 backdrop-blur">
@@ -82,16 +94,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {item.href === "/notifications" && unread > 0 ? ` (${unread})` : ""}
               </Link>
             ))}
-            {isModerator() && (
-              <Link href="/mod" className="text-blue-300 hover:text-blue-200">
-                Mod Tools
-              </Link>
-            )}
-            {isFounder() && (
-              <Link href="/founder" className="text-amber-300 hover:text-amber-200">
-                Founder
-              </Link>
-            )}
+            <ModerationMenu variant="header" />
           </nav>
           <button
             onClick={() => logout().then(() => router.replace("/login"))}
@@ -101,14 +104,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
         <nav className="flex gap-2 overflow-x-auto border-t border-white/5 px-4 py-2 text-sm lg:hidden">
-          {DESKTOP_NAV.slice(0, 6).map((item) => (
+          {mobileScrollNav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={clsx(
                 "whitespace-nowrap rounded-full px-3 py-1",
                 pathname.startsWith(item.href)
-                  ? "bg-[var(--color-accent)]/20 text-[var(--color-accent)]"
+                  ? item.href === "/mod"
+                    ? "bg-blue-500/30 text-blue-200"
+                    : item.href === "/founder"
+                      ? "bg-amber-500/30 text-amber-200"
+                      : "bg-[var(--color-accent)]/20 text-[var(--color-accent)]"
                   : "text-slate-400 hover:text-slate-200"
               )}
             >

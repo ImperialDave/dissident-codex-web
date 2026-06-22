@@ -1,29 +1,62 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { ModerationMenu } from "@/components/ModerationMenu";
 import { RoleBadge } from "@/components/RoleBadge";
-import { computeModerationStats, getUsersForModeration, updateUserRole } from "@/services/moderationService";
+import { UserAvatar } from "@/components/UserAvatar";
+import { deleteComment } from "@/services/commentService";
+import {
+  computeModerationStats,
+  getRecentComments,
+  getUsersForModeration,
+  updateUserRole,
+} from "@/services/moderationService";
 import { deletePost, getPosts } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
-import { roleFromString, type RoleName, type User, type Post } from "@/models";
+import { roleFromString, type Comment, type RoleName, type User, type Post } from "@/models";
 
-const ROLES: RoleName[] = ["USER", "MOD", "ADMIN", "SUSPENDED", "BANNED"];
+const BASE_ROLES: RoleName[] = ["USER", "MOD", "ADMIN", "SUSPENDED", "BANNED"];
 
 export default function ModToolsPage() {
-  const { isModerator } = useAuthStore();
+  const { isModerator, isFounder } = useAuthStore();
   const [users, setUsers] = useState<User[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [stats, setStats] = useState<ReturnType<typeof computeModerationStats> | null>(null);
+  const [userQuery, setUserQuery] = useState("");
+  const [error, setError] = useState("");
+
+  const roles = isFounder() ? (["FOUNDER", ...BASE_ROLES] as RoleName[]) : BASE_ROLES;
+
+  async function refresh() {
+    const [u, p, c] = await Promise.all([
+      getUsersForModeration(),
+      getPosts(null, 30),
+      getRecentComments(40),
+    ]);
+    setUsers(u);
+    setStats(computeModerationStats(u));
+    setPosts(p);
+    setComments(c as Comment[]);
+  }
 
   useEffect(() => {
     if (!isModerator()) return;
-    getUsersForModeration().then((u) => {
-      setUsers(u);
-      setStats(computeModerationStats(u));
-    });
-    getPosts(null, 30).then(setPosts);
+    refresh().catch((err) =>
+      setError(err instanceof Error ? err.message : "Failed to load moderation data")
+    );
   }, [isModerator]);
+
+  const filteredUsers = useMemo(() => {
+    const q = userQuery.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(
+      (u) =>
+        u.displayName.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q)
+    );
+  }, [users, userQuery]);
 
   if (!isModerator()) {
     return <p className="text-red-400">Moderator access required.</p>;
@@ -31,43 +64,72 @@ export default function ModToolsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="space-y-3">
         <h1 className="text-2xl font-bold">Mod Tools</h1>
-        <Link href="/mod/topics" className="text-sm text-[var(--color-accent)]">
-          Manage topics →
-        </Link>
+        <ModerationMenu variant="pills" />
       </div>
 
+      {error && (
+        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+
       {stats && (
-        <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 lg:grid-cols-7">
           <div className="rounded-lg border border-white/10 p-3">Total: {stats.total}</div>
           <div className="rounded-lg border border-white/10 p-3">Members: {stats.members}</div>
           <div className="rounded-lg border border-white/10 p-3">Mods: {stats.mods}</div>
+          <div className="rounded-lg border border-white/10 p-3">Admins: {stats.admins}</div>
+          <div className="rounded-lg border border-white/10 p-3">Founders: {stats.founders}</div>
+          <div className="rounded-lg border border-white/10 p-3">Suspended: {stats.suspended}</div>
           <div className="rounded-lg border border-white/10 p-3">Banned: {stats.banned}</div>
         </div>
       )}
 
-      <section>
-        <h2 className="mb-2 font-semibold">User Roles</h2>
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {users.map((u) => (
-            <div key={u.uid} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-3">
-              <div className="flex items-center gap-2">
-                <span>{u.displayName}</span>
+      <section className="space-y-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">User Roles</h2>
+          <input
+            value={userQuery}
+            onChange={(e) => setUserQuery(e.target.value)}
+            placeholder="Search users..."
+            className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="max-h-96 space-y-2 overflow-y-auto">
+          {filteredUsers.map((u) => (
+            <div
+              key={u.uid}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-3"
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <UserAvatar name={u.displayName} photoUrl={u.photoUrl} size="sm" userId={u.uid} />
+                <div className="min-w-0">
+                  <Link href={`/user/${u.uid}`} className="font-medium hover:text-[var(--color-accent)]">
+                    {u.displayName}
+                  </Link>
+                  <p className="truncate text-xs text-slate-500">{u.email}</p>
+                </div>
                 <RoleBadge role={u.role} />
               </div>
               <select
                 value={roleFromString(u.role)}
                 onChange={async (e) => {
-                  await updateUserRole(u.uid, e.target.value as RoleName);
-                  const refreshed = await getUsersForModeration();
-                  setUsers(refreshed);
-                  setStats(computeModerationStats(refreshed));
+                  try {
+                    setError("");
+                    await updateUserRole(u.uid, e.target.value as RoleName);
+                    await refresh();
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : "Role update failed");
+                  }
                 }}
                 className="rounded border border-white/15 bg-black/20 px-2 py-1 text-sm"
               >
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>{r}</option>
+                {roles.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
                 ))}
               </select>
             </div>
@@ -75,21 +137,67 @@ export default function ModToolsPage() {
         </div>
       </section>
 
-      <section>
-        <h2 className="mb-2 font-semibold">Recent Posts</h2>
-        <div className="space-y-2">
-          {posts.map((p) => (
-            <div key={p.id} className="flex items-center justify-between rounded-lg border border-white/10 p-3">
-              <a href={`/post/${p.id}`} className="font-medium hover:text-[var(--color-accent)]">{p.title}</a>
+      <section className="space-y-2 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4">
+        <h2 className="font-semibold">Recent Posts</h2>
+        {posts.map((p) => (
+          <div
+            key={p.id}
+            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-3"
+          >
+            <div className="min-w-0">
+              <Link href={`/post/${p.id}`} className="font-medium hover:text-[var(--color-accent)]">
+                {p.title}
+              </Link>
+              <p className="text-xs text-slate-500">
+                by {p.authorName} · {p.category}
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                if (!confirm("Delete this post?")) return;
+                await deletePost(p.id);
+                setPosts(await getPosts(null, 30));
+              }}
+              className="text-sm text-red-400"
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </section>
+
+      <section className="space-y-2 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4">
+        <h2 className="font-semibold">Recent Comments</h2>
+        {comments.length === 0 ? (
+          <p className="text-sm text-slate-400">No comments loaded.</p>
+        ) : (
+          comments.map((c) => (
+            <div
+              key={c.id}
+              className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-white/10 p-3"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-slate-200 line-clamp-2">{c.text}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {c.authorName} ·{" "}
+                  <Link href={`/post/${c.postId}`} className="text-[var(--color-accent)]">
+                    View post
+                  </Link>
+                </p>
+              </div>
               <button
-                onClick={async () => { await deletePost(p.id); setPosts(await getPosts(null, 30)); }}
+                onClick={async () => {
+                  if (!confirm("Delete this comment?")) return;
+                  await deleteComment(c.id, c.postId);
+                  setComments((await getRecentComments(40)) as Comment[]);
+                }}
                 className="text-sm text-red-400"
               >
                 Delete
               </button>
             </div>
-          ))}
-        </div>
+          ))
+        )}
       </section>
     </div>
   );

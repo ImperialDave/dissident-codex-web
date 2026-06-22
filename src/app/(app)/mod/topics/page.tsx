@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ModerationMenu } from "@/components/ModerationMenu";
 import { banTopic, getBannedTopics, unbanTopic } from "@/services/categoryService";
 import { getTopicRooms, lockTopicRoom } from "@/services/chatService";
 import { useAuthStore } from "@/stores/authStore";
@@ -25,7 +27,15 @@ export default function ModTopicsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Topic Moderation</h1>
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-bold">Topic Moderation</h1>
+          <Link href="/mod" className="text-sm text-slate-400 hover:text-white">
+            ← Mod Tools
+          </Link>
+        </div>
+        <ModerationMenu variant="pills" />
+      </div>
 
       <div className="flex gap-2">
         <input

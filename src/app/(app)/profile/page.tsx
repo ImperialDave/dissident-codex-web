@@ -8,12 +8,13 @@ import { THEMES } from "@/lib/constants";
 import { getPostsByUser } from "@/services/postService";
 import { uploadImage } from "@/services/mediaService";
 import { updateProfile } from "@/services/userService";
+import { ModerationMenu } from "@/components/ModerationMenu";
 import { useAuthStore } from "@/stores/authStore";
 import { useThemeStore } from "@/stores/themeStore";
 import type { Post } from "@/models";
 
 export default function ProfilePage() {
-  const { user, refreshUser } = useAuthStore();
+  const { user, refreshUser, isModerator, isFounder } = useAuthStore();
   const { themeId, setTheme } = useThemeStore();
   const [posts, setPosts] = useState<Post[]>([]);
   const [bio, setBio] = useState("");
@@ -70,6 +71,15 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {(isModerator() || isFounder()) && (
+        <div className="space-y-3 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+          <h2 className="font-semibold text-blue-200">
+            {isFounder() ? "Founder & Moderation" : "Moderator Menu"}
+          </h2>
+          <ModerationMenu variant="cards" />
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm">
