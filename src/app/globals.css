@@ -3,16 +3,157 @@
 @tailwind utilities;
 
 :root {
-  --color-primary: #0f172a;
-  --color-surface: #1e2937;
-  --color-accent: #14b8a6;
+  --color-primary: #0a0614;
+  --color-surface: #140c28;
+  --color-accent: #00f5ff;
+  --color-accent-alt: #ff2bd6;
   --color-on-surface: #e2e8f0;
+  --color-bg-gradient: linear-gradient(165deg, #03010a 0%, #12082a 42%, #081428 100%);
+  --color-surface-gradient: linear-gradient(145deg, rgba(22, 12, 44, 0.92), rgba(10, 22, 48, 0.82));
+  --color-accent-gradient: linear-gradient(90deg, #00f5ff, #ff2bd6);
+  --color-border: rgba(0, 245, 255, 0.22);
+  --color-text-glow: 0 0 18px rgba(0, 245, 255, 0.55), 0 0 36px rgba(255, 43, 214, 0.25);
+  --color-header-bg: linear-gradient(180deg, #0a0614ee, #0a0614cc);
+  --font-display: "Orbitron", system-ui, sans-serif;
 }
 
 body {
-  background: var(--color-primary);
+  background: var(--color-bg-gradient);
+  background-attachment: fixed;
   color: var(--color-on-surface);
   font-family: system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(var(--color-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(180deg, transparent 0%, black 28%, black 72%, transparent 100%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(ellipse 80% 50% at 50% -10%, var(--color-accent) 0%, transparent 55%);
+  opacity: 0.08;
+}
+
+@layer components {
+  .codex-bg {
+    position: relative;
+    min-height: 100vh;
+    background: var(--color-bg-gradient);
+    background-attachment: fixed;
+  }
+
+  .codex-bg > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .codex-header {
+    background: var(--color-header-bg);
+    border-bottom: 1px solid var(--color-border);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .codex-nav-bar {
+    background: var(--color-surface-gradient);
+    border-top: 1px solid var(--color-border);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .codex-logo {
+    font-family: var(--font-display);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    text-shadow: var(--color-text-glow);
+  }
+
+  .codex-surface {
+    background: var(--color-surface-gradient);
+    border: 1px solid var(--color-border);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+      0 8px 32px rgba(0, 0, 0, 0.28);
+  }
+
+  .codex-surface-hover:hover {
+    border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+      0 0 20px color-mix(in srgb, var(--color-accent) 18%, transparent);
+  }
+
+  .codex-btn-accent {
+    background: var(--color-accent-gradient);
+    color: #050508;
+    font-weight: 600;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--color-accent) 35%, transparent);
+    transition: filter 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .codex-btn-accent:hover:not(:disabled) {
+    filter: brightness(1.08);
+    box-shadow: 0 0 28px color-mix(in srgb, var(--color-accent) 45%, transparent);
+  }
+
+  .codex-btn-accent:disabled {
+    opacity: 0.5;
+  }
+
+  .codex-input {
+    border: 1px solid var(--color-border);
+    background: rgba(0, 0, 0, 0.28);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .codex-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 20%, transparent);
+  }
+
+  .codex-chip-active {
+    background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+    color: var(--color-accent);
+    border: 1px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--color-accent) 15%, transparent);
+  }
+
+  .codex-theme-swatch {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .codex-theme-swatch:hover {
+    transform: scale(1.06);
+  }
+
+  .codex-theme-swatch-active {
+    border-color: white;
+    box-shadow:
+      0 0 0 2px var(--color-accent),
+      0 0 18px color-mix(in srgb, var(--color-accent) 40%, transparent);
+  }
 }
 
 .line-clamp-3 {
