@@ -174,10 +174,14 @@ export interface AppNotification {
 }
 
 export interface LeaderboardEntry {
-  id: string;
-  name: string;
+  rank: number;
+  title: string;
+  roomId: string;
+  messageCount: number;
+  postCount: number;
   score: number;
-  subtitle?: string;
+  lastMessageAt?: Timestamp | null;
+  isTopic: boolean;
 }
 
 export interface LeaderboardData {

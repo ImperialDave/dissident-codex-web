@@ -12,10 +12,17 @@ import {
 } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { ALL_CATEGORY_LABEL, COLLECTIONS } from "@/lib/constants";
-import { canModerate, type BannedTopic, type PostCategory } from "@/models";
+import {
+  canModerate,
+  CHAT_TYPE_TOPIC,
+  type BannedTopic,
+  type LeaderboardData,
+  type LeaderboardEntry,
+  type PostCategory,
+} from "@/models";
 import { fetchUser } from "./authService";
 import { normalizeCategoryName, resolveRole } from "@/lib/utils";
-import { getOrCreateTopicRoom } from "./chatService";
+import { getChatRoomsForInbox, getOrCreateTopicRoom } from "./chatService";
 import type { ChatRoom } from "@/models";
 
 export async function getCategories(): Promise<PostCategory[]> {
@@ -199,33 +206,88 @@ export async function unbanTopic(id: string): Promise<void> {
   await deleteDoc(doc(getFirebaseDb(), COLLECTIONS.HIDDEN_TOPICS, id));
 }
 
-export async function getLeaderboardData(max = 20) {
-  const db = getFirebaseDb();
-  const postsSnap = await getDocs(query(collection(db, COLLECTIONS.POSTS), limit(300)));
-  const topicCounts = new Map<string, number>();
-  for (const d of postsSnap.docs) {
-    const cat = (d.data() as DocumentData).category as string;
-    if (cat) topicCounts.set(cat, (topicCounts.get(cat) || 0) + 1);
-  }
-  const topTopics = [...topicCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, max)
-    .map(([name, score], i) => ({ id: `topic-${i}`, name, score }));
+function topicRoomName(room: ChatRoom): string {
+  return room.topicName?.trim() || room.title?.trim() || room.id;
+}
 
-  const roomsSnap = await getDocs(
-    query(collection(db, COLLECTIONS.CHAT_ROOMS), limit(100))
-  );
-  const topChats = roomsSnap.docs
-    .map((d) => {
-      const data = d.data() as DocumentData;
+async function getPostCountByCategory(): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  try {
+    const postsSnap = await getDocs(
+      query(collection(getFirebaseDb(), COLLECTIONS.POSTS), limit(500))
+    );
+    for (const d of postsSnap.docs) {
+      const cat = (d.data() as DocumentData).category as string | undefined;
+      const trimmed = cat?.trim();
+      if (!trimmed) continue;
+      counts.set(trimmed, (counts.get(trimmed) || 0) + 1);
+    }
+  } catch {
+    // non-fatal — leaderboard still works from chat activity
+  }
+  return counts;
+}
+
+function sortLeaderboardEntries(
+  entries: Omit<LeaderboardEntry, "rank">[],
+  limit: number,
+  compare: (a: Omit<LeaderboardEntry, "rank">, b: Omit<LeaderboardEntry, "rank">) => number
+): LeaderboardEntry[] {
+  return [...entries]
+    .sort(compare)
+    .slice(0, limit)
+    .map((entry, index) => ({ ...entry, rank: index + 1 }));
+}
+
+/** Matches Android: topic rooms + user's DMs, scored by chat activity. */
+export async function getLeaderboardData(limit = 20): Promise<LeaderboardData> {
+  const hidden = new Set((await getBannedTopics()).map((t) => t.name.toLowerCase()));
+  const postCounts = await getPostCountByCategory();
+
+  let rooms: ChatRoom[] = [];
+  try {
+    rooms = await getChatRoomsForInbox();
+  } catch {
+    rooms = [];
+  }
+
+  const topicEntries = rooms
+    .filter((room) => room.type === CHAT_TYPE_TOPIC)
+    .filter((room) => !hidden.has(topicRoomName(room).toLowerCase()))
+    .map((room) => {
+      const name = topicRoomName(room);
+      const messageCount = room.messageCount || 0;
+      const postCount = postCounts.get(name) || 0;
       return {
-        id: d.id,
-        name: (data.title as string) || (data.topicName as string) || d.id,
-        score: Number(data.messageCount) || 0,
+        title: name,
+        roomId: room.id,
+        messageCount,
+        postCount,
+        score: messageCount * 2 + postCount,
+        lastMessageAt: room.lastMessageAt,
+        isTopic: true,
       };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, max);
+    });
+
+  const topTopics = sortLeaderboardEntries(topicEntries, limit, (a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
+  });
+
+  const chatEntries = rooms.map((room) => ({
+    title: room.title?.trim() || room.topicName?.trim() || room.id,
+    roomId: room.id,
+    messageCount: room.messageCount || 0,
+    postCount: 0,
+    score: room.messageCount || 0,
+    lastMessageAt: room.lastMessageAt,
+    isTopic: room.type === CHAT_TYPE_TOPIC,
+  }));
+
+  const topChats = sortLeaderboardEntries(chatEntries, limit, (a, b) => {
+    if (b.messageCount !== a.messageCount) return b.messageCount - a.messageCount;
+    return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
+  });
 
   return { topTopics, topChats };
 }
