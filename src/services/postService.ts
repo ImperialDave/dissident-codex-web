@@ -16,12 +16,7 @@ import {
 } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_BODY, MAX_TITLE } from "@/lib/constants";
-import {
-  mapFirestoreError,
-  resolveMediaType,
-  resolveRole,
-  truncateAuthorName,
-} from "@/lib/utils";
+import { mapFirestoreError, resolveMediaType, resolveRole } from "@/lib/utils";
 import { canModerate, canPost, type Post } from "@/models";
 import { fetchFirestoreRole, fetchUser } from "./authService";
 
@@ -38,19 +33,12 @@ function toPost(id: string, data: DocumentData): Post {
   };
 }
 
-export async function getPosts(
-  category?: string | null,
-  max = 50,
-  options?: { includeHidden?: boolean }
-): Promise<Post[]> {
+export async function getPosts(category?: string | null, max = 50): Promise<Post[]> {
   const db = getFirebaseDb();
   const snap = await getDocs(
     query(collection(db, COLLECTIONS.POSTS), orderBy("createdAt", "desc"), limit(200))
   );
   let posts = snap.docs.map((d) => toPost(d.id, d.data()));
-  if (!options?.includeHidden) {
-    posts = posts.filter((p) => !p.hiddenFromFeed);
-  }
   const effective =
     category && category !== "All" && category.trim() ? category : null;
   if (effective) posts = posts.filter((p) => p.category === effective);
@@ -74,41 +62,32 @@ export async function createPost(
   const fbUser = auth.currentUser;
   if (!fbUser) throw new Error("Not logged in");
 
-  let user = await fetchUser(fbUser.uid);
-  if (!user) {
-    const { loadCurrentUserAndCheckBan } = await import("./authService");
-    user = await loadCurrentUserAndCheckBan(fbUser.uid, fbUser.email);
-  }
+  const user = await fetchUser(fbUser.uid);
+  if (!user) throw new Error("User profile missing");
 
   const role = resolveRole(user, fbUser.email);
   if (!canPost(role)) throw new Error("You do not have permission to post.");
 
   const t = title.trim();
   const b = body.trim();
-  const cat = category.trim();
   if (!t || !b) throw new Error("Title and body are required");
   if (t.length > MAX_TITLE) throw new Error(`Title too long (max ${MAX_TITLE})`);
   if (b.length > MAX_BODY) throw new Error(`Body too long (max ${MAX_BODY})`);
-  if (!cat) throw new Error("Category is required");
-  if (cat.length > 40) throw new Error("Category is too long (max 40 characters)");
 
   const db = getFirebaseDb();
   const postRef = doc(collection(db, COLLECTIONS.POSTS));
   const now = Timestamp.now();
   const authorRole = await fetchFirestoreRole(fbUser.uid);
   const resolvedMediaType = resolveMediaType(mediaType, imageUrl);
-  const authorName = truncateAuthorName(
-    user.displayName || fbUser.email?.split("@")[0] || "User"
-  );
   const post: Post = {
     id: postRef.id,
     authorId: fbUser.uid,
-    authorName,
-    ...(user.photoUrl ? { authorPhotoUrl: user.photoUrl } : {}),
+    authorName: user.displayName || fbUser.email?.split("@")[0] || "User",
+    authorPhotoUrl: user.photoUrl,
     authorRole,
     title: t,
     body: b,
-    category: cat,
+    category: category.trim(),
     likeCount: 0,
     commentCount: 0,
     createdAt: now,
@@ -124,33 +103,6 @@ export async function createPost(
     throw new Error(mapFirestoreError(message));
   }
   return post;
-}
-
-export async function togglePostFeedVisibility(postId: string): Promise<boolean> {
-  const auth = getFirebaseAuth();
-  const uid = auth.currentUser?.uid;
-  if (!uid) throw new Error("Not logged in");
-
-  const user = await fetchUser(uid);
-  const role = resolveRole(user, auth.currentUser?.email);
-  if (!canModerate(role)) throw new Error("Moderator access required");
-
-  const post = await getPost(postId);
-  if (!post) throw new Error("Post not found");
-
-  const nextHidden = !post.hiddenFromFeed;
-  const db = getFirebaseDb();
-  try {
-    await updateDoc(doc(db, COLLECTIONS.POSTS, postId), {
-      hiddenFromFeed: nextHidden,
-      ...(nextHidden ? { hiddenBy: uid, hiddenAt: Timestamp.now() } : {}),
-      updatedAt: Timestamp.now(),
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to update post visibility";
-    throw new Error(mapFirestoreError(message));
-  }
-  return nextHidden;
 }
 
 export async function deletePost(postId: string): Promise<void> {
@@ -229,6 +181,7 @@ export async function likePost(postId: string): Promise<void> {
   const existing = await getDoc(likeRef);
   if (existing.exists()) throw new Error("You already liked this post.");
 
+  // Rules allow only { likedAt } — doc id is the postId.
   await setDoc(likeRef, { likedAt: Timestamp.now() });
   try {
     await updateDoc(doc(db, COLLECTIONS.POSTS, postId), { likeCount: increment(1) });
@@ -250,6 +203,7 @@ export async function unlikePost(postId: string): Promise<void> {
   const existing = await getDoc(likeRef);
   if (!existing.exists()) throw new Error("You have not liked this post.");
 
+  // Decrement while likedPosts doc still exists (required by security rules).
   try {
     await updateDoc(doc(db, COLLECTIONS.POSTS, postId), { likeCount: increment(-1) });
     await deleteDoc(likeRef);
