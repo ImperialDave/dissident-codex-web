@@ -147,10 +147,20 @@ export default function ChatRoomPage() {
           const mine = msg.authorId === user?.uid;
           return (
             <div key={msg.id} className={`flex gap-2 ${mine ? "flex-row-reverse" : ""}`}>
-              <UserAvatar name={msg.authorName} photoUrl={msg.authorPhotoUrl} size="sm" />
+              <UserAvatar
+                name={msg.authorName}
+                photoUrl={msg.authorPhotoUrl}
+                size="sm"
+                userId={msg.authorId}
+              />
               <div className={`max-w-[75%] rounded-xl px-3 py-2 ${mine ? "bg-[var(--color-accent)]/20" : "bg-black/30"}`}>
                 <div className={`mb-1 flex items-center gap-2 ${mine ? "justify-end" : ""}`}>
-                  <span className="text-xs font-medium">{msg.authorName}</span>
+                  <a
+                    href={`/user/${msg.authorId}`}
+                    className="text-xs font-medium hover:text-[var(--color-accent)]"
+                  >
+                    {msg.authorName}
+                  </a>
                   <RoleBadge role={msg.authorRole} />
                 </div>
                 {msg.imageUrl && (

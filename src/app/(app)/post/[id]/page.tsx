@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PostMedia } from "@/components/PostMedia";
 import { RoleBadge } from "@/components/RoleBadge";
@@ -63,10 +64,19 @@ export default function PostDetailPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <article className="rounded-xl border border-white/10 bg-[var(--color-surface)] p-6">
         <div className="mb-4 flex items-center gap-3">
-          <UserAvatar name={post.authorName} photoUrl={post.authorPhotoUrl} />
+          <UserAvatar
+            name={post.authorName}
+            photoUrl={post.authorPhotoUrl}
+            userId={post.authorId}
+          />
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-semibold">{post.authorName}</span>
+              <Link
+                href={`/user/${post.authorId}`}
+                className="font-semibold hover:text-[var(--color-accent)]"
+              >
+                {post.authorName}
+              </Link>
               <RoleBadge role={post.authorRole} />
             </div>
             <p className="text-xs text-slate-400">{timeAgo(post.createdAt)} · {post.category}</p>
@@ -118,8 +128,18 @@ export default function PostDetailPage() {
             className="rounded-lg border border-white/10 bg-black/20 p-4"
           >
             <div className="mb-2 flex items-center gap-2">
-              <UserAvatar name={comment.authorName} photoUrl={comment.authorPhotoUrl} size="sm" />
-              <span className="text-sm font-medium">{comment.authorName}</span>
+              <UserAvatar
+                name={comment.authorName}
+                photoUrl={comment.authorPhotoUrl}
+                size="sm"
+                userId={comment.authorId}
+              />
+              <Link
+                href={`/user/${comment.authorId}`}
+                className="text-sm font-medium hover:text-[var(--color-accent)]"
+              >
+                {comment.authorName}
+              </Link>
               <RoleBadge role={comment.authorRole} />
               <span className="text-xs text-slate-500">{timeAgo(comment.createdAt)}</span>
             </div>
