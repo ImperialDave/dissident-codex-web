@@ -2,19 +2,29 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { ModerationMenu } from "@/components/ModerationMenu";
 import { useAuthStore } from "@/stores/authStore";
 import { listenNotifications } from "@/services/notificationService";
 
-const MOBILE_NAV = [
+/** Primary mobile tabs — fixed bottom bar only */
+const MOBILE_PRIMARY_NAV = [
   { href: "/feed", label: "Feed", icon: "📰" },
   { href: "/chats", label: "Chats", icon: "💬" },
   { href: "/chess", label: "Chess", icon: "♟️" },
   { href: "/create", label: "Create", icon: "✏️" },
   { href: "/profile", label: "Profile", icon: "👤" },
-];
+] as const;
+
+/** Secondary mobile links — top strip only (no overlap with bottom bar) */
+const MOBILE_SECONDARY_NAV = [
+  { href: "/friends", label: "Friends" },
+  { href: "/search", label: "Search" },
+  { href: "/topics", label: "Topics" },
+  { href: "/leaderboard", label: "Ranks" },
+  { href: "/notifications", label: "Alerts", showBadge: true },
+] as const;
 
 const DESKTOP_NAV = [
   { href: "/feed", label: "Feed" },
@@ -27,24 +37,34 @@ const DESKTOP_NAV = [
   { href: "/create", label: "Create" },
   { href: "/notifications", label: "Alerts" },
   { href: "/profile", label: "Profile" },
-];
+] as const;
+
+function navActive(pathname: string, href: string): boolean {
+  if (href === "/feed") return pathname === "/feed" || pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, logout, isModerator, isFounder } = useAuthStore();
   const [unread, setUnread] = useState(0);
-  const showStaffNav = isModerator() || isFounder();
+
+  const showMod = isModerator();
+  const showFounder = isFounder();
+
+  const mobileSecondaryNav = useMemo(() => {
+    const staff: { href: string; label: string; tone?: "mod" | "founder" }[] = [];
+    if (showMod) staff.push({ href: "/mod", label: "Mod", tone: "mod" });
+    if (showFounder) staff.push({ href: "/founder", label: "Founder", tone: "founder" });
+    return [...MOBILE_SECONDARY_NAV, ...staff];
+  }, [showMod, showFounder]);
 
   useEffect(() => {
     if (!user) return;
     const unsub = listenNotifications(
-      (notifs) => {
-        setUnread(notifs.filter((n) => !n.read).length);
-      },
-      () => {
-        setUnread(0);
-      }
+      (notifs) => setUnread(notifs.filter((n) => !n.read).length),
+      () => setUnread(0)
     );
     return () => unsub?.();
   }, [user]);
@@ -63,31 +83,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (!user) return null;
 
-  const mobileScrollNav = [
-    ...DESKTOP_NAV.slice(0, 6),
-    ...(showStaffNav
-      ? [
-          ...(isModerator() ? [{ href: "/mod", label: "Mod" }] : []),
-          ...(isFounder() ? [{ href: "/founder", label: "Founder" }] : []),
-        ]
-      : []),
-  ];
-
   return (
     <div className="min-h-screen bg-[var(--color-primary)] text-slate-100">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[var(--color-primary)]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
           <Link href="/feed" className="shrink-0 text-xl font-bold text-[var(--color-accent)]">
             Codex
           </Link>
-          <nav className="hidden flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm lg:flex">
+
+          {/* Desktop navigation */}
+          <nav className="hidden flex-1 flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm lg:flex">
             {DESKTOP_NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={clsx(
                   "hover:text-[var(--color-accent)]",
-                  pathname.startsWith(item.href) && "text-[var(--color-accent)]"
+                  navActive(pathname, item.href) && "text-[var(--color-accent)]"
                 )}
               >
                 {item.label}
@@ -96,52 +108,103 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
             <ModerationMenu variant="header" />
           </nav>
-          <button
-            onClick={() => logout().then(() => router.replace("/login"))}
-            className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-white/5"
-          >
-            Log out
-          </button>
-        </div>
-        <nav className="flex gap-2 overflow-x-auto border-t border-white/5 px-4 py-2 text-sm lg:hidden">
-          {mobileScrollNav.map((item) => (
+
+          <div className="ml-auto flex items-center gap-2">
             <Link
-              key={item.href}
-              href={item.href}
+              href="/notifications"
               className={clsx(
-                "whitespace-nowrap rounded-full px-3 py-1",
-                pathname.startsWith(item.href)
-                  ? item.href === "/mod"
-                    ? "bg-blue-500/30 text-blue-200"
-                    : item.href === "/founder"
-                      ? "bg-amber-500/30 text-amber-200"
-                      : "bg-[var(--color-accent)]/20 text-[var(--color-accent)]"
-                  : "text-slate-400 hover:text-slate-200"
+                "relative rounded-lg p-2 text-lg lg:hidden",
+                navActive(pathname, "/notifications")
+                  ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)]"
+                  : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
               )}
+              aria-label="Notifications"
             >
-              {item.label}
+              🔔
+              {unread > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[10px] font-bold text-black">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
             </Link>
-          ))}
+            <button
+              onClick={() => logout().then(() => router.replace("/login"))}
+              className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-white/5"
+            >
+              Log out
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile secondary nav — items not in the bottom tab bar */}
+        <nav className="border-t border-white/5 bg-black/20 lg:hidden">
+          <div className="mx-auto flex max-w-6xl gap-1.5 overflow-x-auto px-4 py-2">
+            {mobileSecondaryNav.map((item) => {
+              const active = navActive(pathname, item.href);
+              const tone = "tone" in item ? item.tone : undefined;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={clsx(
+                    "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition",
+                    active
+                      ? tone === "mod"
+                        ? "bg-blue-500/25 text-blue-200"
+                        : tone === "founder"
+                          ? "bg-amber-500/25 text-amber-200"
+                          : "bg-[var(--color-accent)]/20 text-[var(--color-accent)]"
+                      : tone === "mod"
+                        ? "text-blue-300/80 hover:bg-blue-500/10"
+                        : tone === "founder"
+                          ? "text-amber-300/80 hover:bg-amber-500/10"
+                          : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                  )}
+                >
+                  {item.label}
+                  {"showBadge" in item && item.showBadge && unread > 0 && (
+                    <span className="rounded-full bg-[var(--color-accent)] px-1.5 text-[10px] font-bold text-black">
+                      {unread > 9 ? "9+" : unread}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 lg:pb-6">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-6 pb-[4.75rem] lg:pb-6">{children}</main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--color-surface)] lg:hidden">
-        <div className="mx-auto flex max-w-6xl justify-around py-2">
-          {MOBILE_NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={clsx(
-                "relative flex flex-col items-center px-2 py-1 text-xs",
-                pathname.startsWith(item.href) ? "text-[var(--color-accent)]" : "text-slate-400"
-              )}
-            >
-              <span className="text-lg">{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
+      {/* Mobile primary tab bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--color-surface)]/95 backdrop-blur lg:hidden">
+        <div className="mx-auto grid max-w-6xl grid-cols-5 px-1 py-1.5">
+          {MOBILE_PRIMARY_NAV.map((item) => {
+            const active = navActive(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={clsx(
+                  "flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium transition",
+                  active ? "text-[var(--color-accent)]" : "text-slate-500 hover:text-slate-300"
+                )}
+              >
+                <span
+                  className={clsx(
+                    "text-xl leading-none",
+                    active && "drop-shadow-[0_0_8px_var(--color-accent)]"
+                  )}
+                >
+                  {item.icon}
+                </span>
+                <span>{item.label}</span>
+                {active && (
+                  <span className="h-0.5 w-4 rounded-full bg-[var(--color-accent)]" />
+                )}
+              </Link>
+            );
+          })}
         </div>
       </nav>
     </div>

@@ -23,10 +23,13 @@ export default function NewMessagePage() {
     );
   }, [user?.uid]);
 
-  const filtered = users.filter((u) =>
-    u.displayName.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = users.filter((u) => {
+    const q = search.toLowerCase();
+    return (
+      u.displayName.toLowerCase().includes(q) ||
+      (u.flair?.toLowerCase().includes(q) ?? false)
+    );
+  });
 
   return (
     <div className="space-y-4">
@@ -59,7 +62,9 @@ export default function NewMessagePage() {
             <UserAvatar name={u.displayName} photoUrl={u.photoUrl} userId={u.uid} />
             <div className="min-w-0 flex-1">
               <p className="font-medium">{u.displayName}</p>
-              <p className="truncate text-xs text-slate-400">{u.email}</p>
+              {u.flair && (
+                <p className="truncate text-xs text-[var(--color-accent)]">{u.flair}</p>
+              )}
             </div>
           </button>
         ))}

@@ -182,8 +182,12 @@ export default function SearchPage() {
                     <p className="font-medium">{u.displayName}</p>
                     <RoleBadge role={u.role} />
                   </div>
-                  <p className="truncate text-xs text-slate-400">{u.email}</p>
-                  {u.flair && <p className="text-xs text-[var(--color-accent)]">{u.flair}</p>}
+                  {u.flair && (
+                    <p className="text-xs text-[var(--color-accent)]">{u.flair}</p>
+                  )}
+                  {u.bio && (
+                    <p className="truncate text-xs text-slate-400">{u.bio}</p>
+                  )}
                 </div>
                 <span className="text-xs text-slate-500">View profile</span>
               </Link>

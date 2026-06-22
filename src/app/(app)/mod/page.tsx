@@ -54,7 +54,7 @@ export default function ModToolsPage() {
     return users.filter(
       (u) =>
         u.displayName.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q)
+        (u.flair?.toLowerCase().includes(q) ?? false)
     );
   }, [users, userQuery]);
 
@@ -109,7 +109,9 @@ export default function ModToolsPage() {
                   <Link href={`/user/${u.uid}`} className="font-medium hover:text-[var(--color-accent)]">
                     {u.displayName}
                   </Link>
-                  <p className="truncate text-xs text-slate-500">{u.email}</p>
+                  {u.flair && (
+                    <p className="truncate text-xs text-[var(--color-accent)]">{u.flair}</p>
+                  )}
                 </div>
                 <RoleBadge role={u.role} />
               </div>

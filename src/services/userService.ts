@@ -32,8 +32,8 @@ export async function searchUsers(q: string, max = 30): Promise<User[]> {
     .filter(
       (u) =>
         u.displayName.toLowerCase().includes(needle) ||
-        u.email.toLowerCase().includes(needle) ||
-        (u.flair?.toLowerCase().includes(needle) ?? false)
+        (u.flair?.toLowerCase().includes(needle) ?? false) ||
+        (u.bio?.toLowerCase().includes(needle) ?? false)
     )
     .slice(0, max);
 }
