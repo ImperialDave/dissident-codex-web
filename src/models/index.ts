@@ -83,6 +83,9 @@ export interface Post {
   category: string;
   likeCount: number;
   commentCount: number;
+  hiddenFromFeed?: boolean;
+  hiddenBy?: string | null;
+  hiddenAt?: Timestamp | null;
   createdAt?: Timestamp | null;
   updatedAt?: Timestamp | null;
 }
