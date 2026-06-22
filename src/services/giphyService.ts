@@ -10,6 +10,6 @@ export interface GifResult {
 export async function searchGiphy(query: string, limit = 24): Promise<GifResult[]> {
   const fn = httpsCallable(getFirebaseFunctions(), "searchGiphy");
   const result = await fn({ query, limit });
-  const data = result.data as { gifs?: GifResult[] };
-  return data.gifs || [];
+  const data = result.data as { items?: GifResult[]; gifs?: GifResult[] };
+  return data.items || data.gifs || [];
 }
