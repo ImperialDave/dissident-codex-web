@@ -48,10 +48,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   refreshUser: async () => {
-    const fbUser = get().firebaseUser ?? getFirebaseAuth().currentUser;
+    const fbUser = get().firebaseUser;
     if (!fbUser) return;
     const user = await loadCurrentUserAndCheckBan(fbUser.uid, fbUser.email);
-    set({ firebaseUser: fbUser, user });
+    set({ user });
   },
 
   logout: async () => {
