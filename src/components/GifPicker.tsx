@@ -18,16 +18,29 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
   useEffect(() => {
     if (!open) return;
     setQuery("");
-    setGifs([]);
     setError("");
+    let cancelled = false;
+    setLoading(true);
+    searchGiphy("")
+      .then((items) => {
+        if (!cancelled) setGifs(items);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "GIF search failed");
+          setGifs([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   async function runSearch(term: string) {
     const q = term.trim();
-    if (!q) {
-      setGifs([]);
-      return;
-    }
     setLoading(true);
     setError("");
     try {
@@ -73,7 +86,7 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
             />
             <button
               type="submit"
-              disabled={loading || !query.trim()}
+              disabled={loading}
               className="rounded-lg bg-[var(--color-accent)] px-4 py-2 font-semibold text-black disabled:opacity-50"
             >
               Search
@@ -82,10 +95,10 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
         </form>
 
         <div className="max-h-[50vh] overflow-y-auto p-4">
-          {loading && <p className="text-sm text-slate-400">Searching...</p>}
+          {loading && <p className="text-sm text-slate-400">Loading GIFs...</p>}
           {error && <p className="text-sm text-red-400">{error}</p>}
           {!loading && !error && gifs.length === 0 && (
-            <p className="text-sm text-slate-400">Search for a GIF to attach to your post.</p>
+            <p className="text-sm text-slate-400">No GIFs found. Try a different search.</p>
           )}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {gifs.map((gif) => (

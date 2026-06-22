@@ -1,10 +1,15 @@
+"use client";
+
+import { useState } from "react";
 import { containsGifUrl } from "@/lib/utils";
+import { MediaLightbox } from "@/components/MediaLightbox";
 
 interface ChatMediaProps {
   url?: string | null;
   mediaType?: string | null;
   alt?: string;
   className?: string;
+  enlargeable?: boolean;
 }
 
 export function ChatMedia({
@@ -12,7 +17,10 @@ export function ChatMedia({
   mediaType,
   alt = "Chat media",
   className = "",
+  enlargeable = false,
 }: ChatMediaProps) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
   if (!url?.trim()) return null;
 
   const isVideo = mediaType?.toLowerCase() === "video";
@@ -35,18 +43,38 @@ export function ChatMedia({
     );
   }
 
+  const img = (
+    <img
+      src={url}
+      alt={alt}
+      loading="lazy"
+      className={`w-full ${
+        isGif ? "max-h-64 object-contain" : "max-h-64 object-cover"
+      } ${enlargeable ? "cursor-zoom-in" : ""}`}
+    />
+  );
+
   return (
-    <div
-      className={`overflow-hidden rounded-lg border border-white/10 bg-black/30 ${className}`}
-    >
-      <img
-        src={url}
-        alt={alt}
-        loading="lazy"
-        className={`w-full ${
-          isGif ? "max-h-64 object-contain" : "max-h-64 object-cover"
-        }`}
-      />
-    </div>
+    <>
+      <div
+        className={`overflow-hidden rounded-lg border border-white/10 bg-black/30 ${className}`}
+      >
+        {enlargeable ? (
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className="block w-full text-left"
+            aria-label="View full size"
+          >
+            {img}
+          </button>
+        ) : (
+          img
+        )}
+      </div>
+      {lightboxOpen && (
+        <MediaLightbox url={url} alt={alt} onClose={() => setLightboxOpen(false)} />
+      )}
+    </>
   );
 }
