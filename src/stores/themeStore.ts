@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { THEMES, type ThemeId } from "@/lib/constants";
+import { safeLocalStorage } from "@/lib/utils";
 
 interface ThemeState {
   themeId: ThemeId;
@@ -12,12 +13,12 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>((set) => ({
   themeId: "midnight",
   setTheme: (id) => {
-    localStorage.setItem("codex_theme", id);
+    safeLocalStorage.setItem("codex_theme", id);
     set({ themeId: id });
     applyTheme(id);
   },
   init: () => {
-    const saved = (localStorage.getItem("codex_theme") as ThemeId) || "midnight";
+    const saved = (safeLocalStorage.getItem("codex_theme") as ThemeId) || "midnight";
     set({ themeId: saved });
     applyTheme(saved);
   },

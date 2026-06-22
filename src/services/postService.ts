@@ -16,7 +16,12 @@ import {
 } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_BODY, MAX_TITLE } from "@/lib/constants";
-import { mapFirestoreError, resolveMediaType, resolveRole } from "@/lib/utils";
+import {
+  mapFirestoreError,
+  resolveMediaType,
+  resolveRole,
+  truncateAuthorName,
+} from "@/lib/utils";
 import { canModerate, canPost, type Post } from "@/models";
 import { fetchFirestoreRole, fetchUser } from "./authService";
 
@@ -62,32 +67,42 @@ export async function createPost(
   const fbUser = auth.currentUser;
   if (!fbUser) throw new Error("Not logged in");
 
-  const user = await fetchUser(fbUser.uid);
-  if (!user) throw new Error("User profile missing");
+  let user = await fetchUser(fbUser.uid);
+  if (!user) {
+    // Recover orphaned auth accounts (profile doc missing).
+    const { loadCurrentUserAndCheckBan } = await import("./authService");
+    user = await loadCurrentUserAndCheckBan(fbUser.uid, fbUser.email);
+  }
 
   const role = resolveRole(user, fbUser.email);
   if (!canPost(role)) throw new Error("You do not have permission to post.");
 
   const t = title.trim();
   const b = body.trim();
+  const cat = category.trim();
   if (!t || !b) throw new Error("Title and body are required");
   if (t.length > MAX_TITLE) throw new Error(`Title too long (max ${MAX_TITLE})`);
   if (b.length > MAX_BODY) throw new Error(`Body too long (max ${MAX_BODY})`);
+  if (!cat) throw new Error("Category is required");
+  if (cat.length > 40) throw new Error("Category is too long (max 40 characters)");
 
   const db = getFirebaseDb();
   const postRef = doc(collection(db, COLLECTIONS.POSTS));
   const now = Timestamp.now();
   const authorRole = await fetchFirestoreRole(fbUser.uid);
   const resolvedMediaType = resolveMediaType(mediaType, imageUrl);
+  const authorName = truncateAuthorName(
+    user.displayName || fbUser.email?.split("@")[0] || "User"
+  );
   const post: Post = {
     id: postRef.id,
     authorId: fbUser.uid,
-    authorName: user.displayName || fbUser.email?.split("@")[0] || "User",
+    authorName,
     authorPhotoUrl: user.photoUrl,
     authorRole,
     title: t,
     body: b,
-    category: category.trim(),
+    category: cat,
     likeCount: 0,
     commentCount: 0,
     createdAt: now,

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GifPicker } from "@/components/GifPicker";
 import { MAX_BODY, MAX_TITLE } from "@/lib/constants";
@@ -9,7 +9,7 @@ import { uploadImage } from "@/services/mediaService";
 import { createPost } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
 import { canPost } from "@/models";
-import { resolveRole } from "@/lib/utils";
+import { resolveRole, safeLocalStorage } from "@/lib/utils";
 
 type Draft = {
   title: string;
@@ -37,6 +37,7 @@ export default function CreatePostPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const errorRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
     getCreateCategoryNames().then((cats) => {
@@ -47,7 +48,7 @@ export default function CreatePostPage() {
   }, []);
 
   useEffect(() => {
-    const draft = localStorage.getItem(draftKey);
+    const draft = safeLocalStorage.getItem(draftKey);
     if (!draft) return;
     try {
       const parsed = JSON.parse(draft) as Draft;
@@ -60,7 +61,7 @@ export default function CreatePostPage() {
   }, [draftKey]);
 
   useEffect(() => {
-    localStorage.setItem(draftKey, JSON.stringify({ title, body, category }));
+    safeLocalStorage.setItem(draftKey, JSON.stringify({ title, body, category }));
   }, [draftKey, title, body, category]);
 
   useEffect(() => {
@@ -117,7 +118,7 @@ export default function CreatePostPage() {
         // post already published
       }
 
-      localStorage.removeItem(draftKey);
+      safeLocalStorage.removeItem(draftKey);
       clearMedia();
       setTitle("");
       setBody("");
@@ -125,6 +126,9 @@ export default function CreatePostPage() {
       router.push(`/post/${post.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create post");
+      requestAnimationFrame(() => {
+        errorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
     } finally {
       setLoading(false);
     }
@@ -255,7 +259,11 @@ export default function CreatePostPage() {
           )}
         </div>
 
-        {error && <p className="text-red-400">{error}</p>}
+        {error && (
+          <p ref={errorRef} className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            {error}
+          </p>
+        )}
         {success && <p className="text-emerald-400">{success}</p>}
 
         <div className="flex flex-wrap gap-3">
@@ -269,7 +277,7 @@ export default function CreatePostPage() {
           <button
             type="button"
             onClick={() => {
-              localStorage.removeItem(draftKey);
+              safeLocalStorage.removeItem(draftKey);
               setTitle("");
               setBody("");
               setCategory(categories[0] || "General Discussion");
