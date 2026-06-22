@@ -60,10 +60,10 @@ export default function FriendsPage() {
           <div className="space-y-2">
             {requests.map((r) => (
               <div key={r.id} className="flex items-center justify-between rounded-xl border border-white/10 p-3">
-                <div className="flex items-center gap-3">
+                <Link href={`/user/${r.fromUid}`} className="flex items-center gap-3 hover:opacity-90">
                   <UserAvatar name={r.fromName} photoUrl={r.fromPhotoUrl} />
                   <span>{r.fromName}</span>
-                </div>
+                </Link>
                 <div className="flex gap-2">
                   <button
                     onClick={async () => {

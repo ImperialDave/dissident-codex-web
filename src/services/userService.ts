@@ -1,6 +1,42 @@
-import { doc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, limit, query, updateDoc } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_BIO, MAX_FLAIR, MAX_NAME } from "@/lib/constants";
+import { withResolvedRole } from "@/lib/utils";
+import type { User } from "@/models";
+
+let userDirectoryCache: User[] | null = null;
+let userDirectoryCacheAt = 0;
+const USER_DIRECTORY_TTL_MS = 60_000;
+
+async function loadUserDirectory(max = 300): Promise<User[]> {
+  const now = Date.now();
+  if (userDirectoryCache && now - userDirectoryCacheAt < USER_DIRECTORY_TTL_MS) {
+    return userDirectoryCache;
+  }
+  const snap = await getDocs(query(collection(getFirebaseDb(), COLLECTIONS.USERS), limit(max)));
+  userDirectoryCache = snap.docs.map((d) =>
+    withResolvedRole({ uid: d.id, ...(d.data() as Omit<User, "uid">) })
+  );
+  userDirectoryCacheAt = now;
+  return userDirectoryCache;
+}
+
+export async function searchUsers(q: string, max = 30): Promise<User[]> {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return [];
+
+  const me = getFirebaseAuth().currentUser?.uid;
+  const users = await loadUserDirectory(300);
+  return users
+    .filter((u) => u.uid !== me)
+    .filter(
+      (u) =>
+        u.displayName.toLowerCase().includes(needle) ||
+        u.email.toLowerCase().includes(needle) ||
+        (u.flair?.toLowerCase().includes(needle) ?? false)
+    )
+    .slice(0, max);
+}
 
 export async function updateProfile(updates: {
   displayName?: string;

@@ -7,15 +7,22 @@ import { timeAgo } from "@/lib/utils";
 
 export function PostCard({ post }: { post: Post }) {
   return (
-    <Link
-      href={`/post/${post.id}`}
-      className="block rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 transition hover:border-[var(--color-accent)]/50"
-    >
+    <article className="rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 transition hover:border-[var(--color-accent)]/50">
       <div className="mb-2 flex items-center gap-3">
-        <UserAvatar name={post.authorName} photoUrl={post.authorPhotoUrl} size="sm" />
+        <UserAvatar
+          name={post.authorName}
+          photoUrl={post.authorPhotoUrl}
+          size="sm"
+          userId={post.authorId}
+        />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-white">{post.authorName}</span>
+            <Link
+              href={`/user/${post.authorId}`}
+              className="font-medium text-white hover:text-[var(--color-accent)]"
+            >
+              {post.authorName}
+            </Link>
             <RoleBadge role={post.authorRole} />
           </div>
           <p className="text-xs text-slate-400">{timeAgo(post.createdAt)}</p>
@@ -24,13 +31,15 @@ export function PostCard({ post }: { post: Post }) {
           {post.category}
         </span>
       </div>
-      <h3 className="mb-2 text-lg font-semibold text-white">{post.title}</h3>
-      <p className="line-clamp-3 text-sm text-slate-300">{post.body}</p>
-      <PostMedia url={post.imageUrl} mediaType={post.mediaType} preview />
-      <div className="mt-3 flex gap-4 text-xs text-slate-400">
-        <span>{post.likeCount} likes</span>
-        <span>{post.commentCount} comments</span>
-      </div>
-    </Link>
+      <Link href={`/post/${post.id}`} className="block">
+        <h3 className="mb-2 text-lg font-semibold text-white">{post.title}</h3>
+        <p className="line-clamp-3 text-sm text-slate-300">{post.body}</p>
+        <PostMedia url={post.imageUrl} mediaType={post.mediaType} preview />
+        <div className="mt-3 flex gap-4 text-xs text-slate-400">
+          <span>{post.likeCount} likes</span>
+          <span>{post.commentCount} comments</span>
+        </div>
+      </Link>
+    </article>
   );
 }

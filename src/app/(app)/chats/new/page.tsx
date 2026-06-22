@@ -56,10 +56,10 @@ export default function NewMessagePage() {
             disabled={busyUid === u.uid}
             className="flex w-full items-center gap-3 rounded-xl border border-white/10 p-3 text-left hover:border-[var(--color-accent)]/40 disabled:opacity-50"
           >
-            <UserAvatar name={u.displayName} photoUrl={u.photoUrl} />
-            <div>
+            <UserAvatar name={u.displayName} photoUrl={u.photoUrl} userId={u.uid} />
+            <div className="min-w-0 flex-1">
               <p className="font-medium">{u.displayName}</p>
-              <p className="text-xs text-slate-400">{u.email}</p>
+              <p className="truncate text-xs text-slate-400">{u.email}</p>
             </div>
           </button>
         ))}

@@ -103,6 +103,22 @@ export async function respondToFriendRequest(requestId: string, accept: boolean)
   await batch.commit();
 }
 
+export async function getIncomingRequestFrom(fromUid: string): Promise<FriendRequest | null> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) return null;
+  const snap = await getDocs(
+    query(
+      collection(getFirebaseDb(), COLLECTIONS.FRIEND_REQUESTS),
+      where("fromUid", "==", fromUid),
+      where("toUid", "==", uid),
+      where("status", "==", "pending")
+    )
+  );
+  if (snap.empty) return null;
+  const docSnap = snap.docs[0]!;
+  return { id: docSnap.id, ...(docSnap.data() as Omit<FriendRequest, "id">) };
+}
+
 export async function getIncomingFriendRequests(): Promise<FriendRequest[]> {
   const uid = getFirebaseAuth().currentUser?.uid;
   if (!uid) return [];
