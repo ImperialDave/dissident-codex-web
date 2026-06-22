@@ -61,7 +61,7 @@ export async function sendFriendRequest(toUid: string): Promise<void> {
     id: ref.id,
     fromUid: uid,
     fromName: me?.displayName || "User",
-    fromPhotoUrl: me?.photoUrl,
+    ...(me?.photoUrl ? { fromPhotoUrl: me.photoUrl } : {}),
     toUid,
     status: "pending",
     createdAt: Timestamp.now(),
@@ -86,16 +86,17 @@ export async function respondToFriendRequest(requestId: string, accept: boolean)
 
   const batch = writeBatch(getFirebaseDb());
   const now = Timestamp.now();
+  const meUser = await fetchUser(uid);
   batch.set(doc(getFirebaseDb(), COLLECTIONS.USERS, uid, "friends", req.fromUid), {
     uid: req.fromUid,
     displayName: req.fromName,
-    photoUrl: req.fromPhotoUrl,
+    ...(req.fromPhotoUrl ? { photoUrl: req.fromPhotoUrl } : {}),
     since: now,
   });
   batch.set(doc(getFirebaseDb(), COLLECTIONS.USERS, req.fromUid, "friends", uid), {
     uid,
-    displayName: (await fetchUser(uid))?.displayName || "User",
-    photoUrl: (await fetchUser(uid))?.photoUrl,
+    displayName: meUser?.displayName || "User",
+    ...(meUser?.photoUrl ? { photoUrl: meUser.photoUrl } : {}),
     since: now,
   });
   batch.delete(reqRef);
