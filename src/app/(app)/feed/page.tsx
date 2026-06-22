@@ -6,17 +6,21 @@ import { useCallback, useEffect, useState } from "react";
 import { PostCard } from "@/components/PostCard";
 import { mapFirestoreError } from "@/lib/utils";
 import { getFeedCategoryNames } from "@/services/categoryService";
-import { getPosts } from "@/services/postService";
+import { getPosts, togglePostFeedVisibility } from "@/services/postService";
+import { useAuthStore } from "@/stores/authStore";
 import type { Post } from "@/models";
 
 export default function FeedPage() {
   const searchParams = useSearchParams();
+  const { isModerator } = useAuthStore();
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<string[]>(["All"]);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [togglingPostId, setTogglingPostId] = useState<string | null>(null);
+  const modView = isModerator();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -24,7 +28,9 @@ export default function FeedPage() {
     try {
       const [cats, data] = await Promise.all([
         getFeedCategoryNames(),
-        getPosts(category === "All" ? null : category),
+        getPosts(category === "All" ? null : category, 50, {
+          includeHidden: modView,
+        }),
       ]);
       setCategories(cats);
       let filtered = data;
@@ -45,7 +51,22 @@ export default function FeedPage() {
     } finally {
       setLoading(false);
     }
-  }, [category, search]);
+  }, [category, search, modView]);
+
+  async function handleToggleFeedVisibility(postId: string) {
+    setTogglingPostId(postId);
+    setError("");
+    try {
+      const hidden = await togglePostFeedVisibility(postId);
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, hiddenFromFeed: hidden } : p))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? mapFirestoreError(err.message) : "Failed to update post");
+    } finally {
+      setTogglingPostId(null);
+    }
+  }
 
   useEffect(() => {
     const fromUrl = searchParams.get("category");
@@ -113,7 +134,13 @@ export default function FeedPage() {
       ) : (
         <div className="space-y-4">
           {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard
+              key={post.id}
+              post={post}
+              canModerate={modView}
+              togglingVisibility={togglingPostId === post.id}
+              onToggleFeedVisibility={modView ? handleToggleFeedVisibility : undefined}
+            />
           ))}
         </div>
       )}
