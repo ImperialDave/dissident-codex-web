@@ -34,12 +34,43 @@ export function timeAgo(ts?: Timestamp | null): string {
 
 export function mapFirestoreError(message: string): string {
   if (message.includes("permission-denied")) {
-    return "Permission denied. Make sure you are signed in, then update Firestore/Storage rules in Firebase Console to allow the Codex web app (see firestore.rules in the project).";
+    return "Permission denied. Try logging out and back in. On iPhone, use Safari directly (not an in-app browser from Discord/Instagram). If it still fails, your account profile may be incomplete — contact a mod.";
   }
   if (message.includes("unavailable")) {
     return "Service temporarily unavailable. Try again.";
   }
   return message;
+}
+
+/** Safari private mode and some in-app browsers throw on localStorage writes. */
+export const safeLocalStorage = {
+  getItem(key: string): string | null {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem(key: string, value: string): void {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // non-fatal — drafts/theme prefs are optional
+    }
+  },
+  removeItem(key: string): void {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // non-fatal
+    }
+  },
+};
+
+export function truncateAuthorName(name: string, max = 50): string {
+  const trimmed = name.trim();
+  if (!trimmed) return "User";
+  return trimmed.length <= max ? trimmed : trimmed.slice(0, max);
 }
 
 export function dmRoomId(uidA: string, uidB: string): string {
