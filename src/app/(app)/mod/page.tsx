@@ -12,7 +12,8 @@ import {
   getUsersForModeration,
   updateUserRole,
 } from "@/services/moderationService";
-import { deletePost, getPosts } from "@/services/postService";
+import { PostFeedVisibilityToggle } from "@/components/PostFeedVisibilityToggle";
+import { deletePost, getPosts, togglePostFeedVisibility } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
 import { roleFromString, type Comment, type RoleName, type User, type Post } from "@/models";
 
@@ -26,13 +27,14 @@ export default function ModToolsPage() {
   const [stats, setStats] = useState<ReturnType<typeof computeModerationStats> | null>(null);
   const [userQuery, setUserQuery] = useState("");
   const [error, setError] = useState("");
+  const [togglingPostId, setTogglingPostId] = useState<string | null>(null);
 
   const roles = isFounder() ? (["FOUNDER", ...BASE_ROLES] as RoleName[]) : BASE_ROLES;
 
   async function refresh() {
     const [u, p, c] = await Promise.all([
       getUsersForModeration(),
-      getPosts(null, 30),
+      getPosts(null, 30, { includeHidden: true }),
       getRecentComments(40),
     ]);
     setUsers(u);
@@ -154,16 +156,38 @@ export default function ModToolsPage() {
                 by {p.authorName} · {p.category}
               </p>
             </div>
-            <button
-              onClick={async () => {
-                if (!confirm("Delete this post?")) return;
-                await deletePost(p.id);
-                setPosts(await getPosts(null, 30));
-              }}
-              className="text-sm text-red-400"
-            >
-              Delete
-            </button>
+            <div className="flex items-center gap-2">
+              <PostFeedVisibilityToggle
+                hiddenFromFeed={p.hiddenFromFeed}
+                disabled={togglingPostId === p.id}
+                compact
+                onToggle={async () => {
+                  setTogglingPostId(p.id);
+                  try {
+                    const hidden = await togglePostFeedVisibility(p.id);
+                    setPosts((prev) =>
+                      prev.map((post) =>
+                        post.id === p.id ? { ...post, hiddenFromFeed: hidden } : post
+                      )
+                    );
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : "Failed to update post");
+                  } finally {
+                    setTogglingPostId(null);
+                  }
+                }}
+              />
+              <button
+                onClick={async () => {
+                  if (!confirm("Delete this post?")) return;
+                  await deletePost(p.id);
+                  setPosts(await getPosts(null, 30, { includeHidden: true }));
+                }}
+                className="text-sm text-red-400"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
       </section>
