@@ -188,7 +188,7 @@ export async function sendChatMessage(
     id: msgRef.id,
     authorId: fbUser.uid,
     authorName: user.displayName || fbUser.email?.split("@")[0] || "User",
-    authorPhotoUrl: user.photoUrl,
+    ...(user.photoUrl ? { authorPhotoUrl: user.photoUrl } : {}),
     authorRole: user.role,
     text: t,
     ...(imageUrl ? { imageUrl, mediaType: resolvedMediaType } : {}),
