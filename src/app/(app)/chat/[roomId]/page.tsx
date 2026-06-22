@@ -4,10 +4,17 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { ChatMedia } from "@/components/ChatMedia";
 import { GifPicker } from "@/components/GifPicker";
+import { FavoriteStar } from "@/components/FavoriteStar";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { timeAgo } from "@/lib/utils";
-import { getChatRoom, listenMessages, sendChatMessage, toggleFavoriteRoom } from "@/services/chatService";
+import {
+  getChatRoom,
+  getFavoriteRoomIds,
+  listenMessages,
+  sendChatMessage,
+  toggleFavoriteRoom,
+} from "@/services/chatService";
 import { isImageFile, uploadChatImage, uploadChatVideo } from "@/services/mediaService";
 import type { GifResult } from "@/services/giphyService";
 import { useAuthStore } from "@/stores/authStore";
@@ -26,6 +33,8 @@ export default function ChatRoomPage() {
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
+  const [favorited, setFavorited] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [pendingMedia, setPendingMedia] = useState<PendingMedia | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -34,6 +43,10 @@ export default function ChatRoomPage() {
   useEffect(() => {
     getChatRoom(roomId).then(setRoom);
     return listenMessages(roomId, setMessages, (e) => setError(e.message));
+  }, [roomId]);
+
+  useEffect(() => {
+    getFavoriteRoomIds().then((ids) => setFavorited(ids.has(roomId)));
   }, [roomId]);
 
   useEffect(() => {
@@ -134,12 +147,20 @@ export default function ChatRoomPage() {
           <h1 className="font-semibold">{room?.title || "Chat"}</h1>
           {room?.locked && <p className="text-xs text-orange-300">This room is locked</p>}
         </div>
-        <button
-          onClick={() => toggleFavoriteRoom(roomId)}
-          className="text-sm text-[var(--color-accent)]"
-        >
-          Toggle favorite
-        </button>
+        <FavoriteStar
+          favorited={favorited}
+          disabled={favoriteLoading}
+          onToggle={async () => {
+            setFavoriteLoading(true);
+            try {
+              setFavorited(await toggleFavoriteRoom(roomId));
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Failed to update favorite");
+            } finally {
+              setFavoriteLoading(false);
+            }
+          }}
+        />
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
