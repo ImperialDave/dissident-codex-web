@@ -56,7 +56,7 @@ export async function addComment(
     postId,
     authorId: fbUser.uid,
     authorName: user.displayName,
-    ...(user.photoUrl ? { authorPhotoUrl: user.photoUrl } : {}),
+    authorPhotoUrl: user.photoUrl,
     authorRole: user.role,
     text: t,
     likeCount: 0,
