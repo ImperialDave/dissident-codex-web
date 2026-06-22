@@ -61,7 +61,7 @@ export async function sendFriendRequest(toUid: string): Promise<void> {
     id: ref.id,
     fromUid: uid,
     fromName: me?.displayName || "User",
-    ...(me?.photoUrl ? { fromPhotoUrl: me.photoUrl } : {}),
+    fromPhotoUrl: me?.photoUrl,
     toUid,
     status: "pending",
     createdAt: Timestamp.now(),
@@ -86,37 +86,20 @@ export async function respondToFriendRequest(requestId: string, accept: boolean)
 
   const batch = writeBatch(getFirebaseDb());
   const now = Timestamp.now();
-  const meUser = await fetchUser(uid);
   batch.set(doc(getFirebaseDb(), COLLECTIONS.USERS, uid, "friends", req.fromUid), {
     uid: req.fromUid,
     displayName: req.fromName,
-    ...(req.fromPhotoUrl ? { photoUrl: req.fromPhotoUrl } : {}),
+    photoUrl: req.fromPhotoUrl,
     since: now,
   });
   batch.set(doc(getFirebaseDb(), COLLECTIONS.USERS, req.fromUid, "friends", uid), {
     uid,
-    displayName: meUser?.displayName || "User",
-    ...(meUser?.photoUrl ? { photoUrl: meUser.photoUrl } : {}),
+    displayName: (await fetchUser(uid))?.displayName || "User",
+    photoUrl: (await fetchUser(uid))?.photoUrl,
     since: now,
   });
   batch.delete(reqRef);
   await batch.commit();
-}
-
-export async function getIncomingRequestFrom(fromUid: string): Promise<FriendRequest | null> {
-  const uid = getFirebaseAuth().currentUser?.uid;
-  if (!uid) return null;
-  const snap = await getDocs(
-    query(
-      collection(getFirebaseDb(), COLLECTIONS.FRIEND_REQUESTS),
-      where("fromUid", "==", fromUid),
-      where("toUid", "==", uid),
-      where("status", "==", "pending")
-    )
-  );
-  if (snap.empty) return null;
-  const docSnap = snap.docs[0]!;
-  return { id: docSnap.id, ...(docSnap.data() as Omit<FriendRequest, "id">) };
 }
 
 export async function getIncomingFriendRequests(): Promise<FriendRequest[]> {
