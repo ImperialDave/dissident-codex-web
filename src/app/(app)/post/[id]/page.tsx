@@ -5,13 +5,20 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChatMedia } from "@/components/ChatMedia";
 import { GifPicker } from "@/components/GifPicker";
+import { PostFeedVisibilityToggle } from "@/components/PostFeedVisibilityToggle";
 import { PostMedia } from "@/components/PostMedia";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { flattenComments } from "@/lib/commentThread";
 import { mapFirestoreError, timeAgo } from "@/lib/utils";
 import { addComment, deleteComment, getComments } from "@/services/commentService";
-import { deletePost, getPost, hasLikedPost, toggleLikePost } from "@/services/postService";
+import {
+  deletePost,
+  getPost,
+  hasLikedPost,
+  toggleLikePost,
+  togglePostFeedVisibility,
+} from "@/services/postService";
 import {
   isImageFile,
   uploadCommentImage,
@@ -38,6 +45,7 @@ export default function PostDetailPage() {
   const [error, setError] = useState("");
   const [likeError, setLikeError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [visibilityLoading, setVisibilityLoading] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
   const [pendingMedia, setPendingMedia] = useState<PendingMedia | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -148,9 +156,10 @@ export default function PostDetailPage() {
 
   if (!post) return <p className="text-slate-400">Loading post...</p>;
 
+  const modView = isModerator();
   const canDelete =
     post.authorId === user?.uid ||
-    isModerator() ||
+    modView ||
     canModerate(resolveRole(user, firebaseUser?.email));
 
   const canSubmit = Boolean(text.trim() || pendingMedia);
@@ -177,7 +186,14 @@ export default function PostDetailPage() {
             <p className="text-xs text-slate-400">{timeAgo(post.createdAt)} · {post.category}</p>
           </div>
         </div>
-        <h1 className="mb-3 text-2xl font-bold text-white">{post.title}</h1>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-bold text-white">{post.title}</h1>
+          {post.hiddenFromFeed && (
+            <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-xs font-medium text-orange-200">
+              Hidden from feed
+            </span>
+          )}
+        </div>
         <p className="whitespace-pre-wrap text-slate-200">{post.body}</p>
         <PostMedia
           url={post.imageUrl}
@@ -203,6 +219,24 @@ export default function PostDetailPage() {
             {liked ? "Liked" : "Like"} ({post.likeCount})
           </button>
           {likeError && <p className="text-sm text-red-400">{likeError}</p>}
+          {modView && (
+            <PostFeedVisibilityToggle
+              hiddenFromFeed={post.hiddenFromFeed}
+              disabled={visibilityLoading}
+              onToggle={async () => {
+                setVisibilityLoading(true);
+                setError("");
+                try {
+                  const hidden = await togglePostFeedVisibility(id);
+                  setPost((p) => p && { ...p, hiddenFromFeed: hidden });
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Failed to update visibility");
+                } finally {
+                  setVisibilityLoading(false);
+                }
+              }}
+            />
+          )}
           {canDelete && (
             <button
               onClick={async () => {
