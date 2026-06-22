@@ -8,7 +8,7 @@ import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { timeAgo } from "@/lib/utils";
 import { getChatRoom, listenMessages, sendChatMessage, toggleFavoriteRoom } from "@/services/chatService";
-import { uploadChatImage, uploadChatVideo } from "@/services/mediaService";
+import { isImageFile, uploadChatImage, uploadChatVideo } from "@/services/mediaService";
 import type { GifResult } from "@/services/giphyService";
 import { useAuthStore } from "@/stores/authStore";
 import type { ChatMessage, ChatRoom } from "@/models";
@@ -57,7 +57,7 @@ export default function ChatRoomPage() {
 
   function handleImagePick(file: File | undefined) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    if (!isImageFile(file)) {
       setError("Only images are allowed");
       return;
     }
@@ -168,6 +168,7 @@ export default function ChatRoomPage() {
                     url={msg.imageUrl}
                     mediaType={msg.mediaType}
                     className="mb-2"
+                    enlargeable
                   />
                 )}
                 {msg.text?.trim() && (
