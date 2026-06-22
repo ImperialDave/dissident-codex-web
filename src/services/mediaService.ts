@@ -11,6 +11,7 @@ export type MediaFolder =
   | "profile_pics"
   | "profile_backgrounds"
   | "comment_images"
+  | "comment_media"
   | "images"
   | "chat_media";
 
@@ -84,6 +85,28 @@ function readVideoDuration(file: File): Promise<number> {
     };
     video.src = url;
   });
+}
+
+export async function uploadCommentImage(file: File): Promise<string> {
+  return uploadImage(file, "comment_images");
+}
+
+export async function uploadCommentVideo(file: File): Promise<string> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) throw new Error("Not authenticated");
+  if (!file.type.startsWith("video/")) throw new Error("Only videos are allowed");
+  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be under 50MB");
+
+  const duration = await readVideoDuration(file);
+  if (!Number.isFinite(duration) || duration > MAX_VIDEO_DURATION_SEC) {
+    throw new Error("Video must be 2 minutes or shorter");
+  }
+
+  const storage = getFirebaseStorage();
+  const path = `comment_media/${uid}/${Date.now()}_${file.name}`;
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file, { contentType: file.type });
+  return getDownloadURL(storageRef);
 }
 
 export async function uploadChatVideo(file: File): Promise<string> {
