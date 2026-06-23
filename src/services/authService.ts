@@ -1,7 +1,10 @@
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   signInWithEmailAndPassword,
   signOut,
+  updatePassword,
   type User as FirebaseUser,
 } from "firebase/auth";
 import {
@@ -91,11 +94,15 @@ export async function loadCurrentUserAndCheckBan(
 }
 
 export async function fetchUser(uid: string): Promise<User | null> {
-  const db = getFirebaseDb();
-  const snap = await getDoc(doc(db, COLLECTIONS.USERS, uid));
-  if (!snap.exists()) return null;
-  const data = snap.data() as User;
-  return withResolvedRole({ ...data, uid }, getFirebaseAuth().currentUser?.email);
+  try {
+    const db = getFirebaseDb();
+    const snap = await getDoc(doc(db, COLLECTIONS.USERS, uid));
+    if (!snap.exists()) return null;
+    const data = snap.data() as User;
+    return withResolvedRole({ ...data, uid }, getFirebaseAuth().currentUser?.email);
+  } catch {
+    return null;
+  }
 }
 
 /** Role string stored in Firestore — rules validate against this, not client-resolved role. */
@@ -139,11 +146,41 @@ async function ensureFounderRole(
 
 async function updateLastActive(uid: string): Promise<void> {
   try {
-    await updateDoc(doc(getFirebaseDb(), COLLECTIONS.USERS, uid), {
+    await updateDoc(doc(db, COLLECTIONS.USERS, uid), {
       lastActive: Timestamp.now(),
     });
   } catch {
     // non-fatal
+  }
+}
+
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  const auth = getFirebaseAuth();
+  const fbUser = auth.currentUser;
+  if (!fbUser?.email) throw new Error("Not signed in with email.");
+
+  const next = newPassword.trim();
+  if (next.length < 6) throw new Error("New password must be at least 6 characters.");
+
+  const credential = EmailAuthProvider.credential(fbUser.email, currentPassword);
+  try {
+    await reauthenticateWithCredential(fbUser, credential);
+    await updatePassword(fbUser, next);
+  } catch (err) {
+    const code = err && typeof err === "object" && "code" in err ? String((err as { code: string }).code) : "";
+    if (code.includes("wrong-password") || code.includes("invalid-credential")) {
+      throw new Error("Current password is incorrect.");
+    }
+    if (code.includes("requires-recent-login")) {
+      throw new Error("Please log out and log back in, then try again.");
+    }
+    if (code.includes("weak-password")) {
+      throw new Error("New password is too weak. Use at least 6 characters.");
+    }
+    throw err instanceof Error ? err : new Error("Could not change password.");
   }
 }
 

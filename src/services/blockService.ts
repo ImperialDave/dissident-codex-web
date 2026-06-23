@@ -21,11 +21,16 @@ export async function getBlockedUserIds(): Promise<Set<string>> {
   if (!uid) return new Set();
   if (blockedCache) return blockedCache;
 
-  const snap = await getDocs(
-    collection(getFirebaseDb(), COLLECTIONS.USERS, uid, "blockedUsers")
-  );
-  blockedCache = new Set(snap.docs.map((d) => d.id));
-  return blockedCache;
+  try {
+    const snap = await getDocs(
+      collection(getFirebaseDb(), COLLECTIONS.USERS, uid, "blockedUsers")
+    );
+    blockedCache = new Set(snap.docs.map((d) => d.id));
+    return blockedCache;
+  } catch {
+    // Rules may lag deploy — treat as no blocks so feed still loads.
+    return new Set();
+  }
 }
 
 export function clearBlockedCache(): void {
@@ -35,10 +40,14 @@ export function clearBlockedCache(): void {
 export async function isBlocked(otherUid: string): Promise<boolean> {
   const uid = getFirebaseAuth().currentUser?.uid;
   if (!uid || uid === otherUid) return false;
-  const snap = await getDoc(
-    doc(getFirebaseDb(), COLLECTIONS.USERS, uid, "blockedUsers", otherUid)
-  );
-  return snap.exists();
+  try {
+    const snap = await getDoc(
+      doc(getFirebaseDb(), COLLECTIONS.USERS, uid, "blockedUsers", otherUid)
+    );
+    return snap.exists();
+  } catch {
+    return false;
+  }
 }
 
 export async function isBlockedEitherWay(otherUid: string): Promise<boolean> {
@@ -46,11 +55,15 @@ export async function isBlockedEitherWay(otherUid: string): Promise<boolean> {
   if (!uid || uid === otherUid) return false;
 
   const db = getFirebaseDb();
-  const [mine, theirs] = await Promise.all([
-    getDoc(doc(db, COLLECTIONS.USERS, uid, "blockedUsers", otherUid)),
-    getDoc(doc(db, COLLECTIONS.USERS, otherUid, "blockedUsers", uid)),
-  ]);
-  return mine.exists() || theirs.exists();
+  try {
+    const [mine, theirs] = await Promise.all([
+      getDoc(doc(db, COLLECTIONS.USERS, uid, "blockedUsers", otherUid)),
+      getDoc(doc(db, COLLECTIONS.USERS, otherUid, "blockedUsers", uid)),
+    ]);
+    return mine.exists() || theirs.exists();
+  } catch {
+    return false;
+  }
 }
 
 async function clearFriendRequestsBetween(uidA: string, uidB: string): Promise<void> {
