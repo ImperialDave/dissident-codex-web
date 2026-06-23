@@ -146,7 +146,7 @@ async function ensureFounderRole(
 
 async function updateLastActive(uid: string): Promise<void> {
   try {
-    await updateDoc(doc(db, COLLECTIONS.USERS, uid), {
+    await updateDoc(doc(getFirebaseDb(), COLLECTIONS.USERS, uid), {
       lastActive: Timestamp.now(),
     });
   } catch {
