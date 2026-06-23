@@ -14,7 +14,7 @@ import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_COMMENT } from "@/lib/constants";
 import { canModerate, type Comment } from "@/models";
 import { fetchFirestoreRole, fetchUser } from "./authService";
-import { mapFirestoreError, resolveRole } from "@/lib/utils";
+import { mapFirestoreError, resolveRole, stripUndefinedFields } from "@/lib/utils";
 
 export async function getComments(postId: string): Promise<Comment[]> {
   const snap = await getDocs(
@@ -71,7 +71,7 @@ export async function addComment(
     ...(options?.imageUrl ? { imageUrl: options.imageUrl, mediaType: options.mediaType || "image" } : {}),
   };
   try {
-    await setDoc(ref, comment);
+    await setDoc(ref, stripUndefinedFields(comment as unknown as Record<string, unknown>));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to add comment";
     throw new Error(mapFirestoreError(message));
