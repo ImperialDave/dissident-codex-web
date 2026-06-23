@@ -2,9 +2,6 @@
   "name": "codex-web",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": ">=20"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "next build && npm run postbuild",
@@ -15,7 +12,6 @@
   "dependencies": {
     "chess.js": "^1.4.0",
     "clsx": "^2.1.1",
-    "csstype": "^3.1.3",
     "date-fns": "^4.4.0",
     "firebase": "^12.15.0",
     "next": "^14.2.35",
