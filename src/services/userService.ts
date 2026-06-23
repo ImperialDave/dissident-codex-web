@@ -3,6 +3,7 @@ import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_BIO, MAX_FLAIR, MAX_NAME } from "@/lib/constants";
 import { withResolvedRole } from "@/lib/utils";
 import type { User } from "@/models";
+import { getBlockedUserIds } from "./blockService";
 
 let userDirectoryCache: User[] | null = null;
 let userDirectoryCacheAt = 0;
@@ -26,9 +27,10 @@ export async function searchUsers(q: string, max = 30): Promise<User[]> {
   if (!needle) return [];
 
   const me = getFirebaseAuth().currentUser?.uid;
-  const users = await loadUserDirectory(300);
+  const [users, blockedIds] = await Promise.all([loadUserDirectory(300), getBlockedUserIds()]);
   return users
     .filter((u) => u.uid !== me)
+    .filter((u) => !blockedIds.has(u.uid))
     .filter(
       (u) =>
         u.displayName.toLowerCase().includes(needle) ||

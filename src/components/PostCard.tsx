@@ -5,6 +5,7 @@ import { PostMedia } from "./PostMedia";
 import { RoleBadge } from "./RoleBadge";
 import { UserAvatar } from "./UserAvatar";
 import { timeAgo } from "@/lib/utils";
+import { CategoryTag } from "./CategoryTag";
 
 interface PostCardProps {
   post: Post;
@@ -60,9 +61,7 @@ export function PostCard({
               onToggle={() => onToggleFeedVisibility(post.id)}
             />
           )}
-          <span className="codex-chip-active rounded-full px-2 py-1 text-xs">
-            {post.category}
-          </span>
+          <CategoryTag category={post.category} />
         </div>
       </div>
       <Link href={`/post/${post.id}`} className="block">

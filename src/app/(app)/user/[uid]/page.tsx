@@ -13,6 +13,7 @@ import {
   respondToFriendRequest,
   sendFriendRequest,
 } from "@/services/friendService";
+import { blockUser, isBlocked, unblockUser } from "@/services/blockService";
 import { startChessGame } from "@/services/chessService";
 import { useAuthStore } from "@/stores/authStore";
 import type { Post, User } from "@/models";
@@ -24,7 +25,8 @@ export default function UserProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [friendStatus, setFriendStatus] = useState<string>("none");
-  const [busy, setBusy] = useState<"message" | "chess" | "friend" | null>(null);
+  const [blocked, setBlocked] = useState(false);
+  const [busy, setBusy] = useState<"message" | "chess" | "friend" | "block" | null>(null);
   const [error, setError] = useState("");
 
   const isSelf = me?.uid === uid;
@@ -38,7 +40,10 @@ export default function UserProfilePage() {
   useEffect(() => {
     fetchUser(uid).then(setUser);
     getPostsByUser(uid).then(setPosts);
-    if (!isSelf) getFriendshipStatus(uid).then(setFriendStatus);
+    if (!isSelf) {
+      getFriendshipStatus(uid).then(setFriendStatus);
+      isBlocked(uid).then(setBlocked);
+    }
   }, [uid, isSelf]);
 
   if (!user) return <p className="text-slate-400">Loading profile...</p>;
@@ -82,6 +87,28 @@ export default function UserProfilePage() {
     }
   }
 
+  async function toggleBlock() {
+    setError("");
+    setBusy("block");
+    try {
+      if (blocked) {
+        await unblockUser(uid);
+        setBlocked(false);
+      } else {
+        if (!confirm(`Block ${user?.displayName || "this user"}? They won't be able to message you or appear in your feed.`)) {
+          return;
+        }
+        await blockUser(uid);
+        setBlocked(true);
+        setFriendStatus("none");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update block status");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function acceptFriend() {
     setError("");
     setBusy("friend");
@@ -117,8 +144,14 @@ export default function UserProfilePage() {
         </p>
       )}
 
+      {blocked && (
+        <p className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-sm text-orange-200">
+          You have blocked this user. Their posts and comments are hidden from you.
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-2">
-        {friendStatus === "none" && (
+        {!blocked && friendStatus === "none" && (
           <button
             onClick={addFriend}
             disabled={busy !== null}
@@ -127,12 +160,12 @@ export default function UserProfilePage() {
             {busy === "friend" ? "Sending..." : "Add friend"}
           </button>
         )}
-        {friendStatus === "pending_out" && (
+        {!blocked && friendStatus === "pending_out" && (
           <span className="rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-400">
             Request sent
           </span>
         )}
-        {friendStatus === "pending_in" && (
+        {!blocked && friendStatus === "pending_in" && (
           <button
             onClick={acceptFriend}
             disabled={busy !== null}
@@ -141,7 +174,7 @@ export default function UserProfilePage() {
             {busy === "friend" ? "Accepting..." : "Accept friend request"}
           </button>
         )}
-        {friendStatus === "friends" && (
+        {!blocked && friendStatus === "friends" && (
           <>
             <span className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm text-green-400">
               Friends
@@ -155,7 +188,7 @@ export default function UserProfilePage() {
             </button>
           </>
         )}
-        {friendStatus !== "friends" && (
+        {!blocked && friendStatus !== "friends" && (
           <button
             onClick={openChat}
             disabled={busy !== null}
@@ -164,12 +197,21 @@ export default function UserProfilePage() {
             {busy === "message" ? "Opening..." : "Message"}
           </button>
         )}
+        {!blocked && (
+          <button
+            onClick={playChess}
+            disabled={busy !== null}
+            className="codex-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          >
+            {busy === "chess" ? "Starting..." : "Play chess"}
+          </button>
+        )}
         <button
-          onClick={playChess}
+          onClick={toggleBlock}
           disabled={busy !== null}
-          className="codex-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          className="codex-btn-danger rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
-          {busy === "chess" ? "Starting..." : "Play chess"}
+          {busy === "block" ? "Updating..." : blocked ? "Unblock" : "Block"}
         </button>
       </div>
 

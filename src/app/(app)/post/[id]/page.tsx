@@ -2,16 +2,18 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ChatMedia } from "@/components/ChatMedia";
 import { GifPicker } from "@/components/GifPicker";
 import { PostFeedVisibilityToggle } from "@/components/PostFeedVisibilityToggle";
 import { PostMedia } from "@/components/PostMedia";
+import { CategoryTag } from "@/components/CategoryTag";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { flattenComments } from "@/lib/commentThread";
 import { mapFirestoreError, timeAgo } from "@/lib/utils";
 import { addComment, deleteComment, getComments } from "@/services/commentService";
+import { getBlockedUserIds } from "@/services/blockService";
 import {
   deletePost,
   getPost,
@@ -36,6 +38,7 @@ type PendingMedia =
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { user, firebaseUser, isModerator } = useAuthStore();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -52,11 +55,20 @@ export default function PostDetailPage() {
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
-    const [p, c, l] = await Promise.all([getPost(id), getComments(id), hasLikedPost(id)]);
+    const [p, c, l, blockedIds] = await Promise.all([
+      getPost(id),
+      getComments(id),
+      hasLikedPost(id),
+      getBlockedUserIds(),
+    ]);
+    if (p && blockedIds.has(p.authorId)) {
+      router.replace("/feed");
+      return;
+    }
     setPost(p);
     setComments(c);
     setLiked(l);
-  }, [id]);
+  }, [id, router]);
 
   useEffect(() => {
     load();
@@ -183,7 +195,11 @@ export default function PostDetailPage() {
               </Link>
               <RoleBadge role={post.authorRole} />
             </div>
-            <p className="text-xs text-slate-400">{timeAgo(post.createdAt)} · {post.category}</p>
+            <p className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+              <span>{timeAgo(post.createdAt)}</span>
+              <span>·</span>
+              <CategoryTag category={post.category} />
+            </p>
           </div>
         </div>
         <div className="mb-3 flex flex-wrap items-center gap-2">

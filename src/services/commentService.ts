@@ -15,14 +15,17 @@ import { COLLECTIONS, MAX_COMMENT } from "@/lib/constants";
 import { canModerate, type Comment } from "@/models";
 import { fetchUser } from "./authService";
 import { resolveRole } from "@/lib/utils";
+import { excludeBlockedAuthors, getBlockedUserIds } from "./blockService";
 
 export async function getComments(postId: string): Promise<Comment[]> {
   const snap = await getDocs(
     query(collection(getFirebaseDb(), COLLECTIONS.COMMENTS), where("postId", "==", postId))
   );
-  return snap.docs
+  const comments = snap.docs
     .map((d) => ({ id: d.id, ...(d.data() as Omit<Comment, "id">) }))
     .sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
+  const blockedIds = await getBlockedUserIds();
+  return excludeBlockedAuthors(comments, blockedIds);
 }
 
 export async function addComment(

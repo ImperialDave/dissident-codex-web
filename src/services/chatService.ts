@@ -37,6 +37,7 @@ import {
   type ChatRoom,
 } from "@/models";
 import { fetchUser } from "./authService";
+import { isBlockedEitherWay } from "./blockService";
 
 function toRoom(id: string, data: Record<string, unknown>): ChatRoom {
   return {
@@ -214,6 +215,9 @@ export async function getOrCreateDmRoom(otherUserId: string): Promise<ChatRoom> 
   const me = getFirebaseAuth().currentUser?.uid;
   if (!me) throw new Error("Not logged in");
   if (me === otherUserId) throw new Error("Cannot message yourself");
+  if (await isBlockedEitherWay(otherUserId)) {
+    throw new Error("Cannot message this user");
+  }
 
   const roomId = dmRoomId(me, otherUserId);
   const existing = await getChatRoom(roomId);

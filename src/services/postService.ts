@@ -20,6 +20,7 @@ import { COLLECTIONS, MAX_BODY, MAX_TITLE } from "@/lib/constants";
 import { mapFirestoreError, resolveMediaType, resolveRole } from "@/lib/utils";
 import { canModerate, canPost, type Post } from "@/models";
 import { fetchFirestoreRole, fetchUser } from "./authService";
+import { excludeBlockedAuthors, getBlockedUserIds } from "./blockService";
 
 function toPost(id: string, data: DocumentData): Post {
   const imageUrl =
@@ -50,6 +51,8 @@ export async function getPosts(
   const effective =
     category && category !== "All" && category.trim() ? category : null;
   if (effective) posts = posts.filter((p) => p.category === effective);
+  const blockedIds = await getBlockedUserIds();
+  posts = excludeBlockedAuthors(posts, blockedIds);
   return posts.slice(0, max);
 }
 
@@ -159,6 +162,11 @@ export async function deletePost(postId: string): Promise<void> {
 }
 
 export async function getPostsByUser(uid: string): Promise<Post[]> {
+  const me = getFirebaseAuth().currentUser?.uid;
+  if (me) {
+    const blocked = await getBlockedUserIds();
+    if (blocked.has(uid)) return [];
+  }
   const snap = await getDocs(
     query(collection(getFirebaseDb(), COLLECTIONS.POSTS), where("authorId", "==", uid))
   );

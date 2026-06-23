@@ -14,6 +14,7 @@ import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS } from "@/lib/constants";
 import type { Friend, FriendRequest } from "@/models";
 import { fetchUser } from "./authService";
+import { isBlockedEitherWay } from "./blockService";
 
 export type FriendshipStatus = "none" | "friends" | "pending_out" | "pending_in";
 
@@ -50,6 +51,7 @@ export async function sendFriendRequest(toUid: string): Promise<void> {
   const uid = getFirebaseAuth().currentUser?.uid;
   if (!uid) throw new Error("Not logged in");
   if (uid === toUid) throw new Error("Cannot friend yourself");
+  if (await isBlockedEitherWay(toUid)) throw new Error("Cannot send friend request to this user");
 
   const status = await getFriendshipStatus(toUid);
   if (status === "friends") throw new Error("Already friends");
