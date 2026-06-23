@@ -32,7 +32,7 @@ export function PostFeedVisibilityToggle({
           : "codex-btn-ghost"
       }`}
     >
-      {hiddenFromFeed ? "Unhide" : "Hide"}
+      {hiddenFromFeed ? "Unhide from feed" : "Hide from feed"}
     </button>
   );
 }

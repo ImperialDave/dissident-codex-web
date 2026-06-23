@@ -142,16 +142,32 @@ export default function ModToolsPage() {
       </section>
 
       <section className="codex-surface space-y-2 rounded-xl p-4">
-        <h2 className="font-semibold">Recent Posts</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">Recent Posts</h2>
+          {posts.some((p) => p.hiddenFromFeed) && (
+            <span className="rounded-full bg-orange-500/20 px-2.5 py-0.5 text-xs font-medium text-orange-100">
+              {posts.filter((p) => p.hiddenFromFeed).length} hidden from feed
+            </span>
+          )}
+        </div>
         {posts.map((p) => (
           <div
             key={p.id}
-            className="codex-surface flex flex-wrap items-center justify-between gap-2 rounded-lg p-3"
+            className={`codex-surface flex flex-wrap items-center justify-between gap-2 rounded-lg p-3 ${
+              p.hiddenFromFeed ? "border-orange-400/40 bg-orange-500/5" : ""
+            }`}
           >
             <div className="min-w-0">
-              <Link href={`/post/${p.id}`} className="font-medium hover:text-[var(--color-accent)]">
-                {p.title}
-              </Link>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link href={`/post/${p.id}`} className="font-medium hover:text-[var(--color-accent)]">
+                  {p.title}
+                </Link>
+                {p.hiddenFromFeed && (
+                  <span className="rounded-full bg-orange-500/25 px-2 py-0.5 text-[10px] font-medium text-orange-100">
+                    Hidden from feed
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-slate-500">
                 by {p.authorName} · {p.category}
               </p>

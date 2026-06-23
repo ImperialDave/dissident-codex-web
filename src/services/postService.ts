@@ -12,6 +12,7 @@ import {
   where,
   Timestamp,
   increment,
+  deleteField,
   type DocumentData,
 } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
@@ -129,7 +130,9 @@ export async function togglePostFeedVisibility(postId: string): Promise<boolean>
   try {
     await updateDoc(doc(db, COLLECTIONS.POSTS, postId), {
       hiddenFromFeed: nextHidden,
-      ...(nextHidden ? { hiddenBy: uid, hiddenAt: Timestamp.now() } : {}),
+      ...(nextHidden
+        ? { hiddenBy: uid, hiddenAt: Timestamp.now() }
+        : { hiddenBy: deleteField(), hiddenAt: deleteField() }),
       updatedAt: Timestamp.now(),
     });
   } catch (err) {

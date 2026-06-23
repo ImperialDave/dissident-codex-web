@@ -113,6 +113,13 @@ export default function FeedPage() {
         ))}
       </div>
 
+      {modView && (
+        <p className="codex-text-muted text-sm">
+          Moderator view: hidden posts stay visible here with an orange badge so you can unhide them.
+          Members will not see hidden posts in the feed.
+        </p>
+      )}
+
       {error && (
         <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
           {error}
