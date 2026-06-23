@@ -24,12 +24,12 @@ export function PostFeedVisibilityToggle({
       disabled={disabled}
       aria-pressed={hiddenFromFeed}
       title={hiddenFromFeed ? "Unhide from feed" : "Hide from feed"}
-      className={`rounded-lg border transition disabled:opacity-50 ${
+      className={`rounded-lg border font-medium transition ${
         compact ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-sm"
       } ${
         hiddenFromFeed
-          ? "border-orange-400/40 bg-orange-500/15 text-orange-200 hover:bg-orange-500/25"
-          : "border-white/15 text-slate-300 hover:bg-white/5"
+          ? "border-orange-400/50 bg-orange-500/20 text-orange-100 hover:bg-orange-500/30"
+          : "codex-btn-ghost"
       }`}
     >
       {hiddenFromFeed ? "Unhide" : "Hide"}

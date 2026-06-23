@@ -76,7 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="codex-bg flex min-h-screen items-center justify-center text-slate-300">
+      <div className="codex-bg flex min-h-screen items-center justify-center codex-text-muted">
         <span className="codex-logo text-lg">Loading Codex...</span>
       </div>
     );
@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={clsx(
-                  "hover:text-[var(--color-accent)]",
+                  "text-[var(--color-on-surface)] hover:text-[var(--color-accent)]",
                   navActive(pathname, item.href) && "text-[var(--color-accent)]"
                 )}
               >
@@ -118,7 +118,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 "relative rounded-lg p-2 text-lg lg:hidden",
                 navActive(pathname, "/notifications")
                   ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)]"
-                  : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                  : "codex-text-muted hover:bg-white/5 hover:text-[var(--color-on-surface)]"
               )}
               aria-label="Notifications"
             >
@@ -139,7 +139,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Mobile secondary nav — items not in the bottom tab bar */}
-        <nav className="border-t border-white/5 bg-black/20 lg:hidden">
+        <nav className="border-t border-[var(--color-border)] bg-black/20 lg:hidden">
           <div className="mx-auto flex max-w-6xl gap-1.5 overflow-x-auto px-4 py-2">
             {mobileSecondaryNav.map((item) => {
               const active = navActive(pathname, item.href);
@@ -160,7 +160,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         ? "text-blue-300/80 hover:bg-blue-500/10"
                         : tone === "founder"
                           ? "text-amber-300/80 hover:bg-amber-500/10"
-                          : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                          : "codex-text-muted hover:bg-white/5 hover:text-[var(--color-on-surface)]"
                   )}
                 >
                   {item.label}
@@ -191,7 +191,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   "flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium transition",
                   active
                     ? "text-[var(--color-accent)] drop-shadow-[0_0_8px_var(--color-accent)]"
-                    : "text-slate-500 hover:text-slate-300"
+                    : "codex-text-muted hover:text-[var(--color-on-surface)]"
                 )}
               >
                 <span

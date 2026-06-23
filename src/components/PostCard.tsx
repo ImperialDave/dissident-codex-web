@@ -24,7 +24,7 @@ export function PostCard({
   return (
     <article
       className={`codex-surface rounded-xl p-4 transition ${
-        hidden ? "border-orange-400/30 opacity-80" : "codex-surface-hover"
+        hidden ? "border-orange-400/40 bg-orange-500/5" : "codex-surface-hover"
       }`}
     >
       <div className="mb-2 flex items-center gap-3">
@@ -44,7 +44,7 @@ export function PostCard({
             </Link>
             <RoleBadge role={post.authorRole} />
             {hidden && (
-              <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-[10px] font-medium text-orange-200">
+              <span className="rounded-full bg-orange-500/25 px-2 py-0.5 text-[10px] font-medium text-orange-100">
                 Hidden from feed
               </span>
             )}

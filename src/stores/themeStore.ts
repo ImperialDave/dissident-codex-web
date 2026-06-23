@@ -48,6 +48,7 @@ function applyTheme(id: ThemeId, colorMode: ColorMode) {
   root.style.setProperty("--color-surface", vars.surface);
   root.style.setProperty("--color-accent", theme.accent);
   root.style.setProperty("--color-accent-alt", theme.accentAlt);
+  root.style.setProperty("--color-accent-text", vars.accentText);
   root.style.setProperty("--color-on-surface", vars.onSurface);
   root.style.setProperty("--color-text-muted", vars.textMuted);
   root.style.setProperty("--color-bg-gradient", vars.bgGradient);
@@ -66,7 +67,8 @@ function darkVars(theme: Theme) {
     primary: theme.primary,
     surface: theme.surface,
     onSurface: "#e2e8f0",
-    textMuted: "#94a3b8",
+    textMuted: "#cbd5e1",
+    accentText: theme.accent,
     bgGradient: theme.bgGradient,
     surfaceGradient: theme.surfaceGradient,
     border: theme.border,
@@ -82,7 +84,8 @@ function lightVars(theme: Theme) {
     primary: "#f8fafc",
     surface: "#ffffff",
     onSurface: "#0f172a",
-    textMuted: "#64748b",
+    textMuted: "#475569",
+    accentText: `color-mix(in srgb, ${tint} 52%, #0f172a)`,
     bgGradient: `linear-gradient(165deg, #f8fafc 0%, color-mix(in srgb, ${tint} 6%, #f1f5f9) 45%, #e2e8f0 100%)`,
     surfaceGradient:
       "linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95))",

@@ -36,7 +36,7 @@ export function ColorModeToggle({ variant = "segmented" }: { variant?: Variant }
           onClick={() => setColorMode(item.id)}
           className={clsx(
             "flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition",
-            colorMode === item.id ? "codex-chip-active" : "codex-text-muted hover:opacity-80"
+            colorMode === item.id ? "codex-chip-active" : "codex-text-muted hover:text-[var(--color-on-surface)]"
           )}
         >
           <span>{item.icon}</span>
