@@ -81,7 +81,6 @@ export async function createPost(
 
   let user = await fetchUser(fbUser.uid);
   if (!user) {
-    // Recover orphaned auth accounts (profile doc missing).
     const { loadCurrentUserAndCheckBan } = await import("./authService");
     user = await loadCurrentUserAndCheckBan(fbUser.uid, fbUser.email);
   }
@@ -124,7 +123,7 @@ export async function createPost(
       : {}),
   };
   try {
-    await setDoc(postRef, stripUndefinedFields(post as unknown as Record<string, unknown>) as Post);
+    await setDoc(postRef, stripUndefinedFields(post as unknown as Record<string, unknown>));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to create post";
     throw new Error(mapFirestoreError(message));
@@ -242,7 +241,6 @@ export async function likePost(postId: string): Promise<void> {
   const existing = await getDoc(likeRef);
   if (existing.exists()) throw new Error("You already liked this post.");
 
-  // Rules allow only { likedAt } — doc id is the postId.
   await setDoc(likeRef, { likedAt: Timestamp.now() });
   try {
     await updateDoc(doc(db, COLLECTIONS.POSTS, postId), { likeCount: increment(1) });
@@ -264,7 +262,6 @@ export async function unlikePost(postId: string): Promise<void> {
   const existing = await getDoc(likeRef);
   if (!existing.exists()) throw new Error("You have not liked this post.");
 
-  // Decrement while likedPosts doc still exists (required by security rules).
   try {
     await updateDoc(doc(db, COLLECTIONS.POSTS, postId), { likeCount: increment(-1) });
     await deleteDoc(likeRef);
