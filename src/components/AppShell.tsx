@@ -152,14 +152,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition",
                     active
                       ? tone === "mod"
-                        ? "bg-blue-500/25 text-blue-200"
+                        ? "codex-btn-mod-active rounded-full"
                         : tone === "founder"
-                          ? "bg-amber-500/25 text-amber-200"
+                          ? "codex-btn-founder-active rounded-full"
                           : "bg-[var(--color-accent)]/20 text-[var(--color-accent)]"
                       : tone === "mod"
-                        ? "text-blue-300/80 hover:bg-blue-500/10"
+                        ? "codex-btn-mod rounded-full"
                         : tone === "founder"
-                          ? "text-amber-300/80 hover:bg-amber-500/10"
+                          ? "codex-btn-founder rounded-full"
                           : "codex-text-muted hover:bg-white/5 hover:text-[var(--color-on-surface)]"
                   )}
                 >

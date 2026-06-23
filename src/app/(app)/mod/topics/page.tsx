@@ -46,7 +46,7 @@ export default function ModTopicsPage() {
         />
         <button
           onClick={async () => { await banTopic(topicName); setTopicName(""); load(); }}
-          className="rounded-lg bg-red-500/80 px-4 py-2 text-sm text-white"
+          className="codex-btn-danger rounded-lg px-4 py-2 text-sm"
         >
           Ban topic
         </button>
@@ -57,7 +57,7 @@ export default function ModTopicsPage() {
         {banned.map((b) => (
           <div key={b.id} className="codex-surface flex justify-between rounded-lg p-3">
             <span>{b.name}</span>
-            <button onClick={async () => { await unbanTopic(b.id); load(); }} className="text-sm text-[var(--color-accent)]">
+            <button onClick={async () => { await unbanTopic(b.id); load(); }} className="codex-btn-mod rounded-lg px-3 py-1 text-sm">
               Unban
             </button>
           </div>
@@ -71,7 +71,7 @@ export default function ModTopicsPage() {
             <span>{r.title} {r.locked && "(locked)"}</span>
             <button
               onClick={async () => { await lockTopicRoom(r.id, !r.locked); load(); }}
-              className="text-sm text-[var(--color-accent)]"
+              className="codex-btn-mod rounded-lg px-3 py-1 text-sm"
             >
               {r.locked ? "Unlock" : "Lock"}
             </button>

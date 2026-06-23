@@ -128,7 +128,7 @@ export default function ModToolsPage() {
                     setError(err instanceof Error ? err.message : "Role update failed");
                   }
                 }}
-                className="rounded border border-white/15 bg-black/20 px-2 py-1 text-sm"
+                className="codex-input rounded-lg px-2 py-1 text-sm"
               >
                 {roles.map((r) => (
                   <option key={r} value={r}>
@@ -183,7 +183,7 @@ export default function ModToolsPage() {
                   await deletePost(p.id);
                   setPosts(await getPosts(null, 30, { includeHidden: true }));
                 }}
-                className="text-sm text-red-400"
+                className="codex-btn-danger rounded-lg px-3 py-1 text-sm"
               >
                 Delete
               </button>
@@ -217,7 +217,7 @@ export default function ModToolsPage() {
                   await deleteComment(c.id, c.postId);
                   setComments((await getRecentComments(40)) as Comment[]);
                 }}
-                className="text-sm text-red-400"
+                className="codex-btn-danger rounded-lg px-3 py-1 text-sm"
               >
                 Delete
               </button>

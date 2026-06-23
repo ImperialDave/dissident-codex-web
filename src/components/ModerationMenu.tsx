@@ -25,8 +25,8 @@ export function ModerationMenu({ variant = "pills" }: { variant?: Variant }) {
           <Link
             href="/mod"
             className={clsx(
-              "hover:text-blue-200",
-              pathname.startsWith("/mod") ? "text-blue-200" : "text-blue-300"
+              "codex-link-mod",
+              pathname.startsWith("/mod") && "codex-link-mod-active"
             )}
           >
             Mod Tools
@@ -36,8 +36,8 @@ export function ModerationMenu({ variant = "pills" }: { variant?: Variant }) {
           <Link
             href="/founder"
             className={clsx(
-              "hover:text-amber-200",
-              pathname.startsWith("/founder") ? "text-amber-200" : "text-amber-300"
+              "codex-link-founder",
+              pathname.startsWith("/founder") && "codex-link-founder-active"
             )}
           >
             Founder
@@ -54,10 +54,8 @@ export function ModerationMenu({ variant = "pills" }: { variant?: Variant }) {
           <Link
             href="/founder"
             className={clsx(
-              "rounded-full px-3 py-1 text-sm",
-              pathname.startsWith("/founder")
-                ? "bg-amber-500 text-black"
-                : "border border-amber-500/40 text-amber-300"
+              "rounded-full px-3 py-1.5 text-sm",
+              pathname.startsWith("/founder") ? "codex-btn-founder-active" : "codex-btn-founder"
             )}
           >
             Founder Tools
@@ -67,10 +65,8 @@ export function ModerationMenu({ variant = "pills" }: { variant?: Variant }) {
           <Link
             href="/mod"
             className={clsx(
-              "rounded-full px-3 py-1 text-sm",
-              pathname === "/mod"
-                ? "bg-blue-500 text-white"
-                : "border border-blue-500/40 text-blue-300"
+              "rounded-full px-3 py-1.5 text-sm",
+              pathname === "/mod" ? "codex-btn-mod-active" : "codex-btn-mod"
             )}
           >
             Mod Tools
@@ -80,10 +76,8 @@ export function ModerationMenu({ variant = "pills" }: { variant?: Variant }) {
           <Link
             href="/mod/topics"
             className={clsx(
-              "rounded-full px-3 py-1 text-sm",
-              pathname.startsWith("/mod/topics")
-                ? "bg-blue-500 text-white"
-                : "border border-blue-500/40 text-blue-300"
+              "rounded-full px-3 py-1.5 text-sm",
+              pathname.startsWith("/mod/topics") ? "codex-btn-mod-active" : "codex-btn-mod"
             )}
           >
             Topics
@@ -98,20 +92,20 @@ export function ModerationMenu({ variant = "pills" }: { variant?: Variant }) {
       {isFounder() && (
         <Link
           href="/founder"
-          className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 hover:border-amber-400/50"
+          className="codex-surface codex-surface-hover rounded-xl border-amber-400/40 bg-amber-500/12 p-4"
         >
-          <p className="font-semibold text-amber-300">Founder Tools</p>
-          <p className="mt-1 text-sm text-slate-400">Full control center and role sync</p>
+          <p className="font-semibold text-amber-100">Founder Tools</p>
+          <p className="mt-1 text-sm codex-text-muted">Full control center and role sync</p>
         </Link>
       )}
       {MOD_LINKS.map((item) => (
         <Link
           key={item.href}
           href={item.href}
-          className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4 hover:border-blue-400/50"
+          className="codex-surface codex-surface-hover rounded-xl border-blue-400/40 bg-blue-500/12 p-4"
         >
-          <p className="font-semibold text-blue-200">{item.label}</p>
-          <p className="mt-1 text-sm text-slate-400">{item.description}</p>
+          <p className="font-semibold text-blue-100">{item.label}</p>
+          <p className="mt-1 text-sm codex-text-muted">{item.description}</p>
         </Link>
       ))}
     </div>

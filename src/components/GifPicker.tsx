@@ -36,24 +36,44 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
     runSearch("");
   }, [open, runSearch]);
 
+  useEffect(() => {
+    if (!open) return;
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    const timer = window.setTimeout(() => runSearch(trimmed), 350);
+    return () => window.clearTimeout(timer);
+  }, [open, query, runSearch]);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
-      <div className="codex-surface max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-xl shadow-2xl">
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-          <h2 className="font-semibold text-white">Choose a GIF</h2>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="codex-surface max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="gif-picker-title"
+      >
+        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
+          <h2 id="gif-picker-title" className="font-semibold text-[var(--color-on-surface)]">
+            Choose a GIF
+          </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
+            className="codex-btn-ghost rounded-lg px-2 py-1 text-sm"
           >
             Close
           </button>
         </div>
 
         <form
-          className="border-b border-white/10 p-4"
+          className="border-b border-[var(--color-border)] p-4"
           onSubmit={(e) => {
             e.preventDefault();
             runSearch(query);
@@ -69,20 +89,20 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
             />
             <button
               type="submit"
-              disabled={loading || !query.trim()}
-              className="codex-btn-accent rounded-lg px-4 py-2 disabled:opacity-50"
+              disabled={loading}
+              className="codex-btn-accent rounded-lg px-4 py-2"
             >
-              Search
+              {loading ? "..." : "Search"}
             </button>
           </div>
         </form>
 
         <div className="max-h-[50vh] overflow-y-auto p-4">
-          {loading && <p className="text-sm text-slate-400">Searching...</p>}
+          {loading && <p className="codex-text-muted text-sm">Loading GIFs...</p>}
           {error && <p className="text-sm text-red-400">{error}</p>}
           {!loading && !error && gifs.length === 0 && (
-            <p className="text-sm text-slate-400">
-              {query.trim() ? "No GIFs found. Try another search." : "Trending GIFs could not be loaded. Search above or check Giphy setup."}
+            <p className="codex-text-muted text-sm">
+              {query.trim() ? "No GIFs found. Try another search." : "No trending GIFs available."}
             </p>
           )}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -94,9 +114,9 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
                   onSelect(gif);
                   onClose();
                 }}
-                className="codex-surface overflow-hidden rounded-lg hover:border-[var(--color-accent)]"
+                className="codex-surface overflow-hidden rounded-lg transition hover:border-[var(--color-accent)]"
               >
-                <img src={gif.previewUrl} alt="" className="h-28 w-full object-cover" />
+                <img src={gif.previewUrl} alt="" className="h-28 w-full object-cover" loading="lazy" />
               </button>
             ))}
           </div>

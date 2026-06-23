@@ -28,45 +28,61 @@ body {
   min-height: 100vh;
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.35;
-  background-image:
-    linear-gradient(var(--color-border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: linear-gradient(180deg, transparent 0%, black 28%, black 72%, transparent 100%);
-}
-
+body::before,
 body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: radial-gradient(ellipse 80% 50% at 50% -10%, var(--color-accent) 0%, transparent 55%);
-  opacity: 0.08;
-}
-
-[data-color-mode="light"] body::before {
-  opacity: 0.14;
-}
-
-[data-color-mode="light"] body::after {
-  opacity: 0.05;
+  content: none;
 }
 
 @layer components {
   .codex-bg {
     position: relative;
+    isolation: isolate;
     min-height: 100vh;
     background: var(--color-bg-gradient);
     background-attachment: fixed;
     color: var(--color-on-surface);
+    overflow-x: clip;
+  }
+
+  .codex-bg::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.14;
+    background-image:
+      linear-gradient(var(--color-border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-border) 1px, transparent 1px),
+      repeating-linear-gradient(
+        135deg,
+        transparent,
+        transparent 23px,
+        color-mix(in srgb, var(--color-accent) 6%, transparent) 23px,
+        color-mix(in srgb, var(--color-accent) 6%, transparent) 24px
+      );
+    background-size: 32px 32px, 32px 32px, auto;
+    mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, black 20%, transparent 85%);
+  }
+
+  .codex-bg::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.07;
+    background:
+      radial-gradient(ellipse 70% 45% at 50% -5%, var(--color-accent) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 100% 80%, var(--color-accent-alt) 0%, transparent 55%);
+  }
+
+  [data-color-mode="light"] .codex-bg::before {
+    opacity: 0.09;
+  }
+
+  [data-color-mode="light"] .codex-bg::after {
+    opacity: 0.04;
   }
 
   .codex-bg > * {
@@ -126,14 +142,14 @@ body::after {
     background: var(--color-surface-gradient);
     border: 1px solid var(--color-border);
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-      0 8px 32px rgba(0, 0, 0, 0.12);
+      0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+      0 4px 20px rgba(0, 0, 0, 0.1);
   }
 
   [data-color-mode="light"] .codex-surface {
     box-shadow:
-      0 0 0 1px rgba(15, 23, 42, 0.04) inset,
-      0 4px 20px rgba(15, 23, 42, 0.06);
+      0 0 0 1px rgba(15, 23, 42, 0.03) inset,
+      0 2px 12px rgba(15, 23, 42, 0.05);
   }
 
   .codex-surface-hover:hover {
@@ -230,6 +246,97 @@ body::after {
     background: color-mix(in srgb, #ef4444 20%, transparent);
   }
 
+  .codex-btn-mod {
+    border: 1px solid color-mix(in srgb, #60a5fa 55%, transparent);
+    background: color-mix(in srgb, #3b82f6 18%, transparent);
+    color: #dbeafe;
+    font-weight: 600;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .codex-btn-mod:hover:not(:disabled) {
+    background: color-mix(in srgb, #3b82f6 28%, transparent);
+    border-color: color-mix(in srgb, #93c5fd 65%, transparent);
+  }
+
+  .codex-btn-mod-active {
+    background: #2563eb;
+    border: 1px solid #3b82f6;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 0 14px color-mix(in srgb, #3b82f6 35%, transparent);
+  }
+
+  [data-color-mode="light"] .codex-btn-mod {
+    color: #1d4ed8;
+    background: color-mix(in srgb, #3b82f6 10%, transparent);
+  }
+
+  [data-color-mode="light"] .codex-btn-mod-active {
+    color: #ffffff;
+  }
+
+  .codex-btn-founder {
+    border: 1px solid color-mix(in srgb, #fbbf24 55%, transparent);
+    background: color-mix(in srgb, #f59e0b 18%, transparent);
+    color: #fef3c7;
+    font-weight: 600;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .codex-btn-founder:hover:not(:disabled) {
+    background: color-mix(in srgb, #f59e0b 28%, transparent);
+    border-color: color-mix(in srgb, #fcd34d 65%, transparent);
+  }
+
+  .codex-btn-founder-active {
+    background: #d97706;
+    border: 1px solid #f59e0b;
+    color: #1c1917;
+    font-weight: 600;
+    box-shadow: 0 0 14px color-mix(in srgb, #f59e0b 35%, transparent);
+  }
+
+  [data-color-mode="light"] .codex-btn-founder {
+    color: #b45309;
+    background: color-mix(in srgb, #f59e0b 10%, transparent);
+  }
+
+  .codex-link-mod {
+    color: #93c5fd;
+    font-weight: 600;
+    transition: color 0.15s ease;
+  }
+
+  .codex-link-mod:hover,
+  .codex-link-mod-active {
+    color: #dbeafe;
+  }
+
+  [data-color-mode="light"] .codex-link-mod {
+    color: #1d4ed8;
+  }
+
+  [data-color-mode="light"] .codex-link-mod:hover,
+  [data-color-mode="light"] .codex-link-mod-active {
+    color: #1e3a8a;
+  }
+
+  .codex-link-founder {
+    color: #fcd34d;
+    font-weight: 600;
+    transition: color 0.15s ease;
+  }
+
+  .codex-link-founder:hover,
+  .codex-link-founder-active {
+    color: #fef3c7;
+  }
+
+  [data-color-mode="light"] .codex-link-founder {
+    color: #b45309;
+  }
+
   .codex-input {
     border: 1px solid var(--color-border);
     background: var(--color-input-bg);
@@ -258,6 +365,8 @@ body::after {
   .codex-btn-secondary:focus-visible,
   .codex-btn-ghost:focus-visible,
   .codex-btn-danger:focus-visible,
+  .codex-btn-mod:focus-visible,
+  .codex-btn-founder:focus-visible,
   .codex-input:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
