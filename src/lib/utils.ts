@@ -73,6 +73,15 @@ export function truncateAuthorName(name: string, max = 50): string {
   return trimmed.length <= max ? trimmed : trimmed.slice(0, max);
 }
 
+/** Firestore rejects documents containing undefined field values. */
+export function stripUndefinedFields<T extends Record<string, unknown>>(data: T): T {
+  const out = { ...data };
+  for (const key of Object.keys(out)) {
+    if (out[key] === undefined) delete out[key];
+  }
+  return out;
+}
+
 export function dmRoomId(uidA: string, uidB: string): string {
   const sorted = [uidA, uidB].sort();
   return `dm_${sorted[0]}_${sorted[1]}`;
@@ -85,6 +94,13 @@ export function topicRoomId(categoryId: string): string {
 export function chessGameId(uidA: string, uidB: string): string {
   const sorted = [uidA, uidB].sort();
   return `chess_${sorted[0]}_${sorted[1]}`;
+}
+
+export function normalizeMediaUrl(url?: string | null): string | null {
+  if (!url?.trim()) return null;
+  const trimmed = url.trim();
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  return trimmed;
 }
 
 export function containsGifUrl(text: string): boolean {
@@ -140,11 +156,4 @@ export function chatMessagePreview(
 
 export function normalizeCategoryName(name: string): string {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-}
-
-export function normalizeMediaUrl(url?: string | null): string | null {
-  if (!url?.trim()) return null;
-  const trimmed = url.trim();
-  if (trimmed.startsWith("//")) return `https:${trimmed}`;
-  return trimmed;
 }
