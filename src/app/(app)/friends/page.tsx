@@ -59,7 +59,7 @@ export default function FriendsPage() {
           <h2 className="mb-2 font-semibold">Incoming Requests</h2>
           <div className="space-y-2">
             {requests.map((r) => (
-              <div key={r.id} className="flex items-center justify-between rounded-xl border border-white/10 p-3">
+              <div key={r.id} className="codex-surface flex items-center justify-between rounded-xl p-3">
                 <Link href={`/user/${r.fromUid}`} className="flex items-center gap-3 hover:opacity-90">
                   <UserAvatar name={r.fromName} photoUrl={r.fromPhotoUrl} />
                   <span>{r.fromName}</span>
@@ -70,7 +70,7 @@ export default function FriendsPage() {
                       await respondToFriendRequest(r.id, true);
                       load();
                     }}
-                    className="rounded bg-[var(--color-accent)] px-3 py-1 text-sm text-black"
+                    className="codex-btn-accent rounded px-3 py-1 text-sm"
                   >
                     Accept
                   </button>
@@ -99,7 +99,7 @@ export default function FriendsPage() {
             {friends.map((f) => (
               <div
                 key={f.uid}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 p-3"
+                className="codex-surface flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"
               >
                 <Link href={`/user/${f.uid}`} className="flex min-w-0 flex-1 items-center gap-3">
                   <UserAvatar name={f.displayName} photoUrl={f.photoUrl} />

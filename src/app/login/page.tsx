@@ -35,21 +35,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--color-primary)] px-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[var(--color-surface)] p-8 shadow-xl">
-        <h1 className="mb-2 text-center text-3xl font-bold text-[var(--color-accent)]">Codex</h1>
+    <div className="codex-bg flex min-h-screen items-center justify-center px-4">
+      <div className="codex-surface w-full max-w-md rounded-2xl p-8 shadow-xl">
+        <h1 className="codex-logo mb-2 text-center text-3xl font-bold">Codex</h1>
         <p className="mb-6 text-center text-sm text-slate-400">
           Coding discussion forum — web edition
         </p>
 
-        <div className="mb-6 flex rounded-lg bg-black/20 p-1">
+        <div className="mb-6 flex rounded-lg border border-[var(--color-border)] bg-black/25 p-1">
           {(["login", "register"] as const).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => setMode(m)}
               className={`flex-1 rounded-md py-2 text-sm capitalize ${
-                mode === m ? "bg-[var(--color-accent)] text-black" : "text-slate-400"
+                mode === m ? "codex-btn-accent" : "text-slate-400"
               }`}
             >
               {m}
@@ -64,7 +64,7 @@ export default function LoginPage() {
               placeholder="Display name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+              className="codex-input w-full rounded-lg px-4 py-3"
               required
             />
           )}
@@ -73,7 +73,7 @@ export default function LoginPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+            className="codex-input w-full rounded-lg px-4 py-3"
             required
           />
           <input
@@ -81,7 +81,7 @@ export default function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+            className="codex-input w-full rounded-lg px-4 py-3"
             required
             minLength={6}
           />
@@ -89,7 +89,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-[var(--color-accent)] py-3 font-semibold text-black disabled:opacity-50"
+            className="codex-btn-accent w-full rounded-lg py-3 disabled:opacity-50"
           >
             {loading ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
           </button>

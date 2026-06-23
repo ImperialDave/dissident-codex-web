@@ -35,7 +35,7 @@ export default function NotificationsPage() {
             const href = getLink(n);
             const content = (
               <div
-                className={`rounded-xl border p-4 ${n.read ? "border-white/10 bg-black/10" : "border-[var(--color-accent)]/30 bg-[var(--color-surface)]"}`}
+                className={`rounded-xl p-4 ${n.read ? "codex-surface opacity-75" : "codex-surface border-[var(--color-accent)]/40 shadow-[0_0_16px_color-mix(in_srgb,var(--color-accent)_20%,transparent)]"}`}
                 onClick={() => !n.read && markNotificationRead(n.id)}
               >
                 <p className="font-medium">{n.title}</p>

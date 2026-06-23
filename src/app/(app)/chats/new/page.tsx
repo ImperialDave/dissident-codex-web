@@ -39,7 +39,7 @@ export default function NewMessagePage() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search users..."
-        className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-2"
+        className="codex-input w-full rounded-lg px-4 py-2"
       />
       <div className="space-y-2">
         {filtered.map((u) => (
@@ -57,7 +57,7 @@ export default function NewMessagePage() {
               }
             }}
             disabled={busyUid === u.uid}
-            className="flex w-full items-center gap-3 rounded-xl border border-white/10 p-3 text-left hover:border-[var(--color-accent)]/40 disabled:opacity-50"
+            className="codex-surface codex-surface-hover flex w-full items-center gap-3 rounded-xl p-3 text-left disabled:opacity-50"
           >
             <UserAvatar name={u.displayName} photoUrl={u.photoUrl} userId={u.uid} />
             <div className="min-w-0 flex-1">

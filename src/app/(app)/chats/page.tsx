@@ -31,7 +31,7 @@ export default function ChatsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Chats</h1>
-        <Link href="/chats/new" className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black">
+        <Link href="/chats/new" className="codex-btn-accent rounded-lg px-4 py-2 text-sm">
           New message
         </Link>
       </div>
@@ -44,7 +44,7 @@ export default function ChatsPage() {
             <Link
               key={room.id}
               href={`/chat/${room.id}`}
-              className="flex items-center gap-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 hover:border-[var(--color-accent)]/40"
+              className="codex-surface codex-surface-hover flex items-center gap-3 rounded-xl p-4"
             >
               <FavoriteStar
                 favorited={favorites.has(room.id)}

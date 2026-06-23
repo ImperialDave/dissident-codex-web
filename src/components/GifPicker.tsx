@@ -94,7 +94,7 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
                   onSelect(gif);
                   onClose();
                 }}
-                className="overflow-hidden rounded-lg border border-white/10 hover:border-[var(--color-accent)]"
+                className="codex-surface overflow-hidden rounded-lg hover:border-[var(--color-accent)]"
               >
                 <img src={gif.previewUrl} alt="" className="h-28 w-full object-cover" />
               </button>

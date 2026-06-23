@@ -86,11 +86,11 @@ export default function FeedPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search posts..."
-            className="rounded-lg border border-white/10 bg-black/20 px-4 py-2 text-sm outline-none focus:border-[var(--color-accent)]"
+            className="codex-input rounded-lg px-4 py-2 text-sm"
           />
           <Link
             href="/create"
-            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-center text-sm font-semibold text-black"
+            className="codex-btn-accent rounded-lg px-4 py-2 text-center text-sm"
           >
             Create post
           </Link>
@@ -104,8 +104,8 @@ export default function FeedPage() {
             onClick={() => setCategory(cat)}
             className={`rounded-full px-3 py-1 text-sm ${
               category === cat
-                ? "bg-[var(--color-accent)] text-black"
-                : "border border-white/10 text-slate-300"
+                ? "codex-chip-active"
+                : "text-slate-400 hover:text-slate-200"
             }`}
           >
             {cat}
@@ -122,11 +122,11 @@ export default function FeedPage() {
       {loading ? (
         <p className="text-slate-400">Loading posts...</p>
       ) : posts.length === 0 ? (
-        <div className="rounded-xl border border-white/10 bg-[var(--color-surface)] p-6 text-center">
+        <div className="codex-surface rounded-xl p-6 text-center">
           <p className="text-slate-400">No posts yet. Be the first to create one!</p>
           <Link
             href="/create"
-            className="mt-4 inline-block rounded-lg bg-[var(--color-accent)] px-5 py-2 font-semibold text-black"
+            className="codex-btn-accent mt-4 inline-block rounded-lg px-5 py-2"
           >
             Create the first post
           </Link>

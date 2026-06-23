@@ -122,7 +122,7 @@ export default function UserProfilePage() {
           <button
             onClick={addFriend}
             disabled={busy !== null}
-            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            className="codex-btn-accent rounded-lg px-4 py-2 text-sm disabled:opacity-50"
           >
             {busy === "friend" ? "Sending..." : "Add friend"}
           </button>
@@ -136,7 +136,7 @@ export default function UserProfilePage() {
           <button
             onClick={acceptFriend}
             disabled={busy !== null}
-            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            className="codex-btn-accent rounded-lg px-4 py-2 text-sm disabled:opacity-50"
           >
             {busy === "friend" ? "Accepting..." : "Accept friend request"}
           </button>
@@ -162,7 +162,7 @@ export default function UserProfilePage() {
         </button>
       </div>
 
-      <div className="rounded-xl border border-white/10 p-4 text-sm">
+      <div className="codex-surface rounded-xl p-4 text-sm">
         Chess ELO: {user.chessElo ?? 1200} · Games: {user.chessGamesPlayed ?? 0}
       </div>
 
@@ -173,7 +173,7 @@ export default function UserProfilePage() {
             <p className="text-slate-400">No posts yet.</p>
           ) : (
             posts.map((p) => (
-              <a key={p.id} href={`/post/${p.id}`} className="block rounded-lg border border-white/10 p-3 hover:border-[var(--color-accent)]/40">
+              <a key={p.id} href={`/post/${p.id}`} className="codex-surface codex-surface-hover block rounded-lg p-3">
                 {p.title}
               </a>
             ))

@@ -141,7 +141,7 @@ export default function ChatRoomPage() {
   const canSend = Boolean(text.trim() || pendingMedia);
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col rounded-xl border border-white/10 bg-[var(--color-surface)]">
+    <div className="codex-surface flex h-[calc(100vh-8rem)] flex-col rounded-xl">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div>
           <h1 className="font-semibold">{room?.title || "Chat"}</h1>
@@ -284,12 +284,12 @@ export default function ChatRoomPage() {
             onChange={(e) => setText(e.target.value)}
             placeholder="Type a message..."
             disabled={sending}
-            className="flex-1 rounded-lg border border-white/10 bg-black/20 px-4 py-2 outline-none focus:border-[var(--color-accent)] disabled:opacity-50"
+            className="codex-input flex-1 rounded-lg px-4 py-2 disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={sending || !canSend || Boolean(room?.locked)}
-            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 font-semibold text-black disabled:opacity-50"
+            className="codex-btn-accent rounded-lg px-4 py-2 disabled:opacity-50"
           >
             Send
           </button>

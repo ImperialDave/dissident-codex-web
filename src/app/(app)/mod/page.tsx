@@ -79,31 +79,31 @@ export default function ModToolsPage() {
 
       {stats && (
         <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 lg:grid-cols-7">
-          <div className="rounded-lg border border-white/10 p-3">Total: {stats.total}</div>
-          <div className="rounded-lg border border-white/10 p-3">Members: {stats.members}</div>
-          <div className="rounded-lg border border-white/10 p-3">Mods: {stats.mods}</div>
-          <div className="rounded-lg border border-white/10 p-3">Admins: {stats.admins}</div>
-          <div className="rounded-lg border border-white/10 p-3">Founders: {stats.founders}</div>
-          <div className="rounded-lg border border-white/10 p-3">Suspended: {stats.suspended}</div>
-          <div className="rounded-lg border border-white/10 p-3">Banned: {stats.banned}</div>
+          <div className="codex-surface rounded-lg p-3">Total: {stats.total}</div>
+          <div className="codex-surface rounded-lg p-3">Members: {stats.members}</div>
+          <div className="codex-surface rounded-lg p-3">Mods: {stats.mods}</div>
+          <div className="codex-surface rounded-lg p-3">Admins: {stats.admins}</div>
+          <div className="codex-surface rounded-lg p-3">Founders: {stats.founders}</div>
+          <div className="codex-surface rounded-lg p-3">Suspended: {stats.suspended}</div>
+          <div className="codex-surface rounded-lg p-3">Banned: {stats.banned}</div>
         </div>
       )}
 
-      <section className="space-y-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4">
+      <section className="codex-surface space-y-3 rounded-xl p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold">User Roles</h2>
           <input
             value={userQuery}
             onChange={(e) => setUserQuery(e.target.value)}
             placeholder="Search users..."
-            className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm"
+            className="codex-input rounded-lg px-3 py-2 text-sm"
           />
         </div>
         <div className="max-h-96 space-y-2 overflow-y-auto">
           {filteredUsers.map((u) => (
             <div
               key={u.uid}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-3"
+              className="codex-surface flex flex-wrap items-center justify-between gap-2 rounded-lg p-3"
             >
               <div className="flex min-w-0 items-center gap-2">
                 <UserAvatar name={u.displayName} photoUrl={u.photoUrl} size="sm" userId={u.uid} />
@@ -141,12 +141,12 @@ export default function ModToolsPage() {
         </div>
       </section>
 
-      <section className="space-y-2 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4">
+      <section className="codex-surface space-y-2 rounded-xl p-4">
         <h2 className="font-semibold">Recent Posts</h2>
         {posts.map((p) => (
           <div
             key={p.id}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-3"
+            className="codex-surface flex flex-wrap items-center justify-between gap-2 rounded-lg p-3"
           >
             <div className="min-w-0">
               <Link href={`/post/${p.id}`} className="font-medium hover:text-[var(--color-accent)]">
@@ -192,7 +192,7 @@ export default function ModToolsPage() {
         ))}
       </section>
 
-      <section className="space-y-2 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4">
+      <section className="codex-surface space-y-2 rounded-xl p-4">
         <h2 className="font-semibold">Recent Comments</h2>
         {comments.length === 0 ? (
           <p className="text-sm text-slate-400">No comments loaded.</p>
@@ -200,7 +200,7 @@ export default function ModToolsPage() {
           comments.map((c) => (
             <div
               key={c.id}
-              className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-white/10 p-3"
+              className="codex-surface flex flex-wrap items-start justify-between gap-2 rounded-lg p-3"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-slate-200 line-clamp-2">{c.text}</p>

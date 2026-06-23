@@ -68,12 +68,12 @@ export default function TopicsPage() {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           placeholder="Search topics..."
-          className="flex-1 rounded-lg border border-white/10 bg-black/20 px-4 py-2 outline-none focus:border-[var(--color-accent)]"
+          className="codex-input flex-1 rounded-lg px-4 py-2"
         />
         <button
           onClick={handleSearch}
           disabled={loading}
-          className="rounded-lg bg-[var(--color-accent)] px-4 py-2 font-semibold text-black disabled:opacity-50"
+          className="codex-btn-accent rounded-lg px-4 py-2 disabled:opacity-50"
         >
           Search
         </button>
@@ -92,7 +92,7 @@ export default function TopicsPage() {
           {filtered.map((name) => (
             <div
               key={name}
-              className="rounded-xl border border-white/10 bg-[var(--color-surface)] p-4"
+              className="codex-surface codex-surface-hover rounded-xl p-4"
             >
               <p className="font-semibold">{name}</p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -120,7 +120,7 @@ export default function TopicsPage() {
                       setOpening(null);
                     }
                   }}
-                  className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black disabled:opacity-50"
+                  className="codex-btn-accent rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
                 >
                   {opening === name ? "Opening..." : "Open chat"}
                 </button>

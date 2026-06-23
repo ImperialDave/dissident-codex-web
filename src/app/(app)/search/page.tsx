@@ -87,12 +87,12 @@ export default function SearchPage() {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
           placeholder="Search posts, topics, chats, or users..."
-          className="flex-1 rounded-lg border border-white/10 bg-black/20 px-4 py-2 outline-none focus:border-[var(--color-accent)]"
+          className="codex-input flex-1 rounded-lg px-4 py-2"
         />
         <button
           onClick={search}
           disabled={loading || !query.trim()}
-          className="rounded-lg bg-[var(--color-accent)] px-4 py-2 font-semibold text-black disabled:opacity-50"
+          className="codex-btn-accent rounded-lg px-4 py-2 disabled:opacity-50"
         >
           {loading ? "Searching..." : "Search"}
         </button>
@@ -110,7 +110,7 @@ export default function SearchPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`rounded-full px-3 py-1 text-sm capitalize ${
-              tab === t ? "bg-[var(--color-accent)] text-black" : "border border-white/15"
+              tab === t ? "codex-chip-active" : "text-slate-400 hover:text-slate-200"
             }`}
           >
             {t}
@@ -137,7 +137,7 @@ export default function SearchPage() {
               <Link
                 key={`${t.id}-${t.name}`}
                 href={`/feed?category=${encodeURIComponent(t.name)}`}
-                className="block rounded-lg border border-white/10 bg-[var(--color-surface)] p-3 hover:border-[var(--color-accent)]/40"
+                className="codex-surface codex-surface-hover block rounded-lg p-3"
               >
                 <p className="font-medium">{t.name}</p>
                 <p className="text-xs text-slate-400">View posts in this topic</p>
@@ -156,7 +156,7 @@ export default function SearchPage() {
               <Link
                 key={c.id}
                 href={`/chat/${c.id}`}
-                className="block rounded-lg border border-white/10 bg-[var(--color-surface)] p-3 hover:border-[var(--color-accent)]/40"
+                className="codex-surface codex-surface-hover block rounded-lg p-3"
               >
                 {c.title}
               </Link>
@@ -174,7 +174,7 @@ export default function SearchPage() {
               <Link
                 key={u.uid}
                 href={`/user/${u.uid}`}
-                className="flex items-center gap-3 rounded-lg border border-white/10 bg-[var(--color-surface)] p-3 hover:border-[var(--color-accent)]/40"
+                className="codex-surface codex-surface-hover flex items-center gap-3 rounded-lg p-3"
               >
                 <UserAvatar name={u.displayName} photoUrl={u.photoUrl} />
                 <div className="min-w-0 flex-1">

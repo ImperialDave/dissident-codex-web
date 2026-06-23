@@ -28,7 +28,7 @@ export default function ChessLobbyPage() {
             <Link
               key={g.id}
               href={`/chess/game/${g.id}`}
-              className="flex justify-between rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 hover:border-[var(--color-accent)]/40"
+              className="codex-surface codex-surface-hover flex justify-between rounded-xl p-4"
             >
               <span>{g.whiteName} vs {g.blackName}</span>
               <span className="text-sm text-[var(--color-accent)]">{g.status}</span>

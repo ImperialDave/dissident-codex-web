@@ -42,7 +42,7 @@ export default function ModTopicsPage() {
           value={topicName}
           onChange={(e) => setTopicName(e.target.value)}
           placeholder="Topic name to ban"
-          className="flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+          className="codex-input flex-1 rounded-lg px-3 py-2"
         />
         <button
           onClick={async () => { await banTopic(topicName); setTopicName(""); load(); }}
@@ -55,7 +55,7 @@ export default function ModTopicsPage() {
       <section>
         <h2 className="mb-2 font-semibold">Banned Topics</h2>
         {banned.map((b) => (
-          <div key={b.id} className="flex justify-between rounded-lg border border-white/10 p-3">
+          <div key={b.id} className="codex-surface flex justify-between rounded-lg p-3">
             <span>{b.name}</span>
             <button onClick={async () => { await unbanTopic(b.id); load(); }} className="text-sm text-[var(--color-accent)]">
               Unban
@@ -67,7 +67,7 @@ export default function ModTopicsPage() {
       <section>
         <h2 className="mb-2 font-semibold">Topic Rooms</h2>
         {rooms.map((r) => (
-          <div key={r.id} className="mb-2 flex justify-between rounded-lg border border-white/10 p-3">
+          <div key={r.id} className="codex-surface mb-2 flex justify-between rounded-lg p-3">
             <span>{r.title} {r.locked && "(locked)"}</span>
             <button
               onClick={async () => { await lockTopicRoom(r.id, !r.locked); load(); }}

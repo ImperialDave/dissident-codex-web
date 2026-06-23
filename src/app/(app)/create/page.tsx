@@ -149,7 +149,7 @@ export default function CreatePostPage() {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-white/10 bg-[var(--color-surface)] p-5">
+      <form onSubmit={handleSubmit} className="codex-surface space-y-4 rounded-xl p-5">
         <div>
           <label className="mb-1 block text-sm text-slate-400">Title</label>
           <input
@@ -157,7 +157,7 @@ export default function CreatePostPage() {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Give your post a title"
             maxLength={MAX_TITLE}
-            className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+            className="codex-input w-full rounded-lg px-4 py-3"
             required
           />
           <p className="mt-1 text-right text-xs text-slate-500">
@@ -173,7 +173,7 @@ export default function CreatePostPage() {
             placeholder="What's on your mind?"
             rows={8}
             maxLength={MAX_BODY}
-            className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+            className="codex-input w-full rounded-lg px-4 py-3"
             required
           />
           <p className="mt-1 text-right text-xs text-slate-500">
@@ -189,7 +189,7 @@ export default function CreatePostPage() {
             list="create-category-suggestions"
             placeholder="e.g. General Discussion"
             maxLength={40}
-            className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+            className="codex-input w-full rounded-lg px-4 py-3"
             required
           />
           <datalist id="create-category-suggestions">
@@ -205,8 +205,8 @@ export default function CreatePostPage() {
                 onClick={() => setCategory(c)}
                 className={`rounded-full px-3 py-1 text-xs ${
                   category === c
-                    ? "bg-[var(--color-accent)] text-black"
-                    : "border border-white/10 text-slate-300"
+                    ? "codex-chip-active"
+                    : "text-slate-400 hover:text-slate-200"
                 }`}
               >
                 {c}
@@ -215,7 +215,7 @@ export default function CreatePostPage() {
           </div>
         </div>
 
-        <div className="space-y-3 rounded-lg border border-white/10 bg-black/10 p-4">
+        <div className="codex-surface space-y-3 rounded-lg p-4">
           <p className="text-sm text-slate-300">Media (optional)</p>
           <div className="flex flex-wrap gap-2">
             <label className="cursor-pointer rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5">
@@ -249,7 +249,7 @@ export default function CreatePostPage() {
           </div>
 
           {previewMedia && (
-            <div className="overflow-hidden rounded-lg border border-white/10">
+            <div className="codex-surface overflow-hidden rounded-lg">
               <img
                 src={previewMedia}
                 alt="Post preview"
@@ -270,7 +270,7 @@ export default function CreatePostPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-lg bg-[var(--color-accent)] px-6 py-2 font-semibold text-black disabled:opacity-50"
+            className="codex-btn-accent rounded-lg px-6 py-2 disabled:opacity-50"
           >
             {loading ? "Publishing..." : "Publish"}
           </button>

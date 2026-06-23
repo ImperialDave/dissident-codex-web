@@ -57,7 +57,7 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div
-        className="relative h-40 overflow-hidden rounded-xl bg-[var(--color-surface)]"
+        className="codex-surface relative h-40 overflow-hidden rounded-xl"
         style={user.backgroundUrl ? { backgroundImage: `url(${user.backgroundUrl})`, backgroundSize: "cover" } : undefined}
       >
         <div className="absolute bottom-4 left-4 flex items-end gap-4">
@@ -92,45 +92,54 @@ export default function ProfilePage() {
         </label>
       </div>
 
-      <div className="space-y-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4">
+      <div className="codex-surface space-y-3 rounded-xl p-4">
         <input
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+          className="codex-input w-full rounded-lg px-3 py-2"
           placeholder="Display name"
         />
         <textarea
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+          className="codex-input w-full rounded-lg px-3 py-2"
           placeholder="Bio"
         />
         <input
           value={flair}
           onChange={(e) => setFlair(e.target.value)}
-          className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+          className="codex-input w-full rounded-lg px-3 py-2"
           placeholder="Flair"
         />
         <button
           onClick={saveProfile}
           disabled={saving}
-          className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black"
+          className="codex-btn-accent rounded-lg px-4 py-2 text-sm"
         >
           {saving ? "Saving..." : "Save profile"}
         </button>
       </div>
 
-      <div>
-        <h2 className="mb-2 font-semibold">Theme</h2>
-        <div className="flex flex-wrap gap-2">
+      <div className="codex-surface rounded-xl p-4">
+        <h2 className="mb-1 font-semibold">Color scheme</h2>
+        <p className="mb-4 text-xs text-slate-400">90s cyber palettes — pick your vibe.</p>
+        <div className="flex flex-wrap gap-5">
           {THEMES.map((t) => (
             <button
               key={t.id}
+              type="button"
               onClick={() => setTheme(t.id)}
-              className={`rounded-full px-3 py-1 text-sm ${themeId === t.id ? "bg-[var(--color-accent)] text-black" : "border border-white/15"}`}
+              className="flex flex-col items-center gap-2"
+              title={t.label}
             >
-              {t.label}
+              <span
+                className={`codex-theme-swatch ${themeId === t.id ? "codex-theme-swatch-active" : ""}`}
+                style={{ background: t.swatch }}
+              />
+              <span className={`text-xs ${themeId === t.id ? "text-[var(--color-accent)]" : "text-slate-400"}`}>
+                {t.label}
+              </span>
             </button>
           ))}
         </div>
@@ -143,7 +152,7 @@ export default function ProfilePage() {
         ) : (
           <div className="space-y-2">
             {posts.map((p) => (
-              <Link key={p.id} href={`/post/${p.id}`} className="block rounded-lg border border-white/10 p-3 hover:border-[var(--color-accent)]/40">
+              <Link key={p.id} href={`/post/${p.id}`} className="codex-surface codex-surface-hover block rounded-lg p-3">
                 <p className="font-medium">{p.title}</p>
                 <p className="text-xs text-slate-400">{p.category}</p>
               </Link>
@@ -152,7 +161,7 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-white/10 p-4 text-sm text-slate-400">
+      <div className="codex-surface rounded-xl p-4 text-sm text-slate-400">
         <p>Chess ELO: {user.chessElo ?? 1200}</p>
         <p>Games: {user.chessGamesPlayed ?? 0} · W/L/D: {user.chessWins ?? 0}/{user.chessLosses ?? 0}/{user.chessDraws ?? 0}</p>
       </div>

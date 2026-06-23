@@ -50,7 +50,7 @@ export default function LeaderboardPage() {
         </p>
       </div>
 
-      <div className="flex gap-2 rounded-xl border border-white/10 bg-[var(--color-surface)] p-1">
+      <div className="codex-surface flex gap-2 rounded-xl p-1">
         {(
           [
             { id: "topics" as const, label: "Top Topics" },
@@ -65,7 +65,7 @@ export default function LeaderboardPage() {
             className={clsx(
               "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition",
               tab === item.id
-                ? "bg-[var(--color-accent)] text-black"
+                ? "codex-chip-active"
                 : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
             )}
           >
@@ -83,7 +83,7 @@ export default function LeaderboardPage() {
       )}
 
       {!loading && !error && tab !== "chess" && activeEntries.length === 0 && (
-        <p className="rounded-xl border border-white/10 bg-[var(--color-surface)] p-6 text-center text-slate-400">
+        <p className="codex-surface rounded-xl p-6 text-center text-slate-400">
           No activity yet. Join a topic chat to get started!
         </p>
       )}
@@ -94,7 +94,7 @@ export default function LeaderboardPage() {
             <Link
               key={entry.roomId}
               href={`/chat/${entry.roomId}`}
-              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 transition hover:border-[var(--color-accent)]/40"
+              className="codex-surface codex-surface-hover flex items-center justify-between gap-3 rounded-xl p-4 transition"
             >
               <div className="min-w-0">
                 <p className="font-medium text-white">
@@ -116,7 +116,7 @@ export default function LeaderboardPage() {
       {!loading && !error && tab === "chess" && (
         <div className="space-y-2">
           {chess.length === 0 ? (
-            <p className="rounded-xl border border-white/10 bg-[var(--color-surface)] p-6 text-center text-slate-400">
+            <p className="codex-surface rounded-xl p-6 text-center text-slate-400">
               No rated chess games yet. Finish a match to appear here!
             </p>
           ) : (
@@ -124,7 +124,7 @@ export default function LeaderboardPage() {
               <Link
                 key={entry.uid}
                 href={`/user/${entry.uid}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 transition hover:border-[var(--color-accent)]/40"
+                className="codex-surface codex-surface-hover flex items-center justify-between gap-3 rounded-xl p-4 transition"
               >
                 <p className="font-medium text-white">
                   <span className="mr-2 text-[var(--color-accent)]">#{index + 1}</span>

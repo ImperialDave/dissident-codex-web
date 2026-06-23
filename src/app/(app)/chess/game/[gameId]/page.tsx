@@ -63,7 +63,7 @@ export default function ChessGamePage() {
       </p>
       {error && <p className="text-red-400">{error}</p>}
 
-      <div className="overflow-hidden rounded-xl border border-white/10">
+      <div className="codex-surface overflow-hidden rounded-xl">
         <Chessboard
           position={game.fen}
           onPieceDrop={onDrop}

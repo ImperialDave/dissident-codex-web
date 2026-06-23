@@ -75,8 +75,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--color-primary)] text-slate-300">
-        Loading Codex...
+      <div className="codex-bg flex min-h-screen items-center justify-center text-slate-300">
+        <span className="codex-logo text-lg">Loading Codex...</span>
       </div>
     );
   }
@@ -84,10 +84,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[var(--color-primary)] text-slate-100">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-[var(--color-primary)]/95 backdrop-blur">
+    <div className="codex-bg min-h-screen text-slate-100">
+      <header className="codex-header sticky top-0 z-20">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-          <Link href="/feed" className="shrink-0 text-xl font-bold text-[var(--color-accent)]">
+          <Link href="/feed" className="codex-logo shrink-0 text-xl font-bold">
             Codex
           </Link>
 
@@ -177,7 +177,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="mx-auto max-w-6xl px-4 py-6 pb-[4.75rem] lg:pb-6">{children}</main>
 
       {/* Mobile primary tab bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--color-surface)]/95 backdrop-blur lg:hidden">
+      <nav className="codex-nav-bar fixed bottom-0 left-0 right-0 z-20 lg:hidden">
         <div className="mx-auto grid max-w-6xl grid-cols-5 px-1 py-1.5">
           {MOBILE_PRIMARY_NAV.map((item) => {
             const active = navActive(pathname, item.href);
@@ -187,7 +187,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={clsx(
                   "flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium transition",
-                  active ? "text-[var(--color-accent)]" : "text-slate-500 hover:text-slate-300"
+                  active
+                    ? "text-[var(--color-accent)] drop-shadow-[0_0_8px_var(--color-accent)]"
+                    : "text-slate-500 hover:text-slate-300"
                 )}
               >
                 <span

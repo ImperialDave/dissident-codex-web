@@ -166,7 +166,7 @@ export default function PostDetailPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <article className="rounded-xl border border-white/10 bg-[var(--color-surface)] p-6">
+      <article className="codex-surface rounded-xl p-6">
         <div className="mb-4 flex items-center gap-3">
           <UserAvatar
             name={post.authorName}
@@ -214,7 +214,7 @@ export default function PostDetailPage() {
                 setLikeError(mapFirestoreError(message));
               }
             }}
-            className={`rounded-lg px-4 py-2 text-sm ${liked ? "bg-[var(--color-accent)] text-black" : "border border-white/15"}`}
+            className={`rounded-lg px-4 py-2 text-sm ${liked ? "codex-chip-active" : "border border-white/15 text-slate-300"}`}
           >
             {liked ? "Liked" : "Like"} ({post.likeCount})
           </button>
@@ -259,7 +259,7 @@ export default function PostDetailPage() {
           <div
             key={comment.id}
             style={{ marginLeft: depth * 20 }}
-            className="rounded-lg border border-white/10 bg-black/20 p-4"
+            className="codex-surface rounded-lg p-4"
           >
             <div className="mb-2 flex items-center gap-2">
               <UserAvatar
@@ -320,7 +320,7 @@ export default function PostDetailPage() {
             </p>
           )}
           {pendingMedia && (
-            <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/20 p-3">
+            <div className="codex-surface flex items-center gap-3 rounded-lg p-3">
               {pendingMedia.kind === "file" && pendingMedia.mediaType === "video" ? (
                 <video
                   src={pendingMedia.previewUrl}
@@ -396,13 +396,13 @@ export default function PostDetailPage() {
             onChange={(e) => setText(e.target.value)}
             placeholder="Write a comment..."
             rows={3}
-            className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+            className="codex-input w-full rounded-lg px-4 py-3"
           />
           {error && <p className="text-red-400">{error}</p>}
           <button
             type="submit"
             disabled={submitting || !canSubmit}
-            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            className="codex-btn-accent rounded-lg px-4 py-2 text-sm disabled:opacity-50"
           >
             {submitting ? "Posting..." : "Post comment"}
           </button>
