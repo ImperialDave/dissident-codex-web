@@ -8,8 +8,20 @@ import { useAuthStore } from "@/stores/authStore";
 type Variant = "header" | "pills" | "cards";
 
 const MOD_LINKS = [
-  { href: "/mod", label: "Mod Tools", description: "Users, posts, and comments" },
-  { href: "/mod/topics", label: "Topic Moderation", description: "Ban, lock, and manage topics" },
+  {
+    href: "/mod",
+    label: "Mod Tools",
+    short: "Users & posts",
+    description: "Manage roles, posts, and comments",
+    icon: "🛡️",
+  },
+  {
+    href: "/mod/topics",
+    label: "Topics",
+    short: "Ban & lock",
+    description: "Ban topic names and lock chat rooms",
+    icon: "📋",
+  },
 ] as const;
 
 export function ModerationMenu({ variant = "pills" }: { variant?: Variant }) {
@@ -49,63 +61,87 @@ export function ModerationMenu({ variant = "pills" }: { variant?: Variant }) {
 
   if (variant === "pills") {
     return (
-      <div className="flex flex-wrap gap-2">
+      <nav className="codex-mod-nav" aria-label="Moderation">
         {isFounder() && (
           <Link
             href="/founder"
             className={clsx(
-              "rounded-full px-3 py-1.5 text-sm",
+              "codex-mod-nav-item",
               pathname.startsWith("/founder") ? "codex-btn-founder-active" : "codex-btn-founder"
             )}
           >
-            Founder Tools
+            Founder
           </Link>
         )}
         {isModerator() && (
           <Link
             href="/mod"
             className={clsx(
-              "rounded-full px-3 py-1.5 text-sm",
+              "codex-mod-nav-item",
               pathname === "/mod" ? "codex-btn-mod-active" : "codex-btn-mod"
             )}
           >
             Mod Tools
           </Link>
         )}
-        {isModerator() && (
-          <Link
-            href="/mod/topics"
-            className={clsx(
-              "rounded-full px-3 py-1.5 text-sm",
-              pathname.startsWith("/mod/topics") ? "codex-btn-mod-active" : "codex-btn-mod"
-            )}
-          >
-            Topics
-          </Link>
-        )}
-      </div>
+        {isModerator() &&
+          MOD_LINKS.filter((item) => item.href !== "/mod").map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={clsx(
+                "codex-mod-nav-item",
+                pathname.startsWith(item.href) ? "codex-btn-mod-active" : "codex-btn-mod"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+      </nav>
     );
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="codex-mod-cards">
       {isFounder() && (
         <Link
           href="/founder"
-          className="codex-surface codex-surface-hover rounded-xl border-amber-400/40 bg-amber-500/12 p-4"
+          className={clsx(
+            "codex-mod-card codex-mod-card-founder",
+            pathname.startsWith("/founder") && "codex-mod-card-active"
+          )}
         >
-          <p className="font-semibold text-amber-100">Founder Tools</p>
-          <p className="mt-1 text-sm codex-text-muted">Full control center and role sync</p>
+          <span className="codex-mod-card-icon" aria-hidden>
+            👑
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="codex-mod-card-title">Founder Tools</p>
+            <p className="codex-mod-card-desc">Full control center and role sync</p>
+          </div>
+          <span className="codex-mod-card-arrow" aria-hidden>
+            →
+          </span>
         </Link>
       )}
       {MOD_LINKS.map((item) => (
         <Link
           key={item.href}
           href={item.href}
-          className="codex-surface codex-surface-hover rounded-xl border-blue-400/40 bg-blue-500/12 p-4"
+          className={clsx(
+            "codex-mod-card codex-mod-card-mod",
+            pathname.startsWith(item.href) && "codex-mod-card-active"
+          )}
         >
-          <p className="font-semibold text-blue-100">{item.label}</p>
-          <p className="mt-1 text-sm codex-text-muted">{item.description}</p>
+          <span className="codex-mod-card-icon" aria-hidden>
+            {item.icon}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="codex-mod-card-title">{item.label}</p>
+            <p className="codex-mod-card-desc">{item.description}</p>
+          </div>
+          <span className="codex-mod-card-arrow" aria-hidden>
+            →
+          </span>
         </Link>
       ))}
     </div>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { ModerationMenu } from "@/components/ModerationMenu";
+import { ModPageShell, ModSection, ModStatGrid } from "@/components/ModPageShell";
 import { syncFounderRole } from "@/services/authService";
 import { computeModerationStats, getUsersForModeration } from "@/services/moderationService";
 import { useAuthStore } from "@/stores/authStore";
@@ -19,7 +19,7 @@ export default function FounderToolsPage() {
   }, [isFounder]);
 
   if (!isFounder()) {
-    return <p className="text-red-400">Founder access only.</p>;
+    return <p className="codex-mod-alert">Founder access only.</p>;
   }
 
   async function handleSync() {
@@ -37,65 +37,45 @@ export default function FounderToolsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <h1 className="text-2xl font-bold text-amber-300">Founder Tools</h1>
-        <p className="text-slate-300">
-          Full permissions across Codex — posts, comments, chats, moderation, and chess.
-        </p>
-        <ModerationMenu variant="pills" />
-      </div>
-
+    <ModPageShell
+      tone="founder"
+      title="Founder Tools"
+      subtitle="Full permissions across Codex — posts, comments, chats, moderation, and chess."
+    >
       {stats && (
-        <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-            Users: {stats.total}
-          </div>
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-            Mods: {stats.mods}
-          </div>
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-            Admins: {stats.admins}
-          </div>
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-            Banned: {stats.banned}
-          </div>
-        </div>
+        <ModStatGrid
+          items={[
+            { label: "Users", value: stats.total },
+            { label: "Mods", value: stats.mods },
+            { label: "Admins", value: stats.admins },
+            { label: "Banned", value: stats.banned, tone: "warn" },
+          ]}
+        />
       )}
 
-      <ModerationMenu variant="cards" />
+      <ModSection title="Quick links" hint="Jump to moderation areas across the site.">
+        <ModerationMenu variant="cards" />
+      </ModSection>
 
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-3">
-        <h2 className="font-semibold text-amber-200">Account</h2>
-        <p className="text-sm text-slate-300">
-          Keep your Firestore role in sync if permissions ever look wrong after login.
+      <div className="codex-mod-founder-panel space-y-3">
+        <h2 className="codex-mod-founder-panel-title">Account</h2>
+        <p className="text-sm text-[var(--color-text-muted)]">
+          Keep your Firestore role in sync if permissions ever look wrong after login. Your account
+          cannot be demoted by other moderators, and only you can assign the Founder role.
         </p>
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+          className="codex-btn-founder rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50"
         >
-          {syncing ? "Syncing..." : "Sync founder role to Firestore"}
+          {syncing ? "Syncing…" : "Sync founder role to Firestore"}
         </button>
-        {message && <p className="text-sm text-slate-300">{message}</p>}
+        {message && (
+          <p className={`text-sm ${message.includes("failed") || message.includes("Failed") ? "text-red-300" : "text-[var(--color-text-muted)]"}`}>
+            {message}
+          </p>
+        )}
       </div>
-
-      <ul className="list-disc space-y-1 pl-5 text-sm text-slate-400">
-        <li>
-          <Link href="/mod" className="text-blue-300 hover:text-blue-200">
-            Mod Tools
-          </Link>{" "}
-          — manage users, posts, and comments
-        </li>
-        <li>
-          <Link href="/mod/topics" className="text-blue-300 hover:text-blue-200">
-            Topic Moderation
-          </Link>{" "}
-          — ban or lock topic chats
-        </li>
-        <li>Your account cannot be demoted by other moderators</li>
-        <li>Only you can assign the Founder role to others</li>
-      </ul>
-    </div>
+    </ModPageShell>
   );
 }

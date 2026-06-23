@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ModerationMenu } from "@/components/ModerationMenu";
+import {
+  ModEmpty,
+  ModPageShell,
+  ModRow,
+  ModSection,
+  ModStatGrid,
+} from "@/components/ModPageShell";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { deleteComment } from "@/services/commentService";
@@ -30,6 +36,7 @@ export default function ModToolsPage() {
   const [togglingPostId, setTogglingPostId] = useState<string | null>(null);
 
   const roles = isFounder() ? (["FOUNDER", ...BASE_ROLES] as RoleName[]) : BASE_ROLES;
+  const hiddenCount = posts.filter((p) => p.hiddenFromFeed).length;
 
   async function refresh() {
     const [u, p, c] = await Promise.all([
@@ -61,166 +68,157 @@ export default function ModToolsPage() {
   }, [users, userQuery]);
 
   if (!isModerator()) {
-    return <p className="text-red-400">Moderator access required.</p>;
+    return <p className="codex-mod-alert">Moderator access required.</p>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <h1 className="text-2xl font-bold">Mod Tools</h1>
-        <ModerationMenu variant="pills" />
-      </div>
-
-      {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+    <ModPageShell
+      title="Mod Tools"
+      subtitle="Manage user roles, review posts and comments, and control feed visibility."
+    >
+      {error && <p className="codex-mod-alert">{error}</p>}
 
       {stats && (
-        <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 lg:grid-cols-7">
-          <div className="codex-surface rounded-lg p-3">Total: {stats.total}</div>
-          <div className="codex-surface rounded-lg p-3">Members: {stats.members}</div>
-          <div className="codex-surface rounded-lg p-3">Mods: {stats.mods}</div>
-          <div className="codex-surface rounded-lg p-3">Admins: {stats.admins}</div>
-          <div className="codex-surface rounded-lg p-3">Founders: {stats.founders}</div>
-          <div className="codex-surface rounded-lg p-3">Suspended: {stats.suspended}</div>
-          <div className="codex-surface rounded-lg p-3">Banned: {stats.banned}</div>
-        </div>
+        <ModStatGrid
+          wide
+          items={[
+            { label: "Total", value: stats.total },
+            { label: "Members", value: stats.members },
+            { label: "Mods", value: stats.mods },
+            { label: "Admins", value: stats.admins },
+            { label: "Founders", value: stats.founders, tone: "founder" },
+            { label: "Suspended", value: stats.suspended, tone: "warn" },
+            { label: "Banned", value: stats.banned, tone: "warn" },
+          ]}
+        />
       )}
 
-      <section className="codex-surface space-y-3 rounded-xl p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold">User Roles</h2>
+      <ModSection
+        title="User Roles"
+        hint="Search by display name or flair, then assign a role."
+        badge={
           <input
             value={userQuery}
             onChange={(e) => setUserQuery(e.target.value)}
-            placeholder="Search users..."
-            className="codex-input rounded-lg px-3 py-2 text-sm"
+            placeholder="Search users…"
+            className="codex-input w-full min-w-[12rem] rounded-lg px-3 py-2 text-sm sm:w-52"
           />
-        </div>
-        <div className="max-h-96 space-y-2 overflow-y-auto">
-          {filteredUsers.map((u) => (
-            <div
-              key={u.uid}
-              className="codex-surface flex flex-wrap items-center justify-between gap-2 rounded-lg p-3"
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                <UserAvatar name={u.displayName} photoUrl={u.photoUrl} size="sm" userId={u.uid} />
-                <div className="min-w-0">
-                  <Link href={`/user/${u.uid}`} className="font-medium hover:text-[var(--color-accent)]">
-                    {u.displayName}
-                  </Link>
-                  {u.flair && (
-                    <p className="truncate text-xs text-[var(--color-accent)]">{u.flair}</p>
-                  )}
+        }
+      >
+        <div className="max-h-96 overflow-y-auto">
+          {filteredUsers.length === 0 ? (
+            <ModEmpty>No users match your search.</ModEmpty>
+          ) : (
+            filteredUsers.map((u) => (
+              <ModRow key={u.uid}>
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                  <UserAvatar name={u.displayName} photoUrl={u.photoUrl} size="sm" userId={u.uid} />
+                  <div className="min-w-0">
+                    <Link href={`/user/${u.uid}`} className="font-medium hover:text-[var(--color-accent)]">
+                      {u.displayName}
+                    </Link>
+                    {u.flair && (
+                      <p className="truncate text-xs text-[var(--color-accent)]">{u.flair}</p>
+                    )}
+                  </div>
+                  <RoleBadge role={u.role} />
                 </div>
-                <RoleBadge role={u.role} />
-              </div>
-              <select
-                value={roleFromString(u.role)}
-                onChange={async (e) => {
-                  try {
-                    setError("");
-                    await updateUserRole(u.uid, e.target.value as RoleName);
-                    await refresh();
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : "Role update failed");
-                  }
-                }}
-                className="codex-input rounded-lg px-2 py-1 text-sm"
-              >
-                {roles.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="codex-surface space-y-2 rounded-xl p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold">Recent Posts</h2>
-          {posts.some((p) => p.hiddenFromFeed) && (
-            <span className="rounded-full bg-orange-500/20 px-2.5 py-0.5 text-xs font-medium text-orange-100">
-              {posts.filter((p) => p.hiddenFromFeed).length} hidden from feed
-            </span>
+                <select
+                  value={roleFromString(u.role)}
+                  onChange={async (e) => {
+                    try {
+                      setError("");
+                      await updateUserRole(u.uid, e.target.value as RoleName);
+                      await refresh();
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Role update failed");
+                    }
+                  }}
+                  className="codex-input rounded-lg px-2 py-1 text-sm"
+                >
+                  {roles.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </ModRow>
+            ))
           )}
         </div>
-        {posts.map((p) => (
-          <div
-            key={p.id}
-            className={`codex-surface flex flex-wrap items-center justify-between gap-2 rounded-lg p-3 ${
-              p.hiddenFromFeed ? "border-orange-400/40 bg-orange-500/5" : ""
-            }`}
-          >
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link href={`/post/${p.id}`} className="font-medium hover:text-[var(--color-accent)]">
-                  {p.title}
-                </Link>
-                {p.hiddenFromFeed && (
-                  <span className="rounded-full bg-orange-500/25 px-2 py-0.5 text-[10px] font-medium text-orange-100">
-                    Hidden from feed
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-500">
-                by {p.authorName} · {p.category}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <PostFeedVisibilityToggle
-                hiddenFromFeed={p.hiddenFromFeed}
-                disabled={togglingPostId === p.id}
-                compact
-                onToggle={async () => {
-                  setTogglingPostId(p.id);
-                  try {
-                    const hidden = await togglePostFeedVisibility(p.id);
-                    setPosts((prev) =>
-                      prev.map((post) =>
-                        post.id === p.id ? { ...post, hiddenFromFeed: hidden } : post
-                      )
-                    );
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : "Failed to update post");
-                  } finally {
-                    setTogglingPostId(null);
-                  }
-                }}
-              />
-              <button
-                onClick={async () => {
-                  if (!confirm("Delete this post?")) return;
-                  await deletePost(p.id);
-                  setPosts(await getPosts(null, 30, { includeHidden: true }));
-                }}
-                className="codex-btn-danger rounded-lg px-3 py-1 text-sm"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-      </section>
+      </ModSection>
 
-      <section className="codex-surface space-y-2 rounded-xl p-4">
-        <h2 className="font-semibold">Recent Comments</h2>
+      <ModSection
+        title="Recent Posts"
+        hint="Hidden posts stay reachable by direct link but are removed from the public feed."
+        badge={
+          hiddenCount > 0 ? (
+            <span className="codex-mod-badge">{hiddenCount} hidden from feed</span>
+          ) : undefined
+        }
+      >
+        {posts.length === 0 ? (
+          <ModEmpty>No posts loaded.</ModEmpty>
+        ) : (
+          posts.map((p) => (
+            <ModRow key={p.id} highlight={p.hiddenFromFeed ? "hidden" : undefined}>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link href={`/post/${p.id}`} className="font-medium hover:text-[var(--color-accent)]">
+                    {p.title}
+                  </Link>
+                  {p.hiddenFromFeed && <span className="codex-mod-badge">Hidden from feed</span>}
+                </div>
+                <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+                  by {p.authorName} · {p.category}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <PostFeedVisibilityToggle
+                  hiddenFromFeed={p.hiddenFromFeed}
+                  disabled={togglingPostId === p.id}
+                  compact
+                  onToggle={async () => {
+                    setTogglingPostId(p.id);
+                    try {
+                      const hidden = await togglePostFeedVisibility(p.id);
+                      setPosts((prev) =>
+                        prev.map((post) =>
+                          post.id === p.id ? { ...post, hiddenFromFeed: hidden } : post
+                        )
+                      );
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Failed to update post");
+                    } finally {
+                      setTogglingPostId(null);
+                    }
+                  }}
+                />
+                <button
+                  onClick={async () => {
+                    if (!confirm("Delete this post?")) return;
+                    await deletePost(p.id);
+                    setPosts(await getPosts(null, 30, { includeHidden: true }));
+                  }}
+                  className="codex-btn-danger rounded-lg px-3 py-1 text-sm"
+                >
+                  Delete
+                </button>
+              </div>
+            </ModRow>
+          ))
+        )}
+      </ModSection>
+
+      <ModSection title="Recent Comments" hint="Remove spam or abusive comments from posts.">
         {comments.length === 0 ? (
-          <p className="text-sm text-slate-400">No comments loaded.</p>
+          <ModEmpty>No comments loaded.</ModEmpty>
         ) : (
           comments.map((c) => (
-            <div
-              key={c.id}
-              className="codex-surface flex flex-wrap items-start justify-between gap-2 rounded-lg p-3"
-            >
+            <ModRow key={c.id}>
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-slate-200 line-clamp-2">{c.text}</p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="line-clamp-2 text-sm">{c.text}</p>
+                <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                   {c.authorName} ·{" "}
                   <Link href={`/post/${c.postId}`} className="text-[var(--color-accent)]">
                     View post
@@ -233,14 +231,14 @@ export default function ModToolsPage() {
                   await deleteComment(c.id, c.postId);
                   setComments((await getRecentComments(40)) as Comment[]);
                 }}
-                className="codex-btn-danger rounded-lg px-3 py-1 text-sm"
+                className="codex-btn-danger shrink-0 rounded-lg px-3 py-1 text-sm"
               >
                 Delete
               </button>
-            </div>
+            </ModRow>
           ))
         )}
-      </section>
-    </div>
+      </ModSection>
+    </ModPageShell>
   );
 }
