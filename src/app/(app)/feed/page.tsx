@@ -79,18 +79,18 @@ export default function FeedPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-white">Feed</h1>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="codex-page-header">
+        <h1 className="codex-page-title">Feed</h1>
+        <div className="codex-page-actions w-full sm:w-auto">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search posts..."
-            className="codex-input rounded-lg px-4 py-2 text-sm"
+            className="codex-input min-w-0 flex-1 rounded-lg px-4 py-2 text-sm sm:min-w-[12rem]"
           />
           <Link
             href="/create"
-            className="codex-btn-accent rounded-lg px-4 py-2 text-center text-sm"
+            className="codex-btn-accent shrink-0 rounded-lg px-4 py-2 text-center text-sm"
           >
             Create post
           </Link>

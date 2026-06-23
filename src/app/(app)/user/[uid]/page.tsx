@@ -142,21 +142,32 @@ export default function UserProfilePage() {
           </button>
         )}
         {friendStatus === "friends" && (
-          <span className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm text-green-400">
-            Friends
-          </span>
+          <>
+            <span className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm text-green-400">
+              Friends
+            </span>
+            <button
+              onClick={openChat}
+              disabled={busy !== null}
+              className="codex-btn-accent rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+            >
+              {busy === "message" ? "Opening..." : "Message"}
+            </button>
+          </>
         )}
-        <button
-          onClick={openChat}
-          disabled={busy !== null}
-          className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
-        >
-          {busy === "message" ? "Opening..." : "Message"}
-        </button>
+        {friendStatus !== "friends" && (
+          <button
+            onClick={openChat}
+            disabled={busy !== null}
+            className="codex-btn-secondary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          >
+            {busy === "message" ? "Opening..." : "Message"}
+          </button>
+        )}
         <button
           onClick={playChess}
           disabled={busy !== null}
-          className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+          className="codex-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
           {busy === "chess" ? "Starting..." : "Play chess"}
         </button>

@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginUser, registerUser } from "@/services/authService";
+import { ColorModeToggle } from "@/components/ColorModeToggle";
 import { useAuthStore } from "@/stores/authStore";
 
 export default function LoginPage() {
@@ -35,21 +36,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="codex-bg flex min-h-screen items-center justify-center px-4">
-      <div className="codex-surface w-full max-w-md rounded-2xl p-8 shadow-xl">
+    <div className="codex-bg flex min-h-screen items-center justify-center px-4 py-8">
+      <div className="codex-surface relative w-full max-w-md rounded-2xl p-8 shadow-xl">
+        <div className="absolute right-4 top-4">
+          <ColorModeToggle variant="compact" />
+        </div>
         <h1 className="codex-logo mb-2 text-center text-3xl font-bold">Codex</h1>
         <p className="mb-6 text-center text-sm text-slate-400">
           Coding discussion forum — web edition
         </p>
 
-        <div className="mb-6 flex rounded-lg border border-[var(--color-border)] bg-black/25 p-1">
+        <div className="codex-segmented mb-6 flex rounded-lg p-1">
           {(["login", "register"] as const).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => setMode(m)}
               className={`flex-1 rounded-md py-2 text-sm capitalize ${
-                mode === m ? "codex-btn-accent" : "text-slate-400"
+                mode === m ? "codex-chip-active" : "codex-text-muted"
               }`}
             >
               {m}

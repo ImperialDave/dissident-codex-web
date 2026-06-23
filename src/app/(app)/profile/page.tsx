@@ -10,6 +10,7 @@ import { uploadImage } from "@/services/mediaService";
 import { updateProfile } from "@/services/userService";
 import { ModerationMenu } from "@/components/ModerationMenu";
 import { useAuthStore } from "@/stores/authStore";
+import { ColorModeToggle } from "@/components/ColorModeToggle";
 import { useThemeStore } from "@/stores/themeStore";
 import type { Post } from "@/models";
 
@@ -122,8 +123,14 @@ export default function ProfilePage() {
       </div>
 
       <div className="codex-surface rounded-xl p-4">
+        <h2 className="mb-1 font-semibold">Appearance</h2>
+        <p className="mb-3 text-xs text-slate-400">Light or dark UI — accent colors stay with your palette.</p>
+        <ColorModeToggle />
+      </div>
+
+      <div className="codex-surface rounded-xl p-4">
         <h2 className="mb-1 font-semibold">Color scheme</h2>
-        <p className="mb-4 text-xs text-slate-400">90s cyber palettes — pick your vibe.</p>
+        <p className="mb-4 text-xs text-slate-400">Cyber palettes — pick your accent vibe.</p>
         <div className="flex flex-wrap gap-5">
           {THEMES.map((t) => (
             <button

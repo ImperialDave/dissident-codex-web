@@ -29,8 +29,8 @@ export default function ChatsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Chats</h1>
+      <div className="codex-page-header">
+        <h1 className="codex-page-title">Chats</h1>
         <Link href="/chats/new" className="codex-btn-accent rounded-lg px-4 py-2 text-sm">
           New message
         </Link>

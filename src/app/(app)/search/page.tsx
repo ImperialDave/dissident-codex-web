@@ -80,7 +80,9 @@ export default function SearchPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Search</h1>
+      <div className="codex-page-header">
+        <h1 className="codex-page-title">Search</h1>
+      </div>
       <div className="flex gap-2">
         <input
           value={query}

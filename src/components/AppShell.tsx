@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
+import { ColorModeToggle } from "@/components/ColorModeToggle";
 import { ModerationMenu } from "@/components/ModerationMenu";
 import { useAuthStore } from "@/stores/authStore";
 import { listenNotifications } from "@/services/notificationService";
@@ -84,7 +85,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="codex-bg min-h-screen text-slate-100">
+    <div className="codex-bg min-h-screen">
       <header className="codex-header sticky top-0 z-20">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
           <Link href="/feed" className="codex-logo shrink-0 text-xl font-bold">
@@ -110,6 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <ColorModeToggle variant="compact" />
             <Link
               href="/notifications"
               className={clsx(
@@ -129,7 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
             <button
               onClick={() => logout().then(() => router.replace("/login"))}
-              className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-white/5"
+              className="codex-btn-ghost shrink-0 rounded-lg px-3 py-1.5 text-sm"
             >
               Log out
             </button>

@@ -138,12 +138,12 @@ export default function CreatePostPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-white">Create Post</h1>
+      <div className="codex-page-header">
+        <h1 className="codex-page-title">Create Post</h1>
         <button
           type="button"
           onClick={() => router.push("/feed")}
-          className="text-sm text-slate-400 hover:text-white"
+          className="codex-btn-ghost rounded-lg px-3 py-1.5 text-sm"
         >
           Back to feed
         </button>
@@ -218,7 +218,7 @@ export default function CreatePostPage() {
         <div className="codex-surface space-y-3 rounded-lg p-4">
           <p className="text-sm text-slate-300">Media (optional)</p>
           <div className="flex flex-wrap gap-2">
-            <label className="cursor-pointer rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5">
+            <label className="codex-btn-ghost cursor-pointer rounded-lg px-4 py-2 text-sm">
               Upload image
               <input
                 type="file"
@@ -233,7 +233,7 @@ export default function CreatePostPage() {
                 clearMedia();
                 setGifPickerOpen(true);
               }}
-              className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5"
+              className="codex-btn-ghost rounded-lg px-4 py-2 text-sm"
             >
               Add GIF
             </button>
@@ -241,7 +241,7 @@ export default function CreatePostPage() {
               <button
                 type="button"
                 onClick={clearMedia}
-                className="rounded-lg border border-red-400/30 px-4 py-2 text-sm text-red-300 hover:bg-red-500/10"
+                className="codex-btn-danger rounded-lg px-4 py-2 text-sm"
               >
                 Remove media
               </button>
@@ -266,11 +266,11 @@ export default function CreatePostPage() {
         )}
         {success && <p className="text-emerald-400">{success}</p>}
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="submit"
             disabled={loading}
-            className="codex-btn-accent rounded-lg px-6 py-2 disabled:opacity-50"
+            className="codex-btn-accent rounded-lg px-6 py-2.5 disabled:opacity-50"
           >
             {loading ? "Publishing..." : "Publish"}
           </button>
@@ -283,7 +283,7 @@ export default function CreatePostPage() {
               setCategory(categories[0] || "General Discussion");
               clearMedia();
             }}
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm"
+            className="codex-btn-ghost rounded-lg px-4 py-2 text-sm"
           >
             Discard draft
           </button>

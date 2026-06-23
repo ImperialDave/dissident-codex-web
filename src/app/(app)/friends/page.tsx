@@ -51,7 +51,7 @@ export default function FriendsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Friends</h1>
+      <h1 className="codex-page-title">Friends</h1>
       {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
       {requests.length > 0 && (
@@ -70,7 +70,7 @@ export default function FriendsPage() {
                       await respondToFriendRequest(r.id, true);
                       load();
                     }}
-                    className="codex-btn-accent rounded px-3 py-1 text-sm"
+                    className="codex-btn-accent rounded-lg px-3 py-1.5 text-sm"
                   >
                     Accept
                   </button>
@@ -79,7 +79,7 @@ export default function FriendsPage() {
                       await respondToFriendRequest(r.id, false);
                       load();
                     }}
-                    className="rounded border border-white/15 px-3 py-1 text-sm"
+                    className="codex-btn-ghost rounded-lg px-3 py-1.5 text-sm"
                   >
                     Decline
                   </button>
@@ -109,14 +109,14 @@ export default function FriendsPage() {
                   <button
                     onClick={() => messageFriend(f.uid)}
                     disabled={busyUid === f.uid}
-                    className="rounded border border-white/15 px-3 py-1 text-sm hover:bg-white/5 disabled:opacity-50"
+                    className="codex-btn-secondary rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
                   >
                     Message
                   </button>
                   <button
                     onClick={() => playChess(f.uid)}
                     disabled={busyUid === f.uid}
-                    className="rounded border border-white/15 px-3 py-1 text-sm hover:bg-white/5 disabled:opacity-50"
+                    className="codex-btn-ghost rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
                   >
                     Chess
                   </button>

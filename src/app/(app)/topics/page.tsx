@@ -60,7 +60,9 @@ export default function TopicsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Browse Topics</h1>
+      <div className="codex-page-header">
+        <h1 className="codex-page-title">Browse Topics</h1>
+      </div>
 
       <div className="flex gap-2">
         <input
@@ -95,13 +97,7 @@ export default function TopicsPage() {
               className="codex-surface codex-surface-hover rounded-xl p-4"
             >
               <p className="font-semibold">{name}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Link
-                  href={`/feed?category=${encodeURIComponent(name)}`}
-                  className="rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-white/5"
-                >
-                  View posts
-                </Link>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
                   disabled={opening === name}
                   onClick={async () => {
@@ -124,6 +120,12 @@ export default function TopicsPage() {
                 >
                   {opening === name ? "Opening..." : "Open chat"}
                 </button>
+                <Link
+                  href={`/feed?category=${encodeURIComponent(name)}`}
+                  className="codex-btn-ghost rounded-lg px-3 py-1.5 text-sm"
+                >
+                  View posts
+                </Link>
               </div>
             </div>
           ))}

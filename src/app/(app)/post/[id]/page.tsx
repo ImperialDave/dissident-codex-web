@@ -214,7 +214,7 @@ export default function PostDetailPage() {
                 setLikeError(mapFirestoreError(message));
               }
             }}
-            className={`rounded-lg px-4 py-2 text-sm ${liked ? "codex-chip-active" : "border border-white/15 text-slate-300"}`}
+            className={`rounded-lg px-4 py-2 text-sm ${liked ? "codex-chip-active" : "codex-btn-secondary"}`}
           >
             {liked ? "Liked" : "Like"} ({post.likeCount})
           </button>
@@ -245,7 +245,7 @@ export default function PostDetailPage() {
                   window.location.href = "/feed";
                 }
               }}
-              className="rounded-lg border border-red-500/40 px-4 py-2 text-sm text-red-300"
+              className="codex-btn-danger rounded-lg px-4 py-2 text-sm"
             >
               Delete
             </button>
@@ -370,7 +370,7 @@ export default function PostDetailPage() {
               type="button"
               onClick={() => imageInputRef.current?.click()}
               disabled={submitting}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+              className="codex-btn-ghost rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
             >
               Image
             </button>
@@ -378,7 +378,7 @@ export default function PostDetailPage() {
               type="button"
               onClick={() => setGifOpen(true)}
               disabled={submitting}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+              className="codex-btn-ghost rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
             >
               GIF
             </button>
@@ -386,7 +386,7 @@ export default function PostDetailPage() {
               type="button"
               onClick={() => videoInputRef.current?.click()}
               disabled={submitting}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+              className="codex-btn-ghost rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
             >
               Video
             </button>

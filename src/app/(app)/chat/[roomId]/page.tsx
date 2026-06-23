@@ -257,7 +257,7 @@ export default function ChatRoomPage() {
             type="button"
             onClick={() => imageInputRef.current?.click()}
             disabled={sending || Boolean(room?.locked)}
-            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+            className="codex-btn-ghost rounded-lg px-3 py-2 text-sm disabled:opacity-50"
           >
             Image
           </button>
@@ -265,7 +265,7 @@ export default function ChatRoomPage() {
             type="button"
             onClick={() => setGifOpen(true)}
             disabled={sending || Boolean(room?.locked)}
-            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+            className="codex-btn-ghost rounded-lg px-3 py-2 text-sm disabled:opacity-50"
           >
             GIF
           </button>
@@ -273,7 +273,7 @@ export default function ChatRoomPage() {
             type="button"
             onClick={() => videoInputRef.current?.click()}
             disabled={sending || Boolean(room?.locked)}
-            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+            className="codex-btn-ghost rounded-lg px-3 py-2 text-sm disabled:opacity-50"
           >
             Video
           </button>
@@ -289,7 +289,7 @@ export default function ChatRoomPage() {
           <button
             type="submit"
             disabled={sending || !canSend || Boolean(room?.locked)}
-            className="codex-btn-accent rounded-lg px-4 py-2 disabled:opacity-50"
+            className="codex-btn-accent shrink-0 rounded-lg px-5 py-2 disabled:opacity-50"
           >
             Send
           </button>
