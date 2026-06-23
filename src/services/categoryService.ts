@@ -48,8 +48,13 @@ async function collectTopicNames(): Promise<Set<string>> {
 }
 
 export async function getFeedHiddenTopics(): Promise<FeedHiddenTopic[]> {
-  const snap = await getDocs(collection(getFirebaseDb(), COLLECTIONS.FEED_HIDDEN_TOPICS));
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FeedHiddenTopic, "id">) }));
+  try {
+    const snap = await getDocs(collection(getFirebaseDb(), COLLECTIONS.FEED_HIDDEN_TOPICS));
+    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FeedHiddenTopic, "id">) }));
+  } catch {
+    // Rules may lag deploy — treat as none hidden so feed still loads.
+    return [];
+  }
 }
 
 export async function getAllTopicNames(): Promise<string[]> {
@@ -78,8 +83,12 @@ export async function getCreateCategoryNames(): Promise<string[]> {
 }
 
 export async function getBannedTopics(): Promise<BannedTopic[]> {
-  const snap = await getDocs(collection(getFirebaseDb(), COLLECTIONS.HIDDEN_TOPICS));
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<BannedTopic, "id">) }));
+  try {
+    const snap = await getDocs(collection(getFirebaseDb(), COLLECTIONS.HIDDEN_TOPICS));
+    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<BannedTopic, "id">) }));
+  } catch {
+    return [];
+  }
 }
 
 export async function searchTopics(q: string, max = 20): Promise<PostCategory[]> {
