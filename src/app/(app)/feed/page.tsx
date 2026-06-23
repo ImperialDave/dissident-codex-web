@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { PostCard } from "@/components/PostCard";
 import { mapFirestoreError } from "@/lib/utils";
-import { getFeedCategoryNames } from "@/services/categoryService";
+import { getFeedCategoryNames, getFeedHiddenTopics } from "@/services/categoryService";
 import { getPosts, togglePostFeedVisibility } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
 import type { Post } from "@/models";
@@ -20,19 +20,22 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [togglingPostId, setTogglingPostId] = useState<string | null>(null);
+  const [hiddenTopics, setHiddenTopics] = useState<Set<string>>(new Set());
   const modView = isModerator();
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [cats, data] = await Promise.all([
-        getFeedCategoryNames(),
+      const [cats, data, hiddenList] = await Promise.all([
+        getFeedCategoryNames({ includeFeedHidden: modView }),
         getPosts(category === "All" ? null : category, 50, {
           includeHidden: modView,
         }),
+        modView ? getFeedHiddenTopics() : Promise.resolve([]),
       ]);
       setCategories(cats);
+      setHiddenTopics(new Set(hiddenList.map((t) => t.name.toLowerCase())));
       let filtered = data;
       const q = search.trim().toLowerCase();
       if (q) {
@@ -98,25 +101,34 @@ export default function FeedPage() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setCategory(cat)}
-            className={`rounded-full px-3 py-1 text-sm ${
-              category === cat
-                ? "codex-chip-active"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+        {categories.map((cat) => {
+          const topicHidden =
+            modView && cat !== "All" && hiddenTopics.has(cat.toLowerCase());
+          return (
+            <button
+              key={cat}
+              onClick={() => setCategory(cat)}
+              className={`rounded-full px-3 py-1 text-sm ${
+                category === cat
+                  ? "codex-chip-active"
+                  : topicHidden
+                    ? "border border-orange-400/40 bg-orange-500/10 text-orange-100 hover:text-orange-50"
+                    : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              {cat}
+              {topicHidden && (
+                <span className="ml-1 text-[10px] opacity-80">(hidden)</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {modView && (
         <p className="codex-text-muted text-sm">
-          Moderator view: hidden posts stay visible here with an orange badge so you can unhide them.
-          Members will not see hidden posts in the feed.
+          Moderator view: hidden posts and topics stay visible here with orange markers so you can
+          unhide them. Members will not see hidden posts or topics in the feed.
         </p>
       )}
 

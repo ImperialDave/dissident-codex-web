@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-import { ColorModeToggle } from "@/components/ColorModeToggle";
+import { AppearanceMenu } from "@/components/AppearanceMenu";
 import { ModerationMenu } from "@/components/ModerationMenu";
 import { useAuthStore } from "@/stores/authStore";
 import { listenNotifications } from "@/services/notificationService";
@@ -111,7 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <ColorModeToggle variant="compact" />
+            <AppearanceMenu />
             <Link
               href="/notifications"
               className={clsx(

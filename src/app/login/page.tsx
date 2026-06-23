@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginUser, registerUser } from "@/services/authService";
-import { ColorModeToggle } from "@/components/ColorModeToggle";
+import { AppearanceMenu } from "@/components/AppearanceMenu";
 import { useAuthStore } from "@/stores/authStore";
 
 export default function LoginPage() {
@@ -39,7 +39,7 @@ export default function LoginPage() {
     <div className="codex-bg flex min-h-screen items-center justify-center px-4 py-8">
       <div className="codex-surface relative w-full max-w-md rounded-2xl p-8 shadow-xl">
         <div className="absolute right-4 top-4">
-          <ColorModeToggle variant="compact" />
+          <AppearanceMenu />
         </div>
         <h1 className="codex-logo mb-2 text-center text-3xl font-bold">Codex</h1>
         <p className="mb-6 text-center text-sm text-slate-400">

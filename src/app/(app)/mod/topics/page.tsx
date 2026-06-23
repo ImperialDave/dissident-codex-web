@@ -1,26 +1,62 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ModEmpty, ModPageShell, ModRow, ModSection } from "@/components/ModPageShell";
-import { banTopic, getBannedTopics, unbanTopic } from "@/services/categoryService";
+import {
+  banTopic,
+  getAllTopicNames,
+  getBannedTopics,
+  getFeedHiddenTopics,
+  hideTopicFromBrowse,
+  unbanTopic,
+  unhideTopicFromBrowse,
+} from "@/services/categoryService";
 import { getTopicRooms, lockTopicRoom } from "@/services/chatService";
 import { useAuthStore } from "@/stores/authStore";
-import type { BannedTopic, ChatRoom } from "@/models";
+import type { BannedTopic, ChatRoom, FeedHiddenTopic } from "@/models";
 
 export default function ModTopicsPage() {
   const { isModerator } = useAuthStore();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [banned, setBanned] = useState<BannedTopic[]>([]);
+  const [feedHidden, setFeedHidden] = useState<FeedHiddenTopic[]>([]);
+  const [allTopics, setAllTopics] = useState<string[]>([]);
   const [topicName, setTopicName] = useState("");
+  const [hideQuery, setHideQuery] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
 
   async function load() {
-    setRooms(await getTopicRooms());
-    setBanned(await getBannedTopics());
+    const [roomList, bannedList, hiddenList, topics] = await Promise.all([
+      getTopicRooms(),
+      getBannedTopics(),
+      getFeedHiddenTopics(),
+      getAllTopicNames(),
+    ]);
+    setRooms(roomList);
+    setBanned(bannedList);
+    setFeedHidden(hiddenList);
+    setAllTopics(topics);
   }
 
   useEffect(() => {
-    if (isModerator()) load();
+    if (isModerator()) {
+      load().catch((err) =>
+        setError(err instanceof Error ? err.message : "Failed to load topic data")
+      );
+    }
   }, [isModerator]);
+
+  const feedHiddenNames = useMemo(
+    () => new Set(feedHidden.map((t) => t.name.toLowerCase())),
+    [feedHidden]
+  );
+
+  const filteredTopics = useMemo(() => {
+    const q = hideQuery.trim().toLowerCase();
+    if (!q) return allTopics;
+    return allTopics.filter((name) => name.toLowerCase().includes(q));
+  }, [allTopics, hideQuery]);
 
   if (!isModerator()) {
     return <p className="codex-mod-alert">Moderator access required.</p>;
@@ -30,8 +66,10 @@ export default function ModTopicsPage() {
     <ModPageShell
       tone="topics"
       title="Topic Moderation"
-      subtitle="Ban topic names from new posts and lock chat rooms when discussions need a cooldown."
+      subtitle="Ban topic names, hide topics from browse and feed chips, or lock chat rooms."
     >
+      {error && <p className="codex-mod-alert">{error}</p>}
+
       <ModSection
         title="Ban a topic"
         hint="Banned names cannot be used when creating new posts."
@@ -45,9 +83,14 @@ export default function ModTopicsPage() {
           />
           <button
             onClick={async () => {
-              await banTopic(topicName);
-              setTopicName("");
-              load();
+              try {
+                setError("");
+                await banTopic(topicName);
+                setTopicName("");
+                await load();
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Failed to ban topic");
+              }
             }}
             disabled={!topicName.trim()}
             className="codex-btn-danger rounded-lg px-4 py-2 text-sm disabled:opacity-50"
@@ -55,6 +98,65 @@ export default function ModTopicsPage() {
             Ban topic
           </button>
         </div>
+      </ModSection>
+
+      <ModSection
+        title="Hide from browse"
+        hint="Hidden topics disappear from the feed chips, topics page, and leaderboard. Posts and chats still work."
+        badge={
+          feedHidden.length > 0 ? (
+            <span className="codex-mod-badge">{feedHidden.length} hidden</span>
+          ) : undefined
+        }
+      >
+        <input
+          value={hideQuery}
+          onChange={(e) => setHideQuery(e.target.value)}
+          placeholder="Search topics to hide…"
+          className="codex-input mb-3 w-full rounded-lg px-3 py-2 text-sm"
+        />
+        {filteredTopics.length === 0 ? (
+          <ModEmpty>No topics match your search.</ModEmpty>
+        ) : (
+          <div className="max-h-80 overflow-y-auto">
+            {filteredTopics.map((name) => {
+              const hidden = feedHiddenNames.has(name.toLowerCase());
+              const hiddenDoc = feedHidden.find(
+                (t) => t.name.toLowerCase() === name.toLowerCase()
+              );
+              return (
+                <ModRow key={name} highlight={hidden ? "hidden" : undefined}>
+                  <div className="min-w-0">
+                    <span className="font-medium">{name}</span>
+                    {hidden && <span className="codex-mod-badge ml-2">Hidden</span>}
+                  </div>
+                  <button
+                    disabled={busy === name}
+                    onClick={async () => {
+                      setBusy(name);
+                      setError("");
+                      try {
+                        if (hidden && hiddenDoc) {
+                          await unhideTopicFromBrowse(hiddenDoc.id);
+                        } else {
+                          await hideTopicFromBrowse(name);
+                        }
+                        await load();
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Failed to update topic");
+                      } finally {
+                        setBusy(null);
+                      }
+                    }}
+                    className="codex-btn-mod shrink-0 rounded-lg px-3 py-1 text-sm disabled:opacity-50"
+                  >
+                    {busy === name ? "…" : hidden ? "Unhide" : "Hide"}
+                  </button>
+                </ModRow>
+              );
+            })}
+          </div>
+        )}
       </ModSection>
 
       <ModSection title="Banned Topics">
@@ -67,7 +169,7 @@ export default function ModTopicsPage() {
               <button
                 onClick={async () => {
                   await unbanTopic(b.id);
-                  load();
+                  await load();
                 }}
                 className="codex-btn-mod rounded-lg px-3 py-1 text-sm"
               >
@@ -94,7 +196,7 @@ export default function ModTopicsPage() {
               <button
                 onClick={async () => {
                   await lockTopicRoom(r.id, !r.locked);
-                  load();
+                  await load();
                 }}
                 className="codex-btn-mod shrink-0 rounded-lg px-3 py-1 text-sm"
               >

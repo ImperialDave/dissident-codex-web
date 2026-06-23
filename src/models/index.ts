@@ -227,3 +227,10 @@ export interface BannedTopic {
   categoryId?: string | null;
   bannedAt?: Timestamp | null;
 }
+
+export interface FeedHiddenTopic {
+  id: string;
+  name: string;
+  hiddenBy?: string | null;
+  hiddenAt?: Timestamp | null;
+}

@@ -16,6 +16,7 @@ import {
   canModerate,
   CHAT_TYPE_TOPIC,
   type BannedTopic,
+  type FeedHiddenTopic,
   type LeaderboardData,
   type LeaderboardEntry,
   type PostCategory,
@@ -30,8 +31,7 @@ export async function getCategories(): Promise<PostCategory[]> {
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<PostCategory, "id">) }));
 }
 
-export async function getFeedCategoryNames(): Promise<string[]> {
-  const hidden = new Set((await getBannedTopics()).map((t) => t.name.toLowerCase()));
+async function collectTopicNames(): Promise<Set<string>> {
   const names = new Set((await getCategories()).map((c) => c.name).filter(Boolean));
   try {
     const postsSnap = await getDocs(
@@ -44,8 +44,30 @@ export async function getFeedCategoryNames(): Promise<string[]> {
   } catch {
     // non-fatal
   }
+  return names;
+}
+
+export async function getFeedHiddenTopics(): Promise<FeedHiddenTopic[]> {
+  const snap = await getDocs(collection(getFirebaseDb(), COLLECTIONS.FEED_HIDDEN_TOPICS));
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FeedHiddenTopic, "id">) }));
+}
+
+export async function getAllTopicNames(): Promise<string[]> {
+  return [...(await collectTopicNames())].sort((a, b) => a.localeCompare(b));
+}
+
+export async function getFeedCategoryNames(options?: {
+  includeFeedHidden?: boolean;
+}): Promise<string[]> {
+  const banned = new Set((await getBannedTopics()).map((t) => t.name.toLowerCase()));
+  const feedHidden = new Set((await getFeedHiddenTopics()).map((t) => t.name.toLowerCase()));
+  const names = await collectTopicNames();
   const visible = [...names]
-    .filter((name) => !hidden.has(name.toLowerCase()))
+    .filter((name) => !banned.has(name.toLowerCase()))
+    .filter(
+      (name) =>
+        options?.includeFeedHidden || !feedHidden.has(name.toLowerCase())
+    )
     .sort((a, b) => a.localeCompare(b));
   return [ALL_CATEGORY_LABEL, ...visible];
 }
@@ -85,15 +107,18 @@ export async function searchTopics(q: string, max = 20): Promise<PostCategory[]>
     // non-fatal
   }
 
-  let hidden = new Set<string>();
+  let banned = new Set<string>();
+  let feedHidden = new Set<string>();
   try {
-    hidden = new Set((await getBannedTopics()).map((t) => t.name.toLowerCase()));
+    banned = new Set((await getBannedTopics()).map((t) => t.name.toLowerCase()));
+    feedHidden = new Set((await getFeedHiddenTopics()).map((t) => t.name.toLowerCase()));
   } catch {
     // non-fatal
   }
 
   return [...names]
-    .filter((name) => !hidden.has(name.toLowerCase()))
+    .filter((name) => !banned.has(name.toLowerCase()))
+    .filter((name) => !feedHidden.has(name.toLowerCase()))
     .filter((name) => name.toLowerCase().includes(needle))
     .sort((a, b) => a.localeCompare(b))
     .slice(0, max)
@@ -206,6 +231,30 @@ export async function unbanTopic(id: string): Promise<void> {
   await deleteDoc(doc(getFirebaseDb(), COLLECTIONS.HIDDEN_TOPICS, id));
 }
 
+export async function hideTopicFromBrowse(name: string): Promise<void> {
+  const auth = getFirebaseAuth();
+  const user = await fetchUser(auth.currentUser?.uid || "");
+  if (!canModerate(resolveRole(user, auth.currentUser?.email))) {
+    throw new Error("No permission");
+  }
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Topic name required");
+
+  const existing = await getFeedHiddenTopics();
+  if (existing.some((t) => t.name.toLowerCase() === trimmed.toLowerCase())) return;
+
+  const ref = doc(collection(getFirebaseDb(), COLLECTIONS.FEED_HIDDEN_TOPICS));
+  await setDoc(ref, {
+    name: trimmed,
+    hiddenBy: auth.currentUser?.uid ?? null,
+    hiddenAt: Timestamp.now(),
+  });
+}
+
+export async function unhideTopicFromBrowse(id: string): Promise<void> {
+  await deleteDoc(doc(getFirebaseDb(), COLLECTIONS.FEED_HIDDEN_TOPICS, id));
+}
+
 function topicRoomName(room: ChatRoom): string {
   return room.topicName?.trim() || room.title?.trim() || room.id;
 }
@@ -241,7 +290,8 @@ function sortLeaderboardEntries(
 
 /** Matches Android: topic rooms + user's DMs, scored by chat activity. */
 export async function getLeaderboardData(limit = 20): Promise<LeaderboardData> {
-  const hidden = new Set((await getBannedTopics()).map((t) => t.name.toLowerCase()));
+  const banned = new Set((await getBannedTopics()).map((t) => t.name.toLowerCase()));
+  const feedHidden = new Set((await getFeedHiddenTopics()).map((t) => t.name.toLowerCase()));
   const postCounts = await getPostCountByCategory();
 
   let rooms: ChatRoom[] = [];
@@ -253,7 +303,10 @@ export async function getLeaderboardData(limit = 20): Promise<LeaderboardData> {
 
   const topicEntries = rooms
     .filter((room) => room.type === CHAT_TYPE_TOPIC)
-    .filter((room) => !hidden.has(topicRoomName(room).toLowerCase()))
+    .filter((room) => {
+      const key = topicRoomName(room).toLowerCase();
+      return !banned.has(key) && !feedHidden.has(key);
+    })
     .map((room) => {
       const name = topicRoomName(room);
       const messageCount = room.messageCount || 0;

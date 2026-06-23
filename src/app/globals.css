@@ -705,6 +705,125 @@ body::after {
       0 0 0 2px var(--color-accent),
       0 0 18px color-mix(in srgb, var(--color-accent) 40%, transparent);
   }
+
+  [data-theme="sage"] .codex-logo,
+  [data-theme="dusk"] .codex-logo,
+  [data-theme="sand"] .codex-logo,
+  [data-theme="mist"] .codex-logo,
+  [data-theme="linen"] .codex-logo {
+    text-shadow: none;
+    filter: none;
+  }
+
+  .codex-appearance-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .codex-appearance-overlay-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .codex-appearance-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    width: min(22rem, 92vw);
+    height: 100dvh;
+    border-left: 1px solid var(--color-border);
+    background: var(--color-surface-gradient);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.2);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+  }
+
+  .codex-appearance-panel-open {
+    transform: translateX(0);
+  }
+
+  .codex-appearance-panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    padding: 1rem 1.125rem;
+  }
+
+  .codex-appearance-eyebrow {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .codex-appearance-title {
+    margin-top: 0.15rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-on-surface);
+  }
+
+  .codex-appearance-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.125rem 1.5rem;
+  }
+
+  .codex-appearance-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-on-surface);
+  }
+
+  .codex-appearance-hint {
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .codex-appearance-track {
+    display: flex;
+    gap: 0.875rem;
+    overflow-x: auto;
+    padding-bottom: 0.35rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .codex-appearance-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    scroll-snap-align: start;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .codex-appearance-option-label {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .codex-appearance-option-label-active {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
 }
 
 /* Semantic text remapping — WCAG AA contrast on themed surfaces */
