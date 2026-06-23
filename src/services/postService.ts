@@ -33,12 +33,19 @@ function toPost(id: string, data: DocumentData): Post {
   };
 }
 
-export async function getPosts(category?: string | null, max = 50): Promise<Post[]> {
+export async function getPosts(
+  category?: string | null,
+  max = 50,
+  options?: { includeHidden?: boolean }
+): Promise<Post[]> {
   const db = getFirebaseDb();
   const snap = await getDocs(
     query(collection(db, COLLECTIONS.POSTS), orderBy("createdAt", "desc"), limit(200))
   );
   let posts = snap.docs.map((d) => toPost(d.id, d.data()));
+  if (!options?.includeHidden) {
+    posts = posts.filter((p) => !p.hiddenFromFeed);
+  }
   const effective =
     category && category !== "All" && category.trim() ? category : null;
   if (effective) posts = posts.filter((p) => p.category === effective);
@@ -103,6 +110,33 @@ export async function createPost(
     throw new Error(mapFirestoreError(message));
   }
   return post;
+}
+
+export async function togglePostFeedVisibility(postId: string): Promise<boolean> {
+  const auth = getFirebaseAuth();
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error("Not logged in");
+
+  const user = await fetchUser(uid);
+  const role = resolveRole(user, auth.currentUser?.email);
+  if (!canModerate(role)) throw new Error("Moderator access required");
+
+  const post = await getPost(postId);
+  if (!post) throw new Error("Post not found");
+
+  const nextHidden = !post.hiddenFromFeed;
+  const db = getFirebaseDb();
+  try {
+    await updateDoc(doc(db, COLLECTIONS.POSTS, postId), {
+      hiddenFromFeed: nextHidden,
+      ...(nextHidden ? { hiddenBy: uid, hiddenAt: Timestamp.now() } : {}),
+      updatedAt: Timestamp.now(),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to update post visibility";
+    throw new Error(mapFirestoreError(message));
+  }
+  return nextHidden;
 }
 
 export async function deletePost(postId: string): Promise<void> {

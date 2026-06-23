@@ -141,3 +141,10 @@ export function chatMessagePreview(
 export function normalizeCategoryName(name: string): string {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 }
+
+export function normalizeMediaUrl(url?: string | null): string | null {
+  if (!url?.trim()) return null;
+  const trimmed = url.trim();
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  return trimmed;
+}
