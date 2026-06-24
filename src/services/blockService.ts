@@ -3,8 +3,8 @@ import {
   doc,
   getDoc,
   getDocs,
-  setDoc,
   deleteDoc,
+  updateDoc,
   query,
   where,
   Timestamp,
@@ -84,7 +84,7 @@ async function clearFriendRequestsBetween(uidA: string, uidB: string): Promise<v
   ];
   for (const q of pairs) {
     const snap = await getDocs(q);
-    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+    await Promise.all(snap.docs.map((d) => updateDoc(d.ref, { status: "declined" })));
   }
 }
 
