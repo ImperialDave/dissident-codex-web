@@ -58,7 +58,7 @@ export type Theme = {
 export const THEME_FAMILIES: { id: ThemeFamily; label: string; hint: string }[] = [
   { id: "original", label: "Original", hint: "Cyber palettes with neon accents" },
   { id: "calm", label: "Calm", hint: "Soft, simple tones for relaxed reading" },
-};
+];
 
 export const THEMES: Theme[] = [
   {
