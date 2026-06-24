@@ -2,7 +2,9 @@ import {
   collection,
   doc,
   getDocs,
+  deleteDoc,
   updateDoc,
+  writeBatch,
   query,
   orderBy,
   limit,
@@ -56,4 +58,21 @@ export async function markAllNotificationsRead(): Promise<void> {
   await Promise.all(
     notifs.filter((n) => !n.read).map((n) => markNotificationRead(n.id))
   );
+}
+
+export async function deleteNotification(id: string): Promise<void> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) throw new Error("Not logged in");
+  await deleteDoc(doc(getFirebaseDb(), COLLECTIONS.USERS, uid, "notifications", id));
+}
+
+export async function clearAllNotifications(): Promise<void> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) throw new Error("Not logged in");
+  const db = getFirebaseDb();
+  const snap = await getDocs(query(notifsRef(uid), orderBy("createdAt", "desc"), limit(50)));
+  if (snap.empty) return;
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => batch.delete(d.ref));
+  await batch.commit();
 }
