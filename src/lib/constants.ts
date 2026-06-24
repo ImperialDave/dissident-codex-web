@@ -11,6 +11,9 @@ export const MAX_CHAT_MESSAGE = 1000;
 export const VOICE_MAX_DM = 2;
 export const VOICE_MAX_TOPIC = 25;
 export const VOICE_MAX_GROUP = 25;
+export const FEED_DM_STRIP_LIMIT = 12;
+export const MAX_FAVORITE_CATEGORIES = 6;
+export const FEED_FAVORITE_POSTS_LIMIT = 30;
 
 export const COLLECTIONS = {
   USERS: "users",
@@ -33,8 +36,23 @@ export type ThemeId =
   | "forest"
   | "aurora";
 
+export type ThemeFamilyId = "neon";
+
+export const THEME_FAMILIES: {
+  id: ThemeFamilyId;
+  label: string;
+  hint: string;
+}[] = [
+  {
+    id: "neon",
+    label: "Color schemes",
+    hint: "Pick a neon palette for Codex.",
+  },
+];
+
 export type Theme = {
   id: ThemeId;
+  family: ThemeFamilyId;
   label: string;
   /** Solid tone for translucent overlays */
   primary: string;
@@ -61,6 +79,7 @@ export type Theme = {
 export const THEMES: Theme[] = [
   {
     id: "midnight",
+    family: "neon",
     label: "Grid",
     primary: "#0a0614",
     surface: "#140c28",
@@ -77,6 +96,7 @@ export const THEMES: Theme[] = [
   },
   {
     id: "ocean",
+    family: "neon",
     label: "Wave",
     primary: "#06101f",
     surface: "#0c1c34",
@@ -93,6 +113,7 @@ export const THEMES: Theme[] = [
   },
   {
     id: "ember",
+    family: "neon",
     label: "Heat",
     primary: "#140608",
     surface: "#2a1018",
@@ -109,6 +130,7 @@ export const THEMES: Theme[] = [
   },
   {
     id: "forest",
+    family: "neon",
     label: "Matrix",
     primary: "#040c06",
     surface: "#0c1e14",
@@ -125,6 +147,7 @@ export const THEMES: Theme[] = [
   },
   {
     id: "aurora",
+    family: "neon",
     label: "Pulse",
     primary: "#0c0618",
     surface: "#1a1030",
