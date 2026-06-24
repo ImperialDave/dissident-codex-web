@@ -3,17 +3,37 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { DmStripCard } from "@/components/DmStripCard";
 import { PostCard } from "@/components/PostCard";
+import { ALL_CATEGORY_LABEL, FEED_DM_STRIP_LIMIT } from "@/lib/constants";
+import { partitionFeedPosts } from "@/lib/feedRank";
 import { mapFirestoreError } from "@/lib/utils";
-import { getFeedCategoryNames, getFeedHiddenTopics } from "@/services/categoryService";
+import {
+  getFavoriteCategories,
+  getFeedCategoryNames,
+  getFeedHiddenTopics,
+} from "@/services/categoryService";
+import { getRecentDmRooms } from "@/services/chatService";
 import { getPosts, togglePostFeedVisibility } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
-import type { Post } from "@/models";
+import type { ChatRoom, Post } from "@/models";
+
+function matchesSearch(post: Post, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    post.title.toLowerCase().includes(q) ||
+    post.body.toLowerCase().includes(q) ||
+    post.authorName.toLowerCase().includes(q)
+  );
+}
 
 export default function FeedPage() {
   const searchParams = useSearchParams();
   const { isModerator } = useAuthStore();
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [favoritePosts, setFavoritePosts] = useState<Post[]>([]);
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [dmRooms, setDmRooms] = useState<ChatRoom[]>([]);
   const [categories, setCategories] = useState<string[]>(["All"]);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
@@ -22,48 +42,55 @@ export default function FeedPage() {
   const [togglingPostId, setTogglingPostId] = useState<string | null>(null);
   const [hiddenTopics, setHiddenTopics] = useState<Set<string>>(new Set());
   const modView = isModerator();
+  const showPriority = category === ALL_CATEGORY_LABEL;
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [cats, data, hiddenList] = await Promise.all([
+      const [cats, data, hiddenList, favorites, dms] = await Promise.all([
         getFeedCategoryNames({ includeFeedHidden: modView }),
-        getPosts(category === "All" ? null : category, 50, {
+        getPosts(category === ALL_CATEGORY_LABEL ? null : category, 50, {
           includeHidden: modView,
         }),
         modView ? getFeedHiddenTopics() : Promise.resolve([]),
+        showPriority ? getFavoriteCategories() : Promise.resolve([]),
+        showPriority ? getRecentDmRooms(FEED_DM_STRIP_LIMIT) : Promise.resolve([]),
       ]);
       setCategories(cats);
       setHiddenTopics(new Set(hiddenList.map((t) => t.name.toLowerCase())));
-      let filtered = data;
-      const q = search.trim().toLowerCase();
-      if (q) {
-        filtered = data.filter(
-          (p) =>
-            p.title.toLowerCase().includes(q) ||
-            p.body.toLowerCase().includes(q) ||
-            p.authorName.toLowerCase().includes(q)
-        );
+      setDmRooms(dms);
+
+      const filtered = data.filter((p) => matchesSearch(p, search));
+
+      if (showPriority) {
+        const favoriteNames = new Set(favorites.map((f) => f.name.toLowerCase()));
+        const { favoritePosts: fav, allPosts: rest } = partitionFeedPosts(filtered, favoriteNames);
+        setFavoritePosts(fav);
+        setAllPosts(rest);
+      } else {
+        setFavoritePosts([]);
+        setAllPosts(filtered);
       }
-      setPosts(filtered);
     } catch (err) {
-      setPosts([]);
+      setFavoritePosts([]);
+      setAllPosts([]);
+      setDmRooms([]);
       const message = err instanceof Error ? err.message : "Failed to load feed";
       setError(mapFirestoreError(message));
     } finally {
       setLoading(false);
     }
-  }, [category, search, modView]);
+  }, [category, search, modView, showPriority]);
 
   async function handleToggleFeedVisibility(postId: string) {
     setTogglingPostId(postId);
     setError("");
     try {
       const hidden = await togglePostFeedVisibility(postId);
-      setPosts((prev) =>
-        prev.map((p) => (p.id === postId ? { ...p, hiddenFromFeed: hidden } : p))
-      );
+      const update = (p: Post) => (p.id === postId ? { ...p, hiddenFromFeed: hidden } : p);
+      setFavoritePosts((prev) => prev.map(update));
+      setAllPosts((prev) => prev.map(update));
     } catch (err) {
       setError(err instanceof Error ? mapFirestoreError(err.message) : "Failed to update post");
     } finally {
@@ -79,6 +106,21 @@ export default function FeedPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const hasPosts = favoritePosts.length > 0 || allPosts.length > 0;
+
+  function renderPostList(posts: Post[], priorityLabel?: string) {
+    return posts.map((post) => (
+      <PostCard
+        key={post.id}
+        post={post}
+        canModerate={modView}
+        togglingVisibility={togglingPostId === post.id}
+        onToggleFeedVisibility={modView ? handleToggleFeedVisibility : undefined}
+        priorityLabel={priorityLabel}
+      />
+    ));
+  }
 
   return (
     <div className="space-y-4">
@@ -103,7 +145,7 @@ export default function FeedPage() {
       <div className="flex flex-wrap gap-2">
         {categories.map((cat) => {
           const topicHidden =
-            modView && cat !== "All" && hiddenTopics.has(cat.toLowerCase());
+            modView && cat !== ALL_CATEGORY_LABEL && hiddenTopics.has(cat.toLowerCase());
           return (
             <button
               key={cat}
@@ -140,28 +182,50 @@ export default function FeedPage() {
 
       {loading ? (
         <p className="text-slate-400">Loading posts...</p>
-      ) : posts.length === 0 ? (
-        <div className="codex-surface rounded-xl p-6 text-center">
-          <p className="text-slate-400">No posts yet. Be the first to create one!</p>
-          <Link
-            href="/create"
-            className="codex-btn-accent mt-4 inline-block rounded-lg px-5 py-2"
-          >
-            Create the first post
-          </Link>
-        </div>
       ) : (
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              canModerate={modView}
-              togglingVisibility={togglingPostId === post.id}
-              onToggleFeedVisibility={modView ? handleToggleFeedVisibility : undefined}
-            />
-          ))}
-        </div>
+        <>
+          {showPriority && dmRooms.length > 0 && (
+            <section className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Messages</h2>
+                <Link href="/chats" className="text-sm text-[var(--color-accent)]">
+                  See all →
+                </Link>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {dmRooms.map((room) => (
+                  <DmStripCard key={room.id} room={room} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {showPriority && favoritePosts.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold">From your communities</h2>
+              {renderPostList(favoritePosts, "Community")}
+            </section>
+          )}
+
+          {!hasPosts ? (
+            <div className="codex-surface rounded-xl p-6 text-center">
+              <p className="text-slate-400">No posts yet. Be the first to create one!</p>
+              <Link
+                href="/create"
+                className="codex-btn-accent mt-4 inline-block rounded-lg px-5 py-2"
+              >
+                Create the first post
+              </Link>
+            </div>
+          ) : (
+            <section className="space-y-3">
+              {showPriority && (dmRooms.length > 0 || favoritePosts.length > 0) && (
+                <h2 className="text-lg font-semibold">All posts</h2>
+              )}
+              {renderPostList(allPosts)}
+            </section>
+          )}
+        </>
       )}
     </div>
   );
