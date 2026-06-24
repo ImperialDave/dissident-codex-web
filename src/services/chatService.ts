@@ -26,6 +26,7 @@ import {
   normalizeCategoryName,
   resolveMediaType,
   resolveRole,
+  stripUndefinedFields,
   topicRoomId,
 } from "@/lib/utils";
 import {
@@ -204,7 +205,7 @@ export async function sendChatMessage(
   const preview = chatMessagePreview(t, resolvedMediaType);
 
   const batch = writeBatch(db);
-  batch.set(msgRef, message);
+  batch.set(msgRef, stripUndefinedFields(message as unknown as Record<string, unknown>));
   batch.update(roomRef, {
     lastMessageAt: now,
     lastMessagePreview: preview,
