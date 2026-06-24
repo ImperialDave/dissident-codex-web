@@ -113,6 +113,12 @@ export interface PostCategory {
   createdAt?: Timestamp | null;
 }
 
+export interface FavoriteCategory {
+  categoryId: string;
+  name: string;
+  pinnedAt?: Timestamp | null;
+}
+
 export interface ChatRoom {
   id: string;
   type: string;
