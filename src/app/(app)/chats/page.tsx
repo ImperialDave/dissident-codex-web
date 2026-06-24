@@ -29,11 +29,16 @@ export default function ChatsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="codex-page-header">
-        <h1 className="codex-page-title">Chats</h1>
-        <Link href="/chats/new" className="codex-btn-accent rounded-lg px-4 py-2 text-sm">
-          New message
-        </Link>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Chats</h1>
+        <div className="flex gap-2">
+          <Link href="/chats/group/new" className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5">
+            New group
+          </Link>
+          <Link href="/chats/new" className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black">
+            New message
+          </Link>
+        </div>
       </div>
       {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
       {sorted.length === 0 ? (
@@ -44,7 +49,7 @@ export default function ChatsPage() {
             <Link
               key={room.id}
               href={`/chat/${room.id}`}
-              className="codex-surface codex-surface-hover flex items-center gap-3 rounded-xl p-4"
+              className="flex items-center gap-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 hover:border-[var(--color-accent)]/40"
             >
               <FavoriteStar
                 favorited={favorites.has(room.id)}
@@ -70,6 +75,10 @@ export default function ChatsPage() {
               <div className="min-w-0 flex-1">
                 <p className="font-medium">
                   {room.title}
+                  {room.type === "group" && <span className="ml-2 text-xs text-slate-500">group</span>}
+                  {room.activeVoiceSessionId && (
+                    <span className="ml-2 text-xs text-emerald-300">voice active</span>
+                  )}
                   {room.locked && <span className="ml-2 text-xs text-orange-300">locked</span>}
                 </p>
                 <p className="line-clamp-1 text-sm text-slate-400">{room.lastMessagePreview || "No messages yet"}</p>
