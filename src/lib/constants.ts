@@ -8,9 +8,9 @@ export const MAX_NAME = 50;
 export const MAX_BIO = 300;
 export const MAX_FLAIR = 40;
 export const MAX_CHAT_MESSAGE = 1000;
-export const MAX_FAVORITE_CATEGORIES = 6;
-export const FEED_DM_STRIP_LIMIT = 5;
-export const FEED_FAVORITE_POSTS_LIMIT = 8;
+export const VOICE_MAX_DM = 2;
+export const VOICE_MAX_TOPIC = 25;
+export const VOICE_MAX_GROUP = 25;
 
 export const COLLECTIONS = {
   USERS: "users",
@@ -23,48 +23,45 @@ export const COLLECTIONS = {
   HIDDEN_TOPICS: "hiddenTopics",
   FEED_HIDDEN_TOPICS: "feedHiddenTopics",
   CHESS_GAMES: "chessGames",
+  VOICE_SESSIONS: "voiceSessions",
 } as const;
-
-export type ThemeFamily = "original" | "calm";
 
 export type ThemeId =
   | "midnight"
   | "ocean"
   | "ember"
   | "forest"
-  | "aurora"
-  | "sage"
-  | "dusk"
-  | "sand"
-  | "mist"
-  | "linen";
+  | "aurora";
 
 export type Theme = {
   id: ThemeId;
   label: string;
-  family: ThemeFamily;
+  /** Solid tone for translucent overlays */
   primary: string;
+  /** Card / panel base */
   surface: string;
+  /** Primary neon */
   accent: string;
+  /** Secondary neon for gradients */
   accentAlt: string;
+  /** Full-page background */
   bgGradient: string;
+  /** Card background */
   surfaceGradient: string;
+  /** Accent button gradient */
   accentGradient: string;
+  /** Neon border */
   border: string;
+  /** Logo / heading glow */
   textGlow: string;
+  /** Theme picker swatch */
   swatch: string;
 };
-
-export const THEME_FAMILIES: { id: ThemeFamily; label: string; hint: string }[] = [
-  { id: "original", label: "Original", hint: "Cyber palettes with neon accents" },
-  { id: "calm", label: "Calm", hint: "Soft, simple tones for relaxed reading" },
-];
 
 export const THEMES: Theme[] = [
   {
     id: "midnight",
     label: "Grid",
-    family: "original",
     primary: "#0a0614",
     surface: "#140c28",
     accent: "#00f5ff",
@@ -81,7 +78,6 @@ export const THEMES: Theme[] = [
   {
     id: "ocean",
     label: "Wave",
-    family: "original",
     primary: "#06101f",
     surface: "#0c1c34",
     accent: "#38bdf8",
@@ -98,7 +94,6 @@ export const THEMES: Theme[] = [
   {
     id: "ember",
     label: "Heat",
-    family: "original",
     primary: "#140608",
     surface: "#2a1018",
     accent: "#ff6b35",
@@ -115,7 +110,6 @@ export const THEMES: Theme[] = [
   {
     id: "forest",
     label: "Matrix",
-    family: "original",
     primary: "#040c06",
     surface: "#0c1e14",
     accent: "#39ff14",
@@ -132,7 +126,6 @@ export const THEMES: Theme[] = [
   {
     id: "aurora",
     label: "Pulse",
-    family: "original",
     primary: "#0c0618",
     surface: "#1a1030",
     accent: "#c084fc",
@@ -145,80 +138,5 @@ export const THEMES: Theme[] = [
     border: "rgba(192, 132, 252, 0.24)",
     textGlow: "0 0 18px rgba(192, 132, 252, 0.5), 0 0 32px rgba(244, 114, 182, 0.3)",
     swatch: "linear-gradient(135deg, #c084fc, #f472b6)",
-  },
-  {
-    id: "sage",
-    label: "Sage",
-    family: "calm",
-    primary: "#1a211c",
-    surface: "#242b26",
-    accent: "#8fa892",
-    accentAlt: "#a8b5a0",
-    bgGradient: "linear-gradient(180deg, #1a211c 0%, #1e2520 50%, #1a211c 100%)",
-    surfaceGradient: "linear-gradient(180deg, #242b26, #1f2621)",
-    accentGradient: "linear-gradient(90deg, #8fa892, #a8b5a0)",
-    border: "rgba(143, 168, 146, 0.22)",
-    textGlow: "none",
-    swatch: "linear-gradient(135deg, #6b7f6e, #a8b5a0)",
-  },
-  {
-    id: "dusk",
-    label: "Dusk",
-    family: "calm",
-    primary: "#1e1b24",
-    surface: "#2a2630",
-    accent: "#9b8fb8",
-    accentAlt: "#b8a9c9",
-    bgGradient: "linear-gradient(180deg, #1e1b24 0%, #221f2a 50%, #1e1b24 100%)",
-    surfaceGradient: "linear-gradient(180deg, #2a2630, #24212b)",
-    accentGradient: "linear-gradient(90deg, #9b8fb8, #b8a9c9)",
-    border: "rgba(155, 143, 184, 0.22)",
-    textGlow: "none",
-    swatch: "linear-gradient(135deg, #7a6f94, #b8a9c9)",
-  },
-  {
-    id: "sand",
-    label: "Sand",
-    family: "calm",
-    primary: "#1f1c18",
-    surface: "#2a2620",
-    accent: "#c4a882",
-    accentAlt: "#d4bc9a",
-    bgGradient: "linear-gradient(180deg, #1f1c18 0%, #231f1a 50%, #1f1c18 100%)",
-    surfaceGradient: "linear-gradient(180deg, #2a2620, #242018)",
-    accentGradient: "linear-gradient(90deg, #c4a882, #d4bc9a)",
-    border: "rgba(196, 168, 130, 0.22)",
-    textGlow: "none",
-    swatch: "linear-gradient(135deg, #a68b62, #d4bc9a)",
-  },
-  {
-    id: "mist",
-    label: "Mist",
-    family: "calm",
-    primary: "#181c20",
-    surface: "#22282e",
-    accent: "#8ba3b5",
-    accentAlt: "#a3b8c7",
-    bgGradient: "linear-gradient(180deg, #181c20 0%, #1b2024 50%, #181c20 100%)",
-    surfaceGradient: "linear-gradient(180deg, #22282e, #1d2228)",
-    accentGradient: "linear-gradient(90deg, #8ba3b5, #a3b8c7)",
-    border: "rgba(139, 163, 181, 0.22)",
-    textGlow: "none",
-    swatch: "linear-gradient(135deg, #6b8496, #a3b8c7)",
-  },
-  {
-    id: "linen",
-    label: "Linen",
-    family: "calm",
-    primary: "#1c1a18",
-    surface: "#262422",
-    accent: "#b5a99a",
-    accentAlt: "#c9bfb2",
-    bgGradient: "linear-gradient(180deg, #1c1a18 0%, #201e1c 50%, #1c1a18 100%)",
-    surfaceGradient: "linear-gradient(180deg, #262422, #211f1d)",
-    accentGradient: "linear-gradient(90deg, #b5a99a, #c9bfb2)",
-    border: "rgba(181, 169, 154, 0.22)",
-    textGlow: "none",
-    swatch: "linear-gradient(135deg, #958a7c, #c9bfb2)",
   },
 ];
