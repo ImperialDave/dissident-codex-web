@@ -8,6 +8,9 @@ export const MAX_NAME = 50;
 export const MAX_BIO = 300;
 export const MAX_FLAIR = 40;
 export const MAX_CHAT_MESSAGE = 1000;
+export const MAX_FAVORITE_CATEGORIES = 6;
+export const FEED_DM_STRIP_LIMIT = 5;
+export const FEED_FAVORITE_POSTS_LIMIT = 8;
 
 export const COLLECTIONS = {
   USERS: "users",
@@ -55,7 +58,7 @@ export type Theme = {
 export const THEME_FAMILIES: { id: ThemeFamily; label: string; hint: string }[] = [
   { id: "original", label: "Original", hint: "Cyber palettes with neon accents" },
   { id: "calm", label: "Calm", hint: "Soft, simple tones for relaxed reading" },
-];
+};
 
 export const THEMES: Theme[] = [
   {
