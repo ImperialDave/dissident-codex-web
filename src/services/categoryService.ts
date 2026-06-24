@@ -232,8 +232,16 @@ export async function banTopic(name: string): Promise<void> {
   if (!canModerate(resolveRole(user, auth.currentUser?.email))) {
     throw new Error("No permission");
   }
-  const ref = doc(collection(getFirebaseDb(), COLLECTIONS.HIDDEN_TOPICS));
-  await setDoc(ref, { name: name.trim(), bannedAt: Timestamp.now() });
+  const trimmed = name.trim();
+  const key = normalizeCategoryName(trimmed);
+  if (!key) throw new Error("Invalid topic name");
+  const ref = doc(getFirebaseDb(), COLLECTIONS.HIDDEN_TOPICS, key);
+  await setDoc(ref, {
+    name: trimmed,
+    bannedAt: Timestamp.now(),
+    hiddenAt: Timestamp.now(),
+    ...(auth.currentUser?.uid ? { hiddenBy: auth.currentUser.uid } : {}),
+  });
 }
 
 export async function unbanTopic(id: string): Promise<void> {
