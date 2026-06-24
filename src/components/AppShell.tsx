@@ -2,30 +2,21 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { AppearanceMenu } from "@/components/AppearanceMenu";
-import { ModerationMenu } from "@/components/ModerationMenu";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
+import { VoiceIncomingListener } from "@/components/VoiceIncomingListener";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useAuthStore } from "@/stores/authStore";
 import { listenNotifications } from "@/services/notificationService";
 
-/** Primary mobile tabs — fixed bottom bar only */
-const MOBILE_PRIMARY_NAV = [
+const MOBILE_NAV = [
   { href: "/feed", label: "Feed", icon: "📰" },
   { href: "/chats", label: "Chats", icon: "💬" },
   { href: "/chess", label: "Chess", icon: "♟️" },
   { href: "/create", label: "Create", icon: "✏️" },
   { href: "/profile", label: "Profile", icon: "👤" },
-] as const;
-
-/** Secondary mobile links — top strip only (no overlap with bottom bar) */
-const MOBILE_SECONDARY_NAV = [
-  { href: "/friends", label: "Friends" },
-  { href: "/search", label: "Search" },
-  { href: "/topics", label: "Topics" },
-  { href: "/leaderboard", label: "Ranks" },
-  { href: "/notifications", label: "Alerts", showBadge: true },
-] as const;
+];
 
 const DESKTOP_NAV = [
   { href: "/feed", label: "Feed" },
@@ -38,34 +29,26 @@ const DESKTOP_NAV = [
   { href: "/create", label: "Create" },
   { href: "/notifications", label: "Alerts" },
   { href: "/profile", label: "Profile" },
-] as const;
-
-function navActive(pathname: string, href: string): boolean {
-  if (href === "/feed") return pathname === "/feed" || pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
+];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, logout, isModerator, isFounder } = useAuthStore();
   const [unread, setUnread] = useState(0);
-
-  const showMod = isModerator();
-  const showFounder = isFounder();
-
-  const mobileSecondaryNav = useMemo(() => {
-    const staff: { href: string; label: string; tone?: "mod" | "founder" }[] = [];
-    if (showMod) staff.push({ href: "/mod", label: "Mod", tone: "mod" });
-    if (showFounder) staff.push({ href: "/founder", label: "Founder", tone: "founder" });
-    return [...MOBILE_SECONDARY_NAV, ...staff];
-  }, [showMod, showFounder]);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) return;
     const unsub = listenNotifications(
-      (notifs) => setUnread(notifs.filter((n) => !n.read).length),
-      () => setUnread(0)
+      (notifs) => {
+        setUnread(notifs.filter((n) => !n.read).length);
+      },
+      () => {
+        setUnread(0);
+      }
     );
     return () => unsub?.();
   }, [user]);
@@ -74,9 +57,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
 
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [accountMenuOpen]);
+
   if (loading) {
     return (
-      <div className="codex-bg flex min-h-screen items-center justify-center codex-text-muted">
+      <div className="codex-bg flex min-h-screen items-center justify-center text-slate-300">
         <span className="codex-logo text-lg">Loading Codex...</span>
       </div>
     );
@@ -85,132 +79,137 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="codex-bg min-h-screen">
+    <div className="codex-bg min-h-screen text-slate-100">
       <header className="codex-header sticky top-0 z-20">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <Link href="/feed" className="codex-logo shrink-0 text-xl font-bold">
             Codex
           </Link>
-
-          {/* Desktop navigation */}
-          <nav className="hidden flex-1 flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm lg:flex">
+          <nav className="hidden flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm lg:flex">
             {DESKTOP_NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={clsx(
-                  "text-[var(--color-on-surface)] hover:text-[var(--color-accent)]",
-                  navActive(pathname, item.href) && "text-[var(--color-accent)]"
+                  "hover:text-[var(--color-accent)]",
+                  pathname.startsWith(item.href) && "text-[var(--color-accent)]"
                 )}
               >
                 {item.label}
                 {item.href === "/notifications" && unread > 0 ? ` (${unread})` : ""}
               </Link>
             ))}
-            <ModerationMenu variant="header" />
+            {isModerator() && (
+              <Link href="/mod" className="text-blue-300 hover:text-blue-200">
+                Mod Tools
+              </Link>
+            )}
+            {isFounder() && (
+              <Link href="/founder" className="text-amber-300 hover:text-amber-200">
+                Founder
+              </Link>
+            )}
           </nav>
-
-          <div className="ml-auto flex items-center gap-2">
-            <AppearanceMenu />
-            <Link
-              href="/notifications"
-              className={clsx(
-                "relative rounded-lg p-2 text-lg lg:hidden",
-                navActive(pathname, "/notifications")
-                  ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)]"
-                  : "codex-text-muted hover:bg-white/5 hover:text-[var(--color-on-surface)]"
-              )}
-              aria-label="Notifications"
-            >
-              🔔
-              {unread > 0 && (
-                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[10px] font-bold text-black">
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              )}
-            </Link>
+          <div className="relative shrink-0" ref={accountMenuRef}>
             <button
-              onClick={() => logout().then(() => router.replace("/login"))}
-              className="codex-btn-ghost shrink-0 rounded-lg px-3 py-1.5 text-sm"
+              type="button"
+              onClick={() => setAccountMenuOpen((open) => !open)}
+              className="codex-surface flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-white/5"
+              aria-expanded={accountMenuOpen}
+              aria-haspopup="menu"
             >
-              Log out
+              <UserAvatar name={user.displayName} photoUrl={user.photoUrl} size="sm" />
+              <span className="hidden max-w-[8rem] truncate sm:inline">{user.displayName}</span>
+              <span className="text-slate-400">▾</span>
             </button>
+            {accountMenuOpen && (
+              <div
+                role="menu"
+                className="codex-surface absolute right-0 z-30 mt-2 w-52 overflow-hidden rounded-xl py-1 shadow-xl"
+              >
+                <div className="border-b border-white/10 px-3 py-2">
+                  <p className="truncate text-sm font-medium text-white">{user.displayName}</p>
+                  <p className="truncate text-xs text-slate-400">{user.email}</p>
+                </div>
+                <Link
+                  href="/profile"
+                  role="menuitem"
+                  onClick={() => setAccountMenuOpen(false)}
+                  className="block px-3 py-2 text-sm text-slate-200 hover:bg-white/5"
+                >
+                  My profile
+                </Link>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setAccountMenuOpen(false);
+                    setPasswordDialogOpen(true);
+                  }}
+                  className="block w-full px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/5"
+                >
+                  Change password
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setAccountMenuOpen(false);
+                    logout().then(() => router.replace("/login"));
+                  }}
+                  className="block w-full border-t border-white/10 px-3 py-2 text-left text-sm text-red-300 hover:bg-red-500/10"
+                >
+                  Log out
+                </button>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Mobile secondary nav — items not in the bottom tab bar */}
-        <nav className="border-t border-[var(--color-border)] bg-black/20 lg:hidden">
-          <div className="mx-auto flex max-w-6xl gap-1.5 overflow-x-auto px-4 py-2">
-            {mobileSecondaryNav.map((item) => {
-              const active = navActive(pathname, item.href);
-              const tone = "tone" in item ? item.tone : undefined;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={clsx(
-                    "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition",
-                    active
-                      ? tone === "mod"
-                        ? "codex-btn-mod-active rounded-full"
-                        : tone === "founder"
-                          ? "codex-btn-founder-active rounded-full"
-                          : "bg-[var(--color-accent)]/20 text-[var(--color-accent)]"
-                      : tone === "mod"
-                        ? "codex-btn-mod rounded-full"
-                        : tone === "founder"
-                          ? "codex-btn-founder rounded-full"
-                          : "codex-text-muted hover:bg-white/5 hover:text-[var(--color-on-surface)]"
-                  )}
-                >
-                  {item.label}
-                  {"showBadge" in item && item.showBadge && unread > 0 && (
-                    <span className="rounded-full bg-[var(--color-accent)] px-1.5 text-[10px] font-bold text-black">
-                      {unread > 9 ? "9+" : unread}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
+        <nav className="flex gap-2 overflow-x-auto border-t border-[var(--color-border)] px-4 py-2 text-sm lg:hidden">
+          {DESKTOP_NAV.slice(0, 6).map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={clsx(
+                "whitespace-nowrap rounded-full px-3 py-1",
+                pathname.startsWith(item.href)
+                  ? "codex-chip-active"
+                  : "text-slate-400 hover:text-slate-200"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
         </nav>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-[4.75rem] lg:pb-6">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 lg:pb-6">{children}</main>
 
-      {/* Mobile primary tab bar */}
       <nav className="codex-nav-bar fixed bottom-0 left-0 right-0 z-20 lg:hidden">
-        <div className="mx-auto grid max-w-6xl grid-cols-5 px-1 py-1.5">
-          {MOBILE_PRIMARY_NAV.map((item) => {
-            const active = navActive(pathname, item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={clsx(
-                  "flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium transition",
-                  active
-                    ? "text-[var(--color-accent)] drop-shadow-[0_0_8px_var(--color-accent)]"
-                    : "codex-text-muted hover:text-[var(--color-on-surface)]"
-                )}
-              >
-                <span
-                  className={clsx(
-                    "text-xl leading-none",
-                    active && "drop-shadow-[0_0_8px_var(--color-accent)]"
-                  )}
-                >
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-                {active && (
-                  <span className="h-0.5 w-4 rounded-full bg-[var(--color-accent)]" />
-                )}
-              </Link>
-            );
-          })}
+        <div className="mx-auto flex max-w-6xl justify-around py-2">
+          {MOBILE_NAV.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={clsx(
+                "relative flex flex-col items-center px-2 py-1 text-xs",
+                pathname.startsWith(item.href)
+                  ? "text-[var(--color-accent)] drop-shadow-[0_0_8px_var(--color-accent)]"
+                  : "text-slate-400"
+              )}
+            >
+              <span className="text-lg">{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
         </div>
       </nav>
+
+      <ChangePasswordDialog
+        open={passwordDialogOpen}
+        onClose={() => setPasswordDialogOpen(false)}
+      />
+      <VoiceIncomingListener />
     </div>
   );
 }
