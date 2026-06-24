@@ -26,11 +26,11 @@ import {
   normalizeCategoryName,
   resolveMediaType,
   resolveRole,
-  stripUndefinedFields,
   topicRoomId,
 } from "@/lib/utils";
 import {
   CHAT_TYPE_DM,
+  CHAT_TYPE_GROUP,
   CHAT_TYPE_TOPIC,
   canModerate,
   canPost,
@@ -53,6 +53,8 @@ function toRoom(id: string, data: Record<string, unknown>): ChatRoom {
     messageCount: Number(data.messageCount) || 0,
     locked: Boolean(data.locked),
     lockedBy: (data.lockedBy as string) || null,
+    voiceLocked: Boolean(data.voiceLocked),
+    activeVoiceSessionId: (data.activeVoiceSessionId as string) || null,
     createdAt: data.createdAt as ChatRoom["createdAt"],
     lastMessageAt: data.lastMessageAt as ChatRoom["lastMessageAt"],
     lockedAt: data.lockedAt as ChatRoom["lockedAt"],
@@ -79,14 +81,16 @@ export async function getChatRoomsForInbox(): Promise<ChatRoom[]> {
   if (!uid) return [];
   const db = getFirebaseDb();
 
-  const [topicSnap, dmSnap] = await Promise.all([
+  const [topicSnap, dmSnap, groupSnap] = await Promise.all([
     getDocs(query(collection(db, COLLECTIONS.CHAT_ROOMS), where("type", "==", CHAT_TYPE_TOPIC), limit(100))),
     getDocs(query(collection(db, COLLECTIONS.CHAT_ROOMS), where("type", "==", CHAT_TYPE_DM), where("memberIds", "array-contains", uid), limit(50))),
+    getDocs(query(collection(db, COLLECTIONS.CHAT_ROOMS), where("type", "==", CHAT_TYPE_GROUP), where("memberIds", "array-contains", uid), limit(50))),
   ]);
 
   const rooms = [
     ...topicSnap.docs.map((d) => toRoom(d.id, d.data())),
     ...dmSnap.docs.map((d) => toRoom(d.id, d.data())),
+    ...groupSnap.docs.map((d) => toRoom(d.id, d.data())),
   ];
   return rooms.sort((a, b) => (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0));
 }
@@ -101,9 +105,10 @@ export function listenChatRooms(
   const db = getFirebaseDb();
   let topicRooms: ChatRoom[] = [];
   let dmRooms: ChatRoom[] = [];
+  let groupRooms: ChatRoom[] = [];
 
   const emit = () => {
-    const merged = [...topicRooms, ...dmRooms].sort(
+    const merged = [...topicRooms, ...dmRooms, ...groupRooms].sort(
       (a, b) => (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0)
     );
     onUpdate(merged);
@@ -127,9 +132,19 @@ export function listenChatRooms(
     (err) => onError?.(err)
   );
 
+  const unsubGroup = onSnapshot(
+    query(collection(db, COLLECTIONS.CHAT_ROOMS), where("type", "==", CHAT_TYPE_GROUP), where("memberIds", "array-contains", uid), limit(50)),
+    (snap) => {
+      groupRooms = snap.docs.map((d) => toRoom(d.id, d.data()));
+      emit();
+    },
+    (err) => onError?.(err)
+  );
+
   return () => {
     unsubTopic();
     unsubDm();
+    unsubGroup();
   };
 }
 
@@ -205,7 +220,7 @@ export async function sendChatMessage(
   const preview = chatMessagePreview(t, resolvedMediaType);
 
   const batch = writeBatch(db);
-  batch.set(msgRef, stripUndefinedFields(message as unknown as Record<string, unknown>));
+  batch.set(msgRef, message);
   batch.update(roomRef, {
     lastMessageAt: now,
     lastMessagePreview: preview,
@@ -219,6 +234,39 @@ export async function sendChatMessage(
     throw new Error(mapFirestoreError(message));
   }
   return message;
+}
+
+export async function createGroupRoom(title: string, memberIds: string[]): Promise<ChatRoom> {
+  const me = getFirebaseAuth().currentUser?.uid;
+  if (!me) throw new Error("Not logged in");
+
+  const trimmed = title.trim();
+  if (trimmed.length < 2) throw new Error("Group name too short");
+  if (trimmed.length > 80) throw new Error("Group name too long");
+
+  const uniqueMembers = [...new Set([me, ...memberIds])];
+  if (uniqueMembers.length < 2) throw new Error("Add at least one friend");
+  if (uniqueMembers.length > 25) throw new Error("Groups support up to 25 members");
+
+  const roomId = `group_${crypto.randomUUID().replace(/-/g, "")}`;
+  const now = Timestamp.now();
+  const room: ChatRoom = {
+    id: roomId,
+    type: CHAT_TYPE_GROUP,
+    title: trimmed,
+    memberIds: uniqueMembers,
+    createdBy: me,
+    createdAt: now,
+    lastMessageAt: now,
+    lastMessagePreview: "",
+    lastMessageAuthorId: "",
+    messageCount: 0,
+    voiceLocked: false,
+  };
+
+  const { id: _id, ...roomData } = room;
+  await setDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, roomId), roomData);
+  return room;
 }
 
 export async function getOrCreateDmRoom(otherUserId: string): Promise<ChatRoom> {
@@ -396,11 +444,6 @@ export async function toggleFavoriteRoom(roomId: string): Promise<boolean> {
   }
   await setDoc(ref, { roomId, favoritedAt: Timestamp.now() });
   return true;
-}
-
-export async function getRecentDmRooms(limit = 5): Promise<ChatRoom[]> {
-  const rooms = await getChatRoomsForInbox();
-  return rooms.filter((r) => r.type === CHAT_TYPE_DM).slice(0, limit);
 }
 
 export async function getFavoriteRoomIds(): Promise<Set<string>> {
