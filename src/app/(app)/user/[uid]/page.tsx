@@ -7,46 +7,54 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { fetchUser } from "@/services/authService";
 import { getOrCreateDmRoom } from "@/services/chatService";
 import { getPostsByUser } from "@/services/postService";
-import {
-  getFriendshipStatus,
-  getIncomingRequestFrom,
-  respondToFriendRequest,
-  sendFriendRequest,
-} from "@/services/friendService";
-import { blockUser, isBlocked, unblockUser } from "@/services/blockService";
+import { getFriendshipStatus, sendFriendRequest } from "@/services/friendService";
 import { startChessGame } from "@/services/chessService";
-import { useAuthStore } from "@/stores/authStore";
 import type { Post, User } from "@/models";
 
 export default function UserProfilePage() {
   const { uid } = useParams<{ uid: string }>();
   const router = useRouter();
-  const { user: me } = useAuthStore();
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [friendStatus, setFriendStatus] = useState<string>("none");
-  const [blocked, setBlocked] = useState(false);
-  const [busy, setBusy] = useState<"message" | "chess" | "friend" | "block" | null>(null);
+  const [busy, setBusy] = useState<"message" | "chess" | null>(null);
   const [error, setError] = useState("");
-
-  const isSelf = me?.uid === uid;
-
-  useEffect(() => {
-    if (me?.uid && me.uid === uid) {
-      router.replace("/profile");
-    }
-  }, [me?.uid, uid, router]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    fetchUser(uid).then(setUser);
-    getPostsByUser(uid).then(setPosts);
-    if (!isSelf) {
-      getFriendshipStatus(uid).then(setFriendStatus);
-      isBlocked(uid).then(setBlocked);
-    }
-  }, [uid, isSelf]);
+    let cancelled = false;
+    setLoading(true);
+    setLoadError("");
+    Promise.all([fetchUser(uid), getPostsByUser(uid), getFriendshipStatus(uid)])
+      .then(([profile, userPosts, status]) => {
+        if (cancelled) return;
+        setUser(profile);
+        setPosts(userPosts);
+        setFriendStatus(status);
+        if (!profile) setLoadError("User not found.");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setUser(null);
+        setLoadError(err instanceof Error ? err.message : "Failed to load profile");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [uid]);
 
-  if (!user) return <p className="text-slate-400">Loading profile...</p>;
+  if (loading) return <p className="text-slate-400">Loading profile...</p>;
+  if (loadError || !user) {
+    return (
+      <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
+        {loadError || "User not found."}
+      </div>
+    );
+  }
 
   async function openChat() {
     setError("");
@@ -74,56 +82,6 @@ export default function UserProfilePage() {
     }
   }
 
-  async function addFriend() {
-    setError("");
-    setBusy("friend");
-    try {
-      await sendFriendRequest(uid);
-      setFriendStatus("pending_out");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send friend request");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function toggleBlock() {
-    setError("");
-    setBusy("block");
-    try {
-      if (blocked) {
-        await unblockUser(uid);
-        setBlocked(false);
-      } else {
-        if (!confirm(`Block ${user?.displayName || "this user"}? They won't be able to message you or appear in your feed.`)) {
-          return;
-        }
-        await blockUser(uid);
-        setBlocked(true);
-        setFriendStatus("none");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update block status");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function acceptFriend() {
-    setError("");
-    setBusy("friend");
-    try {
-      const req = await getIncomingRequestFrom(uid);
-      if (!req) throw new Error("Friend request not found");
-      await respondToFriendRequest(req.id, true);
-      setFriendStatus("friends");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not accept request");
-    } finally {
-      setBusy(null);
-    }
-  }
-
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
@@ -138,99 +96,50 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
-
-      {blocked && (
-        <p className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-sm text-orange-200">
-          You have blocked this user. Their posts and comments are hidden from you.
-        </p>
-      )}
+      {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
       <div className="flex flex-wrap gap-2">
-        {!blocked && friendStatus === "none" && (
+        {friendStatus === "none" && (
           <button
-            onClick={addFriend}
-            disabled={busy !== null}
-            className="codex-btn-accent rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+            onClick={async () => {
+              await sendFriendRequest(uid);
+              setFriendStatus("pending_out");
+            }}
+            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black"
           >
-            {busy === "friend" ? "Sending..." : "Add friend"}
+            Add friend
           </button>
         )}
-        {!blocked && friendStatus === "pending_out" && (
-          <span className="rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-400">
-            Request sent
-          </span>
-        )}
-        {!blocked && friendStatus === "pending_in" && (
-          <button
-            onClick={acceptFriend}
-            disabled={busy !== null}
-            className="codex-btn-accent rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-          >
-            {busy === "friend" ? "Accepting..." : "Accept friend request"}
-          </button>
-        )}
-        {!blocked && friendStatus === "friends" && (
-          <>
-            <span className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm text-green-400">
-              Friends
-            </span>
-            <button
-              onClick={openChat}
-              disabled={busy !== null}
-              className="codex-btn-accent rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-            >
-              {busy === "message" ? "Opening..." : "Message"}
-            </button>
-          </>
-        )}
-        {!blocked && friendStatus !== "friends" && (
-          <button
-            onClick={openChat}
-            disabled={busy !== null}
-            className="codex-btn-secondary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-          >
-            {busy === "message" ? "Opening..." : "Message"}
-          </button>
-        )}
-        {!blocked && (
-          <button
-            onClick={playChess}
-            disabled={busy !== null}
-            className="codex-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-          >
-            {busy === "chess" ? "Starting..." : "Play chess"}
-          </button>
-        )}
+        {friendStatus === "pending_out" && <span className="text-sm text-slate-400">Request sent</span>}
+        {friendStatus === "friends" && <span className="text-sm text-green-400">Friends</span>}
         <button
-          onClick={toggleBlock}
+          onClick={openChat}
           disabled={busy !== null}
-          className="codex-btn-danger rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
         >
-          {busy === "block" ? "Updating..." : blocked ? "Unblock" : "Block"}
+          {busy === "message" ? "Opening..." : "Message"}
+        </button>
+        <button
+          onClick={playChess}
+          disabled={busy !== null}
+          className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+        >
+          {busy === "chess" ? "Starting..." : "Play chess"}
         </button>
       </div>
 
-      <div className="codex-surface rounded-xl p-4 text-sm">
+      <div className="rounded-xl border border-white/10 p-4 text-sm">
         Chess ELO: {user.chessElo ?? 1200} · Games: {user.chessGamesPlayed ?? 0}
       </div>
 
       <div>
         <h2 className="mb-2 font-semibold">Posts ({posts.length})</h2>
         <div className="space-y-2">
-          {posts.length === 0 ? (
-            <p className="text-slate-400">No posts yet.</p>
-          ) : (
-            posts.map((p) => (
-              <a key={p.id} href={`/post/${p.id}`} className="codex-surface codex-surface-hover block rounded-lg p-3">
-                {p.title}
-              </a>
-            ))
-          )}
+          {posts.map((p) => (
+            <a key={p.id} href={`/post/${p.id}`} className="block rounded-lg border border-white/10 p-3">
+              {p.title}
+            </a>
+          ))}
         </div>
       </div>
     </div>
