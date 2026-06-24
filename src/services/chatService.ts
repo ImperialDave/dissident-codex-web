@@ -398,6 +398,11 @@ export async function toggleFavoriteRoom(roomId: string): Promise<boolean> {
   return true;
 }
 
+export async function getRecentDmRooms(limit = 5): Promise<ChatRoom[]> {
+  const rooms = await getChatRoomsForInbox();
+  return rooms.filter((r) => r.type === CHAT_TYPE_DM).slice(0, limit);
+}
+
 export async function getFavoriteRoomIds(): Promise<Set<string>> {
   const uid = getFirebaseAuth().currentUser?.uid;
   if (!uid) return new Set();
