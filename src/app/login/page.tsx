@@ -1,38 +1,52 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getFirebaseAuth } from "@/lib/firebase";
 import { loginUser, registerUser } from "@/services/authService";
 import { AppearanceMenu } from "@/components/AppearanceMenu";
 import { useAuthStore } from "@/stores/authStore";
 
 export default function LoginPage() {
   const router = useRouter();
-  const refreshUser = useAuthStore((s) => s.refreshUser);
+  const { user, loading, setSession } = useAuthStore();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user) router.replace("/feed");
+  }, [loading, user, router]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
-    setLoading(true);
+    setSubmitting(true);
     try {
-      if (mode === "register") {
-        await registerUser(email, password, displayName);
-      } else {
-        await loginUser(email, password);
-      }
-      await refreshUser();
+      const profile =
+        mode === "register"
+          ? await registerUser(email, password, displayName)
+          : await loginUser(email, password);
+      const fbUser = getFirebaseAuth().currentUser;
+      if (!fbUser) throw new Error("Sign-in did not complete. Please try again.");
+      setSession(fbUser, profile);
       router.replace("/feed");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="codex-bg flex min-h-screen items-center justify-center text-slate-300">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -92,10 +106,10 @@ export default function LoginPage() {
           {error && <p className="text-sm text-red-400">{error}</p>}
           <button
             type="submit"
-            disabled={loading}
+            disabled={submitting}
             className="codex-btn-accent w-full rounded-lg py-3 disabled:opacity-50"
           >
-            {loading ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
+            {submitting ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
           </button>
         </form>
       </div>
