@@ -4,10 +4,11 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { ChatMedia } from "@/components/ChatMedia";
 import { GifPicker } from "@/components/GifPicker";
-import { FavoriteStar } from "@/components/FavoriteStar";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { timeAgo } from "@/lib/utils";
+import { FavoriteStar } from "@/components/FavoriteStar";
+import { VoiceChatControls } from "@/components/VoiceChatControls";
 import {
   getChatRoom,
   getFavoriteRoomIds,
@@ -141,7 +142,7 @@ export default function ChatRoomPage() {
   const canSend = Boolean(text.trim() || pendingMedia);
 
   return (
-    <div className="codex-surface flex h-[calc(100vh-8rem)] flex-col rounded-xl">
+    <div className="flex h-[calc(100vh-8rem)] flex-col rounded-xl border border-white/10 bg-[var(--color-surface)]">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div>
           <h1 className="font-semibold">{room?.title || "Chat"}</h1>
@@ -162,6 +163,13 @@ export default function ChatRoomPage() {
           }}
         />
       </div>
+
+      <VoiceChatControls
+        room={room}
+        roomId={roomId}
+        displayName={user?.displayName || "User"}
+        myUid={user?.uid}
+      />
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.map((msg) => {
@@ -257,7 +265,7 @@ export default function ChatRoomPage() {
             type="button"
             onClick={() => imageInputRef.current?.click()}
             disabled={sending || Boolean(room?.locked)}
-            className="codex-btn-ghost rounded-lg px-3 py-2 text-sm disabled:opacity-50"
+            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
           >
             Image
           </button>
@@ -265,7 +273,7 @@ export default function ChatRoomPage() {
             type="button"
             onClick={() => setGifOpen(true)}
             disabled={sending || Boolean(room?.locked)}
-            className="codex-btn-ghost rounded-lg px-3 py-2 text-sm disabled:opacity-50"
+            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
           >
             GIF
           </button>
@@ -273,7 +281,7 @@ export default function ChatRoomPage() {
             type="button"
             onClick={() => videoInputRef.current?.click()}
             disabled={sending || Boolean(room?.locked)}
-            className="codex-btn-ghost rounded-lg px-3 py-2 text-sm disabled:opacity-50"
+            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
           >
             Video
           </button>
@@ -284,12 +292,12 @@ export default function ChatRoomPage() {
             onChange={(e) => setText(e.target.value)}
             placeholder="Type a message..."
             disabled={sending}
-            className="codex-input flex-1 rounded-lg px-4 py-2 disabled:opacity-50"
+            className="flex-1 rounded-lg border border-white/10 bg-black/20 px-4 py-2 outline-none focus:border-[var(--color-accent)] disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={sending || !canSend || Boolean(room?.locked)}
-            className="codex-btn-accent shrink-0 rounded-lg px-5 py-2 disabled:opacity-50"
+            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 font-semibold text-black disabled:opacity-50"
           >
             Send
           </button>
