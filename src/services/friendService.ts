@@ -4,7 +4,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
-  deleteDoc,
+  updateDoc,
   query,
   where,
   Timestamp,
@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS } from "@/lib/constants";
+import { mapFirestoreError, stripUndefinedFields } from "@/lib/utils";
 import type { Friend, FriendRequest } from "@/models";
 import { fetchUser } from "./authService";
 import { isBlockedEitherWay } from "./blockService";
@@ -63,12 +64,17 @@ export async function sendFriendRequest(toUid: string): Promise<void> {
     id: ref.id,
     fromUid: uid,
     fromName: me?.displayName || "User",
-    fromPhotoUrl: me?.photoUrl,
+    ...(me?.photoUrl ? { fromPhotoUrl: me.photoUrl } : {}),
     toUid,
     status: "pending",
     createdAt: Timestamp.now(),
   };
-  await setDoc(ref, request);
+  try {
+    await setDoc(ref, stripUndefinedFields(request as unknown as Record<string, unknown>));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to send friend request";
+    throw new Error(mapFirestoreError(message));
+  }
 }
 
 export async function respondToFriendRequest(requestId: string, accept: boolean): Promise<void> {
@@ -80,28 +86,46 @@ export async function respondToFriendRequest(requestId: string, accept: boolean)
   if (!reqSnap.exists()) throw new Error("Request not found");
   const req = { id: reqSnap.id, ...reqSnap.data() } as FriendRequest;
   if (req.toUid !== uid) throw new Error("Not your request");
+  if (req.status !== "pending") throw new Error("Request already handled");
 
   if (!accept) {
-    await deleteDoc(reqRef);
+    try {
+      await updateDoc(reqRef, { status: "declined" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to decline request";
+      throw new Error(mapFirestoreError(message));
+    }
     return;
   }
 
+  const me = await fetchUser(uid);
   const batch = writeBatch(getFirebaseDb());
   const now = Timestamp.now();
-  batch.set(doc(getFirebaseDb(), COLLECTIONS.USERS, uid, "friends", req.fromUid), {
-    uid: req.fromUid,
-    displayName: req.fromName,
-    photoUrl: req.fromPhotoUrl,
-    since: now,
-  });
-  batch.set(doc(getFirebaseDb(), COLLECTIONS.USERS, req.fromUid, "friends", uid), {
-    uid,
-    displayName: (await fetchUser(uid))?.displayName || "User",
-    photoUrl: (await fetchUser(uid))?.photoUrl,
-    since: now,
-  });
-  batch.delete(reqRef);
-  await batch.commit();
+  batch.set(
+    doc(getFirebaseDb(), COLLECTIONS.USERS, uid, "friends", req.fromUid),
+    stripUndefinedFields({
+      uid: req.fromUid,
+      displayName: req.fromName,
+      ...(req.fromPhotoUrl ? { photoUrl: req.fromPhotoUrl } : {}),
+      since: now,
+    })
+  );
+  batch.set(
+    doc(getFirebaseDb(), COLLECTIONS.USERS, req.fromUid, "friends", uid),
+    stripUndefinedFields({
+      uid,
+      displayName: me?.displayName || "User",
+      ...(me?.photoUrl ? { photoUrl: me.photoUrl } : {}),
+      since: now,
+    })
+  );
+  batch.update(reqRef, { status: "accepted" });
+  try {
+    await batch.commit();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to accept request";
+    throw new Error(mapFirestoreError(message));
+  }
 }
 
 export async function getIncomingRequestFrom(fromUid: string): Promise<FriendRequest | null> {
