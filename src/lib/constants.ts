@@ -36,7 +36,7 @@ export type ThemeId =
   | "forest"
   | "aurora";
 
-export type ThemeFamilyId = "neon";
+export type ThemeFamilyId = "neon" | "calm";
 
 export const THEME_FAMILIES: {
   id: ThemeFamilyId;
