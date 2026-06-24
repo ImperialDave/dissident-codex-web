@@ -113,12 +113,6 @@ export interface PostCategory {
   createdAt?: Timestamp | null;
 }
 
-export interface FavoriteCategory {
-  categoryId: string;
-  name: string;
-  pinnedAt?: Timestamp | null;
-}
-
 export interface ChatRoom {
   id: string;
   type: string;
@@ -135,10 +129,42 @@ export interface ChatRoom {
   locked?: boolean;
   lockedBy?: string | null;
   lockedAt?: Timestamp | null;
+  voiceLocked?: boolean;
+  activeVoiceSessionId?: string | null;
 }
 
 export const CHAT_TYPE_TOPIC = "topic";
 export const CHAT_TYPE_DM = "dm";
+export const CHAT_TYPE_GROUP = "group";
+
+export const VOICE_TYPE_DM = "dm";
+export const VOICE_TYPE_TOPIC = "topic";
+export const VOICE_TYPE_GROUP = "group";
+
+export type VoiceSessionStatus = "ringing" | "active" | "ended";
+
+export interface VoiceParticipant {
+  joinedAt?: Timestamp | null;
+  leftAt?: Timestamp | null;
+  muted?: boolean;
+  role?: "host" | "member";
+}
+
+export interface VoiceSession {
+  id: string;
+  chatRoomId: string;
+  voiceType: string;
+  livekitRoom: string;
+  status: VoiceSessionStatus;
+  createdBy: string;
+  calleeUid?: string | null;
+  createdAt?: Timestamp | null;
+  startedAt?: Timestamp | null;
+  endedAt?: Timestamp | null;
+  endedBy?: string | null;
+  maxParticipants: number;
+  participants: Record<string, VoiceParticipant>;
+}
 
 export interface ChatMessage {
   id: string;
