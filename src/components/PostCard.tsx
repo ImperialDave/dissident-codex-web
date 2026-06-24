@@ -12,6 +12,7 @@ interface PostCardProps {
   canModerate?: boolean;
   togglingVisibility?: boolean;
   onToggleFeedVisibility?: (postId: string) => void | Promise<void>;
+  priorityLabel?: string;
 }
 
 export function PostCard({
@@ -19,6 +20,7 @@ export function PostCard({
   canModerate = false,
   togglingVisibility = false,
   onToggleFeedVisibility,
+  priorityLabel,
 }: PostCardProps) {
   const hidden = Boolean(post.hiddenFromFeed);
 
@@ -44,6 +46,11 @@ export function PostCard({
               {post.authorName}
             </Link>
             <RoleBadge role={post.authorRole} />
+            {priorityLabel && (
+              <span className="rounded-full bg-[var(--color-accent)]/20 px-2 py-0.5 text-[10px] font-medium text-[var(--color-accent)]">
+                ★ {priorityLabel}
+              </span>
+            )}
             {hidden && (
               <span className="rounded-full bg-orange-500/25 px-2 py-0.5 text-[10px] font-medium text-orange-100">
                 Hidden from feed
