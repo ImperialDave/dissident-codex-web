@@ -5,18 +5,20 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { DmStripCard } from "@/components/DmStripCard";
 import { PostCard } from "@/components/PostCard";
-import { ALL_CATEGORY_LABEL, FEED_DM_STRIP_LIMIT } from "@/lib/constants";
+import { FavoriteStar } from "@/components/FavoriteStar";
+import { ALL_CATEGORY_LABEL, FEED_DM_STRIP_LIMIT, MAX_FAVORITE_CATEGORIES } from "@/lib/constants";
 import { partitionFeedPosts } from "@/lib/feedRank";
-import { mapFirestoreError } from "@/lib/utils";
+import { mapFirestoreError, normalizeCategoryName } from "@/lib/utils";
 import {
   getFavoriteCategories,
   getFeedCategoryNames,
   getFeedHiddenTopics,
+  toggleFavoriteCategory,
 } from "@/services/categoryService";
 import { getRecentDmRooms } from "@/services/chatService";
 import { getPosts, togglePostFeedVisibility } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
-import type { ChatRoom, Post } from "@/models";
+import type { ChatRoom, FavoriteCategory, Post } from "@/models";
 
 function matchesSearch(post: Post, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -41,8 +43,11 @@ export default function FeedPage() {
   const [error, setError] = useState("");
   const [togglingPostId, setTogglingPostId] = useState<string | null>(null);
   const [hiddenTopics, setHiddenTopics] = useState<Set<string>>(new Set());
+  const [favoriteCategories, setFavoriteCategories] = useState<FavoriteCategory[]>([]);
+  const [togglingFavoriteId, setTogglingFavoriteId] = useState<string | null>(null);
   const modView = isModerator();
   const showPriority = category === ALL_CATEGORY_LABEL;
+  const favoriteCategoryIds = new Set(favoriteCategories.map((f) => f.categoryId));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,6 +65,7 @@ export default function FeedPage() {
       setCategories(cats);
       setHiddenTopics(new Set(hiddenList.map((t) => t.name.toLowerCase())));
       setDmRooms(dms);
+      setFavoriteCategories(favorites);
 
       const filtered = data.filter((p) => matchesSearch(p, search));
 
@@ -107,6 +113,28 @@ export default function FeedPage() {
     load();
   }, [load]);
 
+  async function handleToggleFavoriteTopic(name: string) {
+    const categoryId = normalizeCategoryName(name);
+    setTogglingFavoriteId(categoryId);
+    setError("");
+    try {
+      await toggleFavoriteCategory(categoryId, name);
+      const favs = await getFavoriteCategories();
+      setFavoriteCategories(favs);
+      const favoriteNames = new Set(favs.map((f) => f.name.toLowerCase()));
+      const combined = Array.from(
+        new Map([...favoritePosts, ...allPosts].map((p) => [p.id, p])).values()
+      );
+      const { favoritePosts: fav, allPosts: rest } = partitionFeedPosts(combined, favoriteNames);
+      setFavoritePosts(fav);
+      setAllPosts(rest);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update favorite community");
+    } finally {
+      setTogglingFavoriteId(null);
+    }
+  }
+
   const hasPosts = favoritePosts.length > 0 || allPosts.length > 0;
 
   function renderPostList(posts: Post[], priorityLabel?: string) {
@@ -146,26 +174,55 @@ export default function FeedPage() {
         {categories.map((cat) => {
           const topicHidden =
             modView && cat !== ALL_CATEGORY_LABEL && hiddenTopics.has(cat.toLowerCase());
+          const isTopic = cat !== ALL_CATEGORY_LABEL;
+          const categoryId = isTopic ? normalizeCategoryName(cat) : "";
+          const isFavorite = isTopic && favoriteCategoryIds.has(categoryId);
           return (
-            <button
+            <div
               key={cat}
-              onClick={() => setCategory(cat)}
-              className={`rounded-full px-3 py-1 text-sm ${
-                category === cat
-                  ? "codex-chip-active"
-                  : topicHidden
-                    ? "border border-orange-400/40 bg-orange-500/10 text-orange-100 hover:text-orange-50"
-                    : "text-slate-400 hover:text-slate-200"
+              className={`flex items-center gap-0.5 rounded-full pr-0.5 ${
+                category === cat ? "codex-chip-active" : ""
               }`}
             >
-              {cat}
-              {topicHidden && (
-                <span className="ml-1 text-[10px] opacity-80">(hidden)</span>
+              <button
+                onClick={() => setCategory(cat)}
+                className={`rounded-full px-3 py-1 text-sm ${
+                  category === cat
+                    ? ""
+                    : topicHidden
+                      ? "border border-orange-400/40 bg-orange-500/10 text-orange-100 hover:text-orange-50"
+                      : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {isFavorite && isTopic ? "★ " : ""}
+                {cat}
+                {topicHidden && (
+                  <span className="ml-1 text-[10px] opacity-80">(hidden)</span>
+                )}
+              </button>
+              {isTopic && (
+                <FavoriteStar
+                  size="sm"
+                  favorited={isFavorite}
+                  disabled={togglingFavoriteId === categoryId}
+                  label={`${isFavorite ? "Unpin" : "Pin"} ${cat} on your feed`}
+                  onToggle={() => handleToggleFavoriteTopic(cat)}
+                />
               )}
-            </button>
+            </div>
           );
         })}
       </div>
+
+      {showPriority && categories.length > 1 && favoriteCategories.length === 0 && (
+        <p className="codex-text-muted rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
+          Pin up to {MAX_FAVORITE_CATEGORIES} topics with the ★ on any category chip (or on{" "}
+          <Link href="/profile" className="text-[var(--color-accent)] hover:underline">
+            your profile
+          </Link>
+          ) — their posts appear first under &ldquo;From your communities.&rdquo;
+        </p>
+      )}
 
       {modView && (
         <p className="codex-text-muted text-sm">
