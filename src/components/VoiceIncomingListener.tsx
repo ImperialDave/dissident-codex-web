@@ -1,88 +1,106 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { IncomingCallBanner, IncomingCallModal } from "@/components/IncomingCallModal";
-import { acceptDmVoiceCall, declineDmVoiceCall, listenIncomingDmCalls } from "@/services/voiceService";
+import { useEffect, useRef } from "react";
 import { fetchUser } from "@/services/authService";
+import { listenNotifications } from "@/services/notificationService";
+import {
+  getVoiceSession,
+  listenIncomingDmCalls,
+} from "@/services/voiceService";
+import { useAuthStore } from "@/stores/authStore";
+import { useIncomingCallStore } from "@/stores/incomingCallStore";
 import type { VoiceSession } from "@/models";
 
+function formatListenerError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (message.includes("index")) {
+    return "Firestore index is building — try again in a few minutes.";
+  }
+  if (message.includes("permission") || message.includes("Permission")) {
+    return "Permission denied — refresh and sign in again.";
+  }
+  return message || "Could not listen for incoming calls.";
+}
+
 export function VoiceIncomingListener() {
-  const router = useRouter();
-  const [incoming, setIncoming] = useState<VoiceSession | null>(null);
-  const [callerName, setCallerName] = useState("Someone");
-  const [callerPhotoUrl, setCallerPhotoUrl] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const uid = useAuthStore((s) => s.user?.uid);
+  const setIncoming = useIncomingCallStore((s) => s.setIncoming);
+  const setCaller = useIncomingCallStore((s) => s.setCaller);
+  const clear = useIncomingCallStore((s) => s.clear);
+  const setListenerError = useIncomingCallStore((s) => s.setListenerError);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    return listenIncomingDmCalls((sessions) => {
-      const active = sessions[0] ?? null;
-      setIncoming(active);
-      if (!active) {
-        setDismissed(false);
-        return;
-      }
-      fetchUser(active.createdBy).then((user) => {
+    if (!uid) {
+      clear();
+      setListenerError(null);
+      return;
+    }
+
+    const loadCaller = (session: VoiceSession) => {
+      fetchUser(session.createdBy).then((user) => {
         if (user) {
-          setCallerName(user.displayName);
-          setCallerPhotoUrl(user.photoUrl ?? null);
+          setCaller(user.displayName, user.photoUrl ?? null);
         }
       });
-    });
-  }, []);
+    };
 
-  const handleAccept = useCallback(async () => {
-    if (!incoming) return;
-    setBusy(true);
-    try {
-      await acceptDmVoiceCall(incoming);
-      setDismissed(false);
-      router.push(`/chat/${incoming.chatRoomId}`);
-    } finally {
-      setBusy(false);
-    }
-  }, [incoming, router]);
+    const applySession = (session: VoiceSession | null) => {
+      if (!session || session.status !== "ringing" || session.calleeUid !== uid) {
+        if (!session) clear();
+        return;
+      }
+      setListenerError(null);
+      setIncoming(session);
+      loadCaller(session);
+    };
 
-  const handleReject = useCallback(async () => {
-    if (!incoming) return;
-    setBusy(true);
-    try {
-      await declineDmVoiceCall(incoming);
-      setIncoming(null);
-      setDismissed(false);
-    } finally {
-      setBusy(false);
-    }
-  }, [incoming]);
-
-  const handleIgnore = useCallback(() => {
-    setDismissed(true);
-  }, []);
-
-  if (!incoming) return null;
-
-  if (dismissed) {
-    return (
-      <IncomingCallBanner
-        callerName={callerName}
-        busy={busy}
-        onAccept={handleAccept}
-        onReject={handleReject}
-        onExpand={() => setDismissed(false)}
-      />
+    const unsubCalls = listenIncomingDmCalls(
+      uid,
+      (sessions) => {
+        applySession(sessions[0] ?? null);
+      },
+      (err) => {
+        console.error("[incoming-call]", err);
+        setListenerError(formatListenerError(err));
+      }
     );
-  }
 
-  return (
-    <IncomingCallModal
-      session={incoming}
-      callerName={callerName}
-      callerPhotoUrl={callerPhotoUrl}
-      busy={busy}
-      onAccept={handleAccept}
-      onReject={handleReject}
-      onIgnore={handleIgnore}
-    />
-  );
+    const unsubNotifs = listenNotifications(
+      (notifs) => {
+        const voiceNotif = notifs.find(
+          (n) => !n.read && n.type === "VOICE_INCOMING" && n.targetId
+        );
+        if (!voiceNotif?.targetId) return;
+
+        if (useIncomingCallStore.getState().session?.id === voiceNotif.targetId) return;
+
+        if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = setTimeout(() => {
+          const active = useIncomingCallStore.getState().session;
+          if (active?.status === "ringing") return;
+
+          getVoiceSession(voiceNotif.targetId!).then((session) => {
+            if (session?.status === "ringing" && session.calleeUid === uid) {
+              applySession(session);
+              if (voiceNotif.actorName) {
+                setCaller(voiceNotif.actorName, null);
+              }
+            }
+          });
+        }, 2000);
+      },
+      (err) => {
+        console.warn("[incoming-call] notification fallback", err);
+      }
+    );
+
+    return () => {
+      unsubCalls();
+      unsubNotifs?.();
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+    };
+  }, [uid, setIncoming, setCaller, clear, setListenerError]);
+
+  return null;
 }
