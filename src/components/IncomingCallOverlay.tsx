@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { IncomingCallBanner, IncomingCallModal } from "@/components/IncomingCallModal";
 import { VoiceIncomingListener } from "@/components/VoiceIncomingListener";
+import { ensureMicrophoneForVoice } from "@/lib/microphonePermission";
 import { acceptDmVoiceCall, declineDmVoiceCall } from "@/services/voiceService";
 import { startIncomingCallAlerts, stopIncomingCallAlerts } from "@/lib/incomingCallAlerts";
 import { useIncomingCallStore } from "@/stores/incomingCallStore";
@@ -33,6 +34,9 @@ function IncomingCallUi() {
 
   const handleAccept = useCallback(async () => {
     if (!session) return;
+    const mic = await ensureMicrophoneForVoice();
+    if (mic.status !== "granted") return;
+
     setBusy(true);
     try {
       await acceptDmVoiceCall(session);

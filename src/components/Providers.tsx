@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { IncomingCallOverlay } from "@/components/IncomingCallOverlay";
+import { MicrophonePermissionDialog } from "@/components/MicrophonePermissionDialog";
 import { useAuthStore } from "@/stores/authStore";
 import { useThemeStore } from "@/stores/themeStore";
 
@@ -18,6 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <>
       {children}
       <IncomingCallOverlay />
+      <MicrophonePermissionDialog />
     </>
   );
 }
