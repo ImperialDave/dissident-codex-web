@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { IncomingCallOverlay } from "@/components/IncomingCallOverlay";
 import { useAuthStore } from "@/stores/authStore";
 import { useThemeStore } from "@/stores/themeStore";
 
@@ -13,5 +14,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return initAuth();
   }, [initAuth, initTheme]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <IncomingCallOverlay />
+    </>
+  );
 }
