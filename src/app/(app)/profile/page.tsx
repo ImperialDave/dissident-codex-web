@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
-import { MAX_FAVORITE_CATEGORIES, THEMES } from "@/lib/constants";
+import { AppearancePicker } from "@/components/AppearancePicker";
+import { MAX_FAVORITE_CATEGORIES } from "@/lib/constants";
 import { normalizeCategoryName } from "@/lib/utils";
 import {
   getFeedCategoryNames,
@@ -17,12 +18,10 @@ import { uploadImage } from "@/services/mediaService";
 import { updateProfile } from "@/services/userService";
 import { ModerationMenu } from "@/components/ModerationMenu";
 import { useAuthStore } from "@/stores/authStore";
-import { useThemeStore } from "@/stores/themeStore";
 import type { Post } from "@/models";
 
 export default function ProfilePage() {
   const { user, refreshUser, isModerator, isFounder } = useAuthStore();
-  const { themeId, setTheme } = useThemeStore();
   const [posts, setPosts] = useState<Post[]>([]);
   const [bio, setBio] = useState("");
   const [flair, setFlair] = useState("");
@@ -194,27 +193,11 @@ export default function ProfilePage() {
       </div>
 
       <div className="codex-surface rounded-xl p-4">
-        <h2 className="mb-1 font-semibold">Color scheme</h2>
-        <p className="mb-4 text-xs text-slate-400">90s cyber palettes — pick your vibe.</p>
-        <div className="flex flex-wrap gap-5">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTheme(t.id)}
-              className="flex flex-col items-center gap-2"
-              title={t.label}
-            >
-              <span
-                className={`codex-theme-swatch ${themeId === t.id ? "codex-theme-swatch-active" : ""}`}
-                style={{ background: t.swatch }}
-              />
-              <span className={`text-xs ${themeId === t.id ? "text-[var(--color-accent)]" : "text-slate-400"}`}>
-                {t.label}
-              </span>
-            </button>
-          ))}
-        </div>
+        <h2 className="mb-1 font-semibold">Appearance</h2>
+        <p className="mb-4 text-xs text-slate-400">
+          Light or dark mode, neon or relaxed palettes.
+        </p>
+        <AppearancePicker compact />
       </div>
 
       <div>
