@@ -9,7 +9,9 @@ import {
   type LocalParticipant,
   type RemoteTrack,
 } from "livekit-client";
+import { mapMicrophoneConnectError } from "@/lib/microphonePermission";
 import { mapCallableError } from "@/lib/utils";
+import { useVoiceUiStore } from "@/stores/voiceUiStore";
 import {
   endVoiceSessionLocal,
   endVoiceSessionRemote,
@@ -56,6 +58,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
 }
 
 export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOptions) {
+  const micPreflightGranted = useVoiceUiStore((s) => s.micPreflightGranted);
   const roomRef = useRef<Room | null>(null);
   const audioContainerRef = useRef<HTMLDivElement>(null);
   const leavingRef = useRef(false);
@@ -176,7 +179,12 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
         CONNECT_TIMEOUT_MS,
         "Voice connection timed out. Check microphone permission and try again."
       );
-      await room.localParticipant.setMicrophoneEnabled(true);
+      try {
+        await room.localParticipant.setMicrophoneEnabled(true);
+      } catch (micErr) {
+        useVoiceUiStore.getState().setMicPreflightGranted(false);
+        throw new Error(mapMicrophoneConnectError(micErr));
+      }
       setMuted(false);
       setConnected(true);
       setConnecting(false);
@@ -208,14 +216,22 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
 
   useEffect(() => {
     if (leavingRef.current || suppressConnectRef.current) return;
-    if (enabled && session?.status === "active" && !connectFailedRef.current) {
+    if (
+      enabled &&
+      session?.status === "active" &&
+      !connectFailedRef.current &&
+      micPreflightGranted
+    ) {
       void connect();
       return;
     }
     if (!enabled || session?.status === "ended" || !session) {
       void disconnect();
+      if (session?.status === "ended" || !session) {
+        useVoiceUiStore.getState().resetMicPreflight();
+      }
     }
-  }, [enabled, session?.id, session?.status, connect, disconnect]);
+  }, [enabled, session?.id, session?.status, connect, disconnect, micPreflightGranted]);
 
   useEffect(() => {
     return () => {
@@ -264,6 +280,15 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
     setError("");
   }, []);
 
+  const needsManualJoin =
+    enabled &&
+    session?.status === "active" &&
+    !micPreflightGranted &&
+    !connected &&
+    !connecting &&
+    !leaving &&
+    !connectFailedRef.current;
+
   return {
     connected,
     connecting,
@@ -272,6 +297,7 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
     error,
     participants,
     needsAudioUnlock,
+    needsManualJoin,
     toggleMute,
     leave,
     unlockAudio,
