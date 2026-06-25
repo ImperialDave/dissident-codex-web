@@ -48,6 +48,15 @@ export default function FeedPage() {
   const modView = isModerator();
   const showPriority = category === ALL_CATEGORY_LABEL;
   const favoriteCategoryIds = new Set(favoriteCategories.map((f) => f.categoryId));
+  const favoriteCategoryNames = new Set(favoriteCategories.map((f) => f.name.toLowerCase()));
+
+  function isTopicFavorited(displayName: string): boolean {
+    const categoryId = normalizeCategoryName(displayName);
+    return (
+      favoriteCategoryIds.has(categoryId) ||
+      favoriteCategoryNames.has(displayName.toLowerCase())
+    );
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,7 +68,7 @@ export default function FeedPage() {
           includeHidden: modView,
         }),
         modView ? getFeedHiddenTopics() : Promise.resolve([]),
-        showPriority ? getFavoriteCategories() : Promise.resolve([]),
+        getFavoriteCategories(),
         showPriority ? getRecentDmRooms(FEED_DM_STRIP_LIMIT) : Promise.resolve([]),
       ]);
       setCategories(cats);
@@ -115,10 +124,14 @@ export default function FeedPage() {
 
   async function handleToggleFavoriteTopic(name: string) {
     const categoryId = normalizeCategoryName(name);
-    setTogglingFavoriteId(categoryId);
+    const existing = favoriteCategories.find(
+      (f) => f.categoryId === categoryId || f.name.toLowerCase() === name.toLowerCase()
+    );
+    const idToToggle = existing?.categoryId ?? categoryId;
+    setTogglingFavoriteId(idToToggle);
     setError("");
     try {
-      await toggleFavoriteCategory(categoryId, name);
+      await toggleFavoriteCategory(idToToggle, name);
       const favs = await getFavoriteCategories();
       setFavoriteCategories(favs);
       const favoriteNames = new Set(favs.map((f) => f.name.toLowerCase()));
@@ -176,7 +189,7 @@ export default function FeedPage() {
             modView && cat !== ALL_CATEGORY_LABEL && hiddenTopics.has(cat.toLowerCase());
           const isTopic = cat !== ALL_CATEGORY_LABEL;
           const categoryId = isTopic ? normalizeCategoryName(cat) : "";
-          const isFavorite = isTopic && favoriteCategoryIds.has(categoryId);
+          const isFavorite = isTopic && isTopicFavorited(cat);
           return (
             <div
               key={cat}

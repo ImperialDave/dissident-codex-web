@@ -22,6 +22,7 @@ export default function TopicsPage() {
   const [error, setError] = useState("");
   const [opening, setOpening] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoriteNames, setFavoriteNames] = useState<Set<string>>(new Set());
   const [togglingFavorite, setTogglingFavorite] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function TopicsPage() {
       .then(([names, favs]) => {
         setTopics(names);
         setFavoriteIds(new Set(favs.map((f) => f.categoryId)));
+        setFavoriteNames(new Set(favs.map((f) => f.name.toLowerCase())));
       })
       .catch((err) => {
         setTopics([]);
@@ -116,16 +118,34 @@ export default function TopicsPage() {
                 <p className="font-semibold">{name}</p>
                 <FavoriteStar
                   size="sm"
-                  favorited={favoriteIds.has(normalizeCategoryName(name))}
+                  favorited={
+                    favoriteIds.has(normalizeCategoryName(name)) ||
+                    favoriteNames.has(name.toLowerCase())
+                  }
                   disabled={togglingFavorite === name}
-                  label={`${favoriteIds.has(normalizeCategoryName(name)) ? "Unpin" : "Pin"} ${name} on your feed`}
+                  label={`${
+                    favoriteIds.has(normalizeCategoryName(name)) ||
+                    favoriteNames.has(name.toLowerCase())
+                      ? "Unpin"
+                      : "Pin"
+                  } ${name} on your feed`}
                   onToggle={async () => {
                     setTogglingFavorite(name);
                     setError("");
                     try {
-                      await toggleFavoriteCategory(normalizeCategoryName(name), name);
+                      const categoryId = normalizeCategoryName(name);
+                      const favsBefore = await getFavoriteCategories();
+                      const existing = favsBefore.find(
+                        (f) =>
+                          f.categoryId === categoryId ||
+                          f.name.toLowerCase() === name.toLowerCase()
+                      );
+                      const idToToggle = existing?.categoryId ?? categoryId;
+                      await toggleFavoriteCategory(idToToggle, name);
                       const favs = await getFavoriteCategories();
                       setFavoriteIds(new Set(favs.map((f) => f.categoryId)));
+                      setFavoriteNames(new Set(favs.map((f) => f.name.toLowerCase())));
+        setFavoriteNames(new Set(favs.map((f) => f.name.toLowerCase())));
                     } catch (err) {
                       setError(
                         err instanceof Error ? err.message : "Failed to update favorite community"
