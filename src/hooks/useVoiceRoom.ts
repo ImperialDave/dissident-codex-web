@@ -14,9 +14,10 @@ import {
   endVoiceSessionLocal,
   endVoiceSessionRemote,
   fetchVoiceToken,
-  markParticipantLeft,
 } from "@/services/voiceService";
 import type { VoiceSession } from "@/models";
+
+const CONNECT_TIMEOUT_MS = 20_000;
 
 export interface VoiceParticipantInfo {
   identity: string;
@@ -39,10 +40,28 @@ function attachRemoteAudio(track: RemoteTrack, container: HTMLElement | null) {
   container.appendChild(el);
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
 export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOptions) {
   const roomRef = useRef<Room | null>(null);
   const audioContainerRef = useRef<HTMLDivElement>(null);
   const leavingRef = useRef(false);
+  const suppressConnectRef = useRef(false);
+  const connectingRef = useRef(false);
+  const connectFailedRef = useRef(false);
   const sessionRef = useRef(session);
   sessionRef.current = session;
 
@@ -78,6 +97,7 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
   const disconnect = useCallback(async () => {
     const room = roomRef.current;
     roomRef.current = null;
+    connectingRef.current = false;
     if (room) {
       room.removeAllListeners();
       await room.disconnect();
@@ -103,9 +123,19 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
 
   const connect = useCallback(async () => {
     const activeSession = sessionRef.current;
-    if (!activeSession || activeSession.status !== "active" || !enabled || leavingRef.current) return;
-    if (roomRef.current || connecting) return;
+    if (
+      !activeSession ||
+      activeSession.status !== "active" ||
+      !enabled ||
+      leavingRef.current ||
+      suppressConnectRef.current ||
+      connectFailedRef.current
+    ) {
+      return;
+    }
+    if (roomRef.current || connectingRef.current) return;
 
+    connectingRef.current = true;
     setConnecting(true);
     setError("");
     try {
@@ -119,11 +149,13 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
       room.on(RoomEvent.Connected, () => {
         setConnected(true);
         setConnecting(false);
+        connectingRef.current = false;
         refreshParticipants(room);
       });
       room.on(RoomEvent.Disconnected, () => {
         setConnected(false);
         setConnecting(false);
+        connectingRef.current = false;
       });
       room.on(RoomEvent.ParticipantConnected, () => refreshParticipants(room));
       room.on(RoomEvent.ParticipantDisconnected, () => refreshParticipants(room));
@@ -139,9 +171,17 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
         refreshParticipants(room);
       });
 
-      await room.connect(url, token, { autoSubscribe: true });
+      await withTimeout(
+        room.connect(url, token, { autoSubscribe: true }),
+        CONNECT_TIMEOUT_MS,
+        "Voice connection timed out. Check microphone permission and try again."
+      );
       await room.localParticipant.setMicrophoneEnabled(true);
       setMuted(false);
+      setConnected(true);
+      setConnecting(false);
+      connectingRef.current = false;
+      connectFailedRef.current = false;
       refreshParticipants(room);
 
       try {
@@ -151,15 +191,24 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
         setNeedsAudioUnlock(true);
       }
     } catch (err) {
+      connectFailedRef.current = true;
       setError(mapCallableError(err));
       setConnecting(false);
+      connectingRef.current = false;
       await disconnect();
     }
-  }, [displayName, enabled, connecting, disconnect, refreshParticipants]);
+  }, [displayName, enabled, disconnect, refreshParticipants]);
 
   useEffect(() => {
-    if (leavingRef.current) return;
-    if (enabled && session?.status === "active") {
+    if (session?.status === "ended") {
+      suppressConnectRef.current = false;
+      connectFailedRef.current = false;
+    }
+  }, [session?.status]);
+
+  useEffect(() => {
+    if (leavingRef.current || suppressConnectRef.current) return;
+    if (enabled && session?.status === "active" && !connectFailedRef.current) {
       void connect();
       return;
     }
@@ -188,21 +237,18 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
     if (!activeSession || leavingRef.current) return;
 
     leavingRef.current = true;
+    suppressConnectRef.current = true;
     setLeaving(true);
     setError("");
 
-    const uid = roomRef.current?.localParticipant.identity;
     await disconnect();
 
     try {
-      if (uid) {
-        await markParticipantLeft(activeSession.id, uid).catch(() => {});
-      }
       await endVoiceSessionLocal(activeSession);
       try {
         await endVoiceSessionRemote(activeSession.id);
       } catch {
-        // Remote LiveKit cleanup is best-effort; Firestore end is authoritative.
+        // LiveKit cleanup is best-effort.
       }
     } catch (err) {
       setError(mapCallableError(err));
@@ -211,6 +257,12 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
       setLeaving(false);
     }
   }, [disconnect]);
+
+  const resetConnect = useCallback(() => {
+    connectFailedRef.current = false;
+    suppressConnectRef.current = false;
+    setError("");
+  }, []);
 
   return {
     connected,
@@ -223,6 +275,7 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
     toggleMute,
     leave,
     unlockAudio,
+    resetConnect,
     connect,
     disconnect,
     audioContainerRef,
