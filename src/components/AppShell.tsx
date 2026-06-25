@@ -7,9 +7,9 @@ import clsx from "clsx";
 import { AppearanceMenu } from "@/components/AppearanceMenu";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { ColorModeToggle } from "@/components/ColorModeToggle";
-import { VoiceIncomingListener } from "@/components/VoiceIncomingListener";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuthStore } from "@/stores/authStore";
+import { useIncomingCallStore } from "@/stores/incomingCallStore";
 import { listenNotifications } from "@/services/notificationService";
 
 const MOBILE_NAV = [
@@ -37,6 +37,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, logout, isModerator, isFounder } = useAuthStore();
+  const incomingSession = useIncomingCallStore((s) => s.session);
+  const expandIncomingCall = useIncomingCallStore((s) => s.expand);
   const [unread, setUnread] = useState(0);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -113,6 +115,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </nav>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            {incomingSession && (
+              <button
+                type="button"
+                onClick={expandIncomingCall}
+                className="animate-pulse rounded-full border border-emerald-500/50 bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/30"
+              >
+                📞 Incoming
+              </button>
+            )}
             <ColorModeToggle variant="compact" />
             <AppearanceMenu />
             <div className="relative" ref={accountMenuRef}>
@@ -191,6 +202,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="mx-auto max-w-6xl px-4 py-6 pb-24 lg:pb-6">{children}</main>
 
+      {incomingSession && (
+        <button
+          type="button"
+          onClick={expandIncomingCall}
+          className="fixed bottom-16 left-1/2 z-30 -translate-x-1/2 animate-pulse rounded-full border border-emerald-500/50 bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 lg:hidden"
+        >
+          📞 Incoming call
+        </button>
+      )}
+
       <nav className="codex-nav-bar fixed bottom-0 left-0 right-0 z-20 lg:hidden">
         <div className="mx-auto flex max-w-6xl justify-around py-2">
           {MOBILE_NAV.map((item) => (
@@ -215,7 +236,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         open={passwordDialogOpen}
         onClose={() => setPasswordDialogOpen(false)}
       />
-      <VoiceIncomingListener />
     </div>
   );
 }
