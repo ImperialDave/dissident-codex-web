@@ -386,7 +386,6 @@ export default function PostDetailPage() {
               type="button"
               onClick={() => videoInputRef.current?.click()}
               disabled={submitting}
-              disabled={submitting}
               className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
             >
               Video
