@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { VoiceCallBar } from "@/components/VoiceCallBar";
 import { useVoiceRoom } from "@/hooks/useVoiceRoom";
+import { ensureMicrophoneForVoice } from "@/lib/microphonePermission";
+import { useVoiceUiStore } from "@/stores/voiceUiStore";
 import {
   declineDmVoiceCall,
   getActiveVoiceSessionForRoom,
@@ -22,7 +24,9 @@ interface VoiceChatControlsProps {
 export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceChatControlsProps) {
   const [session, setSession] = useState<VoiceSession | null>(null);
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [manualJoinBusy, setManualJoinBusy] = useState(false);
   const [voiceError, setVoiceError] = useState("");
+  const resetMicPreflight = useVoiceUiStore((s) => s.resetMicPreflight);
 
   const inActiveCall =
     session?.status === "active" &&
@@ -56,8 +60,14 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
 
   async function handleStartDmCall() {
     if (!room) return;
-    setVoiceBusy(true);
     setVoiceError("");
+    const mic = await ensureMicrophoneForVoice();
+    if (mic.status !== "granted") {
+      if (mic.message && mic.status !== "denied") setVoiceError(mic.message);
+      return;
+    }
+
+    setVoiceBusy(true);
     try {
       const created = await startDmVoiceCall(room);
       setSession(created);
@@ -70,18 +80,41 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
 
   async function handleJoinChannel() {
     if (!room) return;
-    setVoiceBusy(true);
     setVoiceError("");
+    const mic = await ensureMicrophoneForVoice();
+    if (mic.status !== "granted") {
+      if (mic.message && mic.status !== "denied") setVoiceError(mic.message);
+      return;
+    }
+
+    setVoiceBusy(true);
     voice.resetConnect();
     try {
       await joinTopicOrGroupVoice(room);
-      // Firestore listener is source of truth for session + participants.
     } catch (err) {
       setVoiceError(err instanceof Error ? err.message : "Could not join voice");
     } finally {
       setVoiceBusy(false);
     }
   }
+
+  const handleManualJoin = useCallback(async () => {
+    setVoiceError("");
+    setManualJoinBusy(true);
+    try {
+      const mic = await ensureMicrophoneForVoice();
+      if (mic.status !== "granted") {
+        if (mic.message && mic.status !== "denied") setVoiceError(mic.message);
+        return;
+      }
+      voice.resetConnect();
+      await voice.connect();
+    } catch (err) {
+      setVoiceError(err instanceof Error ? err.message : "Could not join voice");
+    } finally {
+      setManualJoinBusy(false);
+    }
+  }, [voice]);
 
   async function handleCancelRinging() {
     if (!session) return;
@@ -102,6 +135,7 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
     setSession((prev) => (prev ? { ...prev, status: "ended" } : null));
     try {
       await voice.leave();
+      resetMicPreflight();
       setSession(null);
     } catch (err) {
       setVoiceError(err instanceof Error ? err.message : "Could not end call");
@@ -179,9 +213,12 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
         participants={voice.participants}
         error={voice.error || voiceError}
         needsAudioUnlock={voice.needsAudioUnlock}
+        needsManualJoin={voice.needsManualJoin}
+        manualJoinBusy={manualJoinBusy}
         onToggleMute={voice.toggleMute}
         onLeave={handleLeaveVoice}
         onUnlockAudio={voice.unlockAudio}
+        onManualJoin={() => void handleManualJoin()}
         audioContainerRef={voice.audioContainerRef}
         label={room.type === CHAT_TYPE_TOPIC ? "Topic voice" : room.type === CHAT_TYPE_GROUP ? "Group voice" : "Call"}
       />

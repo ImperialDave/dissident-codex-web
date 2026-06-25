@@ -11,9 +11,12 @@ interface VoiceCallBarProps {
   participants: VoiceParticipantInfo[];
   error?: string;
   needsAudioUnlock?: boolean;
+  needsManualJoin?: boolean;
+  manualJoinBusy?: boolean;
   onToggleMute: () => void;
   onLeave: () => void | Promise<void>;
   onUnlockAudio?: () => void;
+  onManualJoin?: () => void;
   audioContainerRef?: RefObject<HTMLDivElement>;
   label?: string;
 }
@@ -26,13 +29,22 @@ export function VoiceCallBar({
   participants,
   error,
   needsAudioUnlock,
+  needsManualJoin,
+  manualJoinBusy = false,
   onToggleMute,
   onLeave,
   onUnlockAudio,
+  onManualJoin,
   audioContainerRef,
   label = "Voice",
 }: VoiceCallBarProps) {
-  const showBar = connected || connecting || leaving || Boolean(error) || needsAudioUnlock;
+  const showBar =
+    connected ||
+    connecting ||
+    leaving ||
+    Boolean(error) ||
+    needsAudioUnlock ||
+    needsManualJoin;
   if (!showBar) return null;
 
   return (
@@ -45,15 +57,27 @@ export function VoiceCallBar({
               ? "Ending call..."
               : connecting
                 ? "Connecting to voice..."
-                : `${label} — ${participants.length} in call`}
+                : needsManualJoin
+                  ? `${label} — ready to join`
+                  : `${label} — ${participants.length} in call`}
           </p>
+          {needsManualJoin && onManualJoin && (
+            <button
+              type="button"
+              onClick={onManualJoin}
+              disabled={manualJoinBusy}
+              className="mt-1 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
+            >
+              {manualJoinBusy ? "Joining..." : "Enable microphone and join"}
+            </button>
+          )}
           {needsAudioUnlock && onUnlockAudio && (
             <button
               type="button"
               onClick={onUnlockAudio}
               className="mt-1 text-xs font-medium text-amber-200 underline hover:text-amber-100"
             >
-              Tap to enable audio
+              Tap to enable speaker audio
             </button>
           )}
           {error && <p className="text-xs text-red-300">{error}</p>}
