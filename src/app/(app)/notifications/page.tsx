@@ -94,35 +94,49 @@ export default function NotificationsPage() {
         <div className="space-y-2">
           {notifications.map((n) => {
             const href = getLink(n);
-            const content = (
-              <div
-                className={`relative rounded-xl border p-4 pr-10 ${n.read ? "border-white/10 bg-black/10" : "border-[var(--color-accent)]/30 bg-[var(--color-surface)]"}`}
-                onClick={() => !n.read && markNotificationRead(n.id)}
-              >
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    void handleDelete(n.id);
-                  }}
-                  disabled={busy === n.id}
-                  className="absolute right-2 top-2 rounded-lg px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-red-300 disabled:opacity-50"
-                  aria-label="Delete notification"
-                >
-                  ✕
-                </button>
+            const cardClass = `rounded-xl border p-4 ${
+              n.read
+                ? "border-white/10 bg-black/10"
+                : "border-[var(--color-accent)]/30 bg-[var(--color-surface)]"
+            }`;
+
+            const body = (
+              <>
                 <p className="font-medium">{n.title}</p>
                 <p className="text-sm text-slate-300">{n.body}</p>
                 <p className="mt-1 text-xs text-slate-500">{timeAgo(n.createdAt)}</p>
-              </div>
+              </>
             );
-            return href ? (
-              <Link key={n.id} href={href}>
-                {content}
-              </Link>
-            ) : (
-              <div key={n.id}>{content}</div>
+
+            return (
+              <div key={n.id} className="flex items-start gap-2">
+                {href ? (
+                  <Link
+                    href={href}
+                    className={`min-w-0 flex-1 ${cardClass}`}
+                    onClick={() => !n.read && markNotificationRead(n.id)}
+                  >
+                    {body}
+                  </Link>
+                ) : (
+                  <div
+                    className={`min-w-0 flex-1 ${cardClass}`}
+                    onClick={() => !n.read && markNotificationRead(n.id)}
+                  >
+                    {body}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void handleDelete(n.id)}
+                  disabled={busy === n.id}
+                  className="codex-btn-ghost shrink-0 rounded-lg px-2.5 py-2 text-sm text-slate-400 hover:text-red-300 disabled:opacity-50"
+                  aria-label="Delete notification"
+                  title="Delete"
+                >
+                  Delete
+                </button>
+              </div>
             );
           })}
         </div>
