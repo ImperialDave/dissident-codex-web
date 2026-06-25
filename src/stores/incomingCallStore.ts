@@ -30,7 +30,11 @@ export const useIncomingCallStore = create<IncomingCallState>((set) => ({
   setIncoming: (session) =>
     set((state) => ({
       session,
-      dismissed: session ? state.dismissed : false,
+      dismissed: session
+        ? state.session?.id === session.id
+          ? state.dismissed
+          : false
+        : false,
     })),
 
   setCaller: (callerName, callerPhotoUrl) => set({ callerName, callerPhotoUrl }),
