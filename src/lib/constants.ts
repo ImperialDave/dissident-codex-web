@@ -34,7 +34,12 @@ export type ThemeId =
   | "ocean"
   | "ember"
   | "forest"
-  | "aurora";
+  | "aurora"
+  | "sage"
+  | "dusk"
+  | "sand"
+  | "mist"
+  | "linen";
 
 export type ThemeFamilyId = "neon" | "calm";
 
@@ -45,8 +50,13 @@ export const THEME_FAMILIES: {
 }[] = [
   {
     id: "neon",
-    label: "Color schemes",
-    hint: "Pick a neon palette for Codex.",
+    label: "Neon palettes",
+    hint: "Bold cyber colors for Codex.",
+  },
+  {
+    id: "calm",
+    label: "Relaxed palettes",
+    hint: "Muted tones — easier on the eyes.",
   },
 ];
 
@@ -54,25 +64,15 @@ export type Theme = {
   id: ThemeId;
   family: ThemeFamilyId;
   label: string;
-  /** Solid tone for translucent overlays */
   primary: string;
-  /** Card / panel base */
   surface: string;
-  /** Primary neon */
   accent: string;
-  /** Secondary neon for gradients */
   accentAlt: string;
-  /** Full-page background */
   bgGradient: string;
-  /** Card background */
   surfaceGradient: string;
-  /** Accent button gradient */
   accentGradient: string;
-  /** Neon border */
   border: string;
-  /** Logo / heading glow */
   textGlow: string;
-  /** Theme picker swatch */
   swatch: string;
 };
 
@@ -161,5 +161,90 @@ export const THEMES: Theme[] = [
     border: "rgba(192, 132, 252, 0.24)",
     textGlow: "0 0 18px rgba(192, 132, 252, 0.5), 0 0 32px rgba(244, 114, 182, 0.3)",
     swatch: "linear-gradient(135deg, #c084fc, #f472b6)",
+  },
+  {
+    id: "sage",
+    family: "calm",
+    label: "Sage",
+    primary: "#1a221c",
+    surface: "#243028",
+    accent: "#7d9b76",
+    accentAlt: "#a8b89e",
+    bgGradient:
+      "linear-gradient(180deg, #141a16 0%, #1e2822 50%, #182018 100%)",
+    surfaceGradient:
+      "linear-gradient(180deg, rgba(36, 48, 40, 0.95), rgba(28, 36, 32, 0.9))",
+    accentGradient: "linear-gradient(90deg, #7d9b76, #a8b89e)",
+    border: "rgba(125, 155, 118, 0.28)",
+    textGlow: "none",
+    swatch: "linear-gradient(135deg, #7d9b76, #a8b89e)",
+  },
+  {
+    id: "dusk",
+    family: "calm",
+    label: "Dusk",
+    primary: "#1c1824",
+    surface: "#282236",
+    accent: "#9b8ec4",
+    accentAlt: "#c4a8b8",
+    bgGradient:
+      "linear-gradient(180deg, #16121e 0%, #242030 50%, #1a1622 100%)",
+    surfaceGradient:
+      "linear-gradient(180deg, rgba(40, 34, 54, 0.95), rgba(30, 26, 42, 0.9))",
+    accentGradient: "linear-gradient(90deg, #9b8ec4, #c4a8b8)",
+    border: "rgba(155, 142, 196, 0.26)",
+    textGlow: "none",
+    swatch: "linear-gradient(135deg, #9b8ec4, #c4a8b8)",
+  },
+  {
+    id: "sand",
+    family: "calm",
+    label: "Sand",
+    primary: "#221e18",
+    surface: "#2e2820",
+    accent: "#c4a574",
+    accentAlt: "#d4b896",
+    bgGradient:
+      "linear-gradient(180deg, #1a1612 0%, #282218 50%, #201c16 100%)",
+    surfaceGradient:
+      "linear-gradient(180deg, rgba(46, 40, 32, 0.95), rgba(36, 30, 24, 0.9))",
+    accentGradient: "linear-gradient(90deg, #c4a574, #d4b896)",
+    border: "rgba(196, 165, 116, 0.28)",
+    textGlow: "none",
+    swatch: "linear-gradient(135deg, #c4a574, #d4b896)",
+  },
+  {
+    id: "mist",
+    family: "calm",
+    label: "Mist",
+    primary: "#181c22",
+    surface: "#242a32",
+    accent: "#7a9aad",
+    accentAlt: "#9eb4c4",
+    bgGradient:
+      "linear-gradient(180deg, #12161c 0%, #1e242c 50%, #181c24 100%)",
+    surfaceGradient:
+      "linear-gradient(180deg, rgba(36, 42, 50, 0.95), rgba(28, 34, 42, 0.9))",
+    accentGradient: "linear-gradient(90deg, #7a9aad, #9eb4c4)",
+    border: "rgba(122, 154, 173, 0.26)",
+    textGlow: "none",
+    swatch: "linear-gradient(135deg, #7a9aad, #9eb4c4)",
+  },
+  {
+    id: "linen",
+    family: "calm",
+    label: "Linen",
+    primary: "#221e1a",
+    surface: "#2c2620",
+    accent: "#b8957a",
+    accentAlt: "#c9a88e",
+    bgGradient:
+      "linear-gradient(180deg, #1a1614 0%, #28221c 50%, #201c18 100%)",
+    surfaceGradient:
+      "linear-gradient(180deg, rgba(44, 38, 32, 0.95), rgba(34, 28, 24, 0.9))",
+    accentGradient: "linear-gradient(90deg, #b8957a, #c9a88e)",
+    border: "rgba(184, 149, 122, 0.28)",
+    textGlow: "none",
+    swatch: "linear-gradient(135deg, #b8957a, #c9a88e)",
   },
 ];
