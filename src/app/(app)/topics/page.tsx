@@ -3,8 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { mapFirestoreError } from "@/lib/utils";
-import { ensureTopicChatRoom, getCreateCategoryNames, searchTopics } from "@/services/categoryService";
+import { FavoriteStar } from "@/components/FavoriteStar";
+import { MAX_FAVORITE_CATEGORIES } from "@/lib/constants";
+import { mapFirestoreError, normalizeCategoryName } from "@/lib/utils";
+import {
+  ensureTopicChatRoom,
+  getCreateCategoryNames,
+  getFavoriteCategories,
+  searchTopics,
+  toggleFavoriteCategory,
+} from "@/services/categoryService";
 
 export default function TopicsPage() {
   const router = useRouter();
@@ -13,10 +21,15 @@ export default function TopicsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [opening, setOpening] = useState<string | null>(null);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [togglingFavorite, setTogglingFavorite] = useState<string | null>(null);
 
   useEffect(() => {
-    getCreateCategoryNames()
-      .then((names) => setTopics(names))
+    Promise.all([getCreateCategoryNames(), getFavoriteCategories()])
+      .then(([names, favs]) => {
+        setTopics(names);
+        setFavoriteIds(new Set(favs.map((f) => f.categoryId)));
+      })
       .catch((err) => {
         setTopics([]);
         setError(err instanceof Error ? mapFirestoreError(err.message) : "Failed to load topics");
@@ -62,6 +75,9 @@ export default function TopicsPage() {
     <div className="space-y-4">
       <div className="codex-page-header">
         <h1 className="codex-page-title">Browse Topics</h1>
+        <p className="codex-text-muted text-sm">
+          Pin up to {MAX_FAVORITE_CATEGORIES} favorites — they show first on your feed.
+        </p>
       </div>
 
       <div className="flex gap-2">
@@ -96,7 +112,30 @@ export default function TopicsPage() {
               key={name}
               className="codex-surface codex-surface-hover rounded-xl p-4"
             >
-              <p className="font-semibold">{name}</p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-semibold">{name}</p>
+                <FavoriteStar
+                  size="sm"
+                  favorited={favoriteIds.has(normalizeCategoryName(name))}
+                  disabled={togglingFavorite === name}
+                  label={`${favoriteIds.has(normalizeCategoryName(name)) ? "Unpin" : "Pin"} ${name} on your feed`}
+                  onToggle={async () => {
+                    setTogglingFavorite(name);
+                    setError("");
+                    try {
+                      await toggleFavoriteCategory(normalizeCategoryName(name), name);
+                      const favs = await getFavoriteCategories();
+                      setFavoriteIds(new Set(favs.map((f) => f.categoryId)));
+                    } catch (err) {
+                      setError(
+                        err instanceof Error ? err.message : "Failed to update favorite community"
+                      );
+                    } finally {
+                      setTogglingFavorite(null);
+                    }
+                  }}
+                />
+              </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
                   disabled={opening === name}
