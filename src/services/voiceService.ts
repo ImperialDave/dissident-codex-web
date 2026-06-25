@@ -58,10 +58,28 @@ function maxParticipantsForRoom(room: ChatRoom): number {
   return VOICE_MAX_TOPIC;
 }
 
+function parseDmMemberIds(roomId: string, myUid: string): string | null {
+  if (!roomId.startsWith("dm_")) return null;
+  const parts = roomId.slice(3).split("_").filter(Boolean);
+  if (parts.length !== 2 || !parts.includes(myUid)) return null;
+  return parts.find((id) => id !== myUid) ?? null;
+}
+
 function otherDmUid(room: ChatRoom, myUid: string): string | null {
-  if (room.type !== CHAT_TYPE_DM) return null;
+  const normalizedType =
+    room.type === CHAT_TYPE_DM || room.id.startsWith("dm_") ? CHAT_TYPE_DM : room.type;
+  if (normalizedType !== CHAT_TYPE_DM) return null;
   const other = room.memberIds.find((id) => id !== myUid);
-  return other || null;
+  return other || parseDmMemberIds(room.id, myUid);
+}
+
+function isFirestorePermissionError(err: unknown): boolean {
+  const code =
+    err && typeof err === "object" && "code" in err
+      ? String((err as { code?: string }).code ?? "")
+      : "";
+  const message = err instanceof Error ? err.message : String(err ?? "");
+  return code === "permission-denied" || message.includes("permission");
 }
 
 export async function getVoiceSession(sessionId: string): Promise<VoiceSession | null> {
@@ -70,18 +88,40 @@ export async function getVoiceSession(sessionId: string): Promise<VoiceSession |
   return toVoiceSession(snap.id, snap.data());
 }
 
+function pickActiveSession(sessions: VoiceSession[]): VoiceSession | null {
+  return sessions.find((s) => s.status === "ringing" || s.status === "active") ?? null;
+}
+
 export async function getActiveVoiceSessionForRoom(chatRoomId: string): Promise<VoiceSession | null> {
-  const snap = await getDocs(
-    query(
-      collection(getFirebaseDb(), COLLECTIONS.VOICE_SESSIONS),
-      where("chatRoomId", "==", chatRoomId),
-      limit(5)
-    )
-  );
-  const active = snap.docs
-    .map((d) => toVoiceSession(d.id, d.data()))
-    .find((s) => s.status === "ringing" || s.status === "active");
-  return active ?? null;
+  // Prefer single-doc reads (avoids list-query permission failures from orphan sessions).
+  try {
+    const roomSnap = await getDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, chatRoomId));
+    const activeId = roomSnap.exists()
+      ? (roomSnap.data().activeVoiceSessionId as string | undefined)
+      : undefined;
+    if (activeId) {
+      const linked = await getVoiceSession(activeId);
+      if (linked && (linked.status === "ringing" || linked.status === "active")) {
+        return linked;
+      }
+    }
+  } catch (err) {
+    if (!isFirestorePermissionError(err)) throw err;
+  }
+
+  try {
+    const snap = await getDocs(
+      query(
+        collection(getFirebaseDb(), COLLECTIONS.VOICE_SESSIONS),
+        where("chatRoomId", "==", chatRoomId),
+        limit(5)
+      )
+    );
+    return pickActiveSession(snap.docs.map((d) => toVoiceSession(d.id, d.data())));
+  } catch (err) {
+    if (isFirestorePermissionError(err)) return null;
+    throw err;
+  }
 }
 
 export function listenVoiceSession(
@@ -109,6 +149,7 @@ export function listenIncomingDmCalls(
 ): Unsubscribe {
   if (!uid) return () => {};
 
+  // Single-field query (calleeUid) matches security rules without a composite index.
   return onSnapshot(
     query(
       collection(getFirebaseDb(), COLLECTIONS.VOICE_SESSIONS),
