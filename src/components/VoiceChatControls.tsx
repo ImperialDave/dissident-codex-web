@@ -26,7 +26,13 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
 
   const inActiveCall =
     session?.status === "active" &&
-    Boolean(myUid && session.participants[myUid] && !session.participants[myUid]?.leftAt);
+    Boolean(
+      myUid &&
+        (session.createdBy === myUid ||
+          session.calleeUid === myUid ||
+          session.participants[myUid]) &&
+        !session.participants[myUid]?.leftAt
+    );
 
   const voice = useVoiceRoom({
     session,
@@ -66,9 +72,10 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
     if (!room) return;
     setVoiceBusy(true);
     setVoiceError("");
+    voice.resetConnect();
     try {
-      const joined = await joinTopicOrGroupVoice(room);
-      setSession(joined);
+      await joinTopicOrGroupVoice(room);
+      // Firestore listener is source of truth for session + participants.
     } catch (err) {
       setVoiceError(err instanceof Error ? err.message : "Could not join voice");
     } finally {
@@ -92,11 +99,10 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
 
   async function handleLeaveVoice() {
     setVoiceError("");
+    setSession((prev) => (prev ? { ...prev, status: "ended" } : null));
     try {
       await voice.leave();
-      if (session?.status === "active" || session?.status === "ringing") {
-        setSession((prev) => (prev ? { ...prev, status: "ended" } : null));
-      }
+      setSession(null);
     } catch (err) {
       setVoiceError(err instanceof Error ? err.message : "Could not end call");
     }

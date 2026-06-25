@@ -176,7 +176,7 @@ export async function joinTopicOrGroupVoice(room: ChatRoom): Promise<VoiceSessio
   const existing = await getActiveVoiceSessionForRoom(room.id);
   if (existing) {
     await markParticipantJoined(existing.id, uid);
-    return existing;
+    return (await getVoiceSession(existing.id)) ?? existing;
   }
 
   const now = Timestamp.now();
