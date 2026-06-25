@@ -14,6 +14,7 @@ import {
   sendFriendRequest,
 } from "@/services/friendService";
 import { startChessGame } from "@/services/chessService";
+import { startDmVoiceCall } from "@/services/voiceService";
 import { useAuthStore } from "@/stores/authStore";
 import type { Post, User } from "@/models";
 
@@ -24,7 +25,7 @@ export default function UserProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [friendStatus, setFriendStatus] = useState<string>("none");
-  const [busy, setBusy] = useState<"message" | "chess" | "friend" | null>(null);
+  const [busy, setBusy] = useState<"message" | "chess" | "friend" | "call" | null>(null);
   const [error, setError] = useState("");
 
   const isSelf = me?.uid === uid;
@@ -64,6 +65,20 @@ export default function UserProfilePage() {
       router.push(`/chess/game/${game.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not start chess game");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function startVoiceCall() {
+    setError("");
+    setBusy("call");
+    try {
+      const room = await getOrCreateDmRoom(uid);
+      await startDmVoiceCall(room);
+      router.push(`/chat/${room.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start voice call");
     } finally {
       setBusy(null);
     }
@@ -152,6 +167,13 @@ export default function UserProfilePage() {
           className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
         >
           {busy === "message" ? "Opening..." : "Message"}
+        </button>
+        <button
+          onClick={startVoiceCall}
+          disabled={busy !== null}
+          className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
+        >
+          {busy === "call" ? "Calling..." : "Voice call"}
         </button>
         <button
           onClick={playChess}
