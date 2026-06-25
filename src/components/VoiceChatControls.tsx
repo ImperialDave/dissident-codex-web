@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { VoiceCallBar } from "@/components/VoiceCallBar";
 import { useVoiceRoom } from "@/hooks/useVoiceRoom";
 import {
-  acceptDmVoiceCall,
-  declineDmVoiceCall,
   getActiveVoiceSessionForRoom,
   joinTopicOrGroupVoice,
   listenVoiceSession,
@@ -77,30 +75,6 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
     }
   }
 
-  async function handleAcceptRinging() {
-    if (!session) return;
-    setVoiceBusy(true);
-    setVoiceError("");
-    try {
-      await acceptDmVoiceCall(session);
-    } catch (err) {
-      setVoiceError(err instanceof Error ? err.message : "Could not accept call");
-    } finally {
-      setVoiceBusy(false);
-    }
-  }
-
-  async function handleDeclineRinging() {
-    if (!session) return;
-    setVoiceBusy(true);
-    try {
-      await declineDmVoiceCall(session);
-      setSession(null);
-    } finally {
-      setVoiceBusy(false);
-    }
-  }
-
   if (!room || !myUid) return null;
 
   const isDm = room.type === CHAT_TYPE_DM;
@@ -147,24 +121,7 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
           <span className="text-sm text-slate-400">Ringing...</span>
         )}
         {isCallee && (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleAcceptRinging}
-              disabled={voiceBusy}
-              className="rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-black"
-            >
-              Accept
-            </button>
-            <button
-              type="button"
-              onClick={handleDeclineRinging}
-              disabled={voiceBusy}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm"
-            >
-              Decline
-            </button>
-          </div>
+          <span className="text-sm text-emerald-300">Incoming call — use the pop-up to respond</span>
         )}
         {(voiceError || voice.error) && (
           <span className="text-xs text-red-300">{voiceError || voice.error}</span>
