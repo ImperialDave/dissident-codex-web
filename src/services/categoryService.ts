@@ -373,14 +373,22 @@ export async function getFavoriteCategories(targetUid?: string): Promise<Favorit
   if (!uid) return [];
   const snap = await getDocs(favoriteCategoriesRef(uid));
   return snap.docs
-    .map((d) => ({ categoryId: d.id, ...(d.data() as Omit<FavoriteCategory, "categoryId">) }))
+    .map((d) => {
+      const data = d.data() as Omit<FavoriteCategory, "categoryId">;
+      return { ...data, categoryId: d.id };
+    })
     .sort((a, b) => (a.pinnedAt?.seconds ?? 0) - (b.pinnedAt?.seconds ?? 0));
 }
 
 export async function toggleFavoriteCategory(categoryId: string, name: string): Promise<boolean> {
   const uid = getFirebaseAuth().currentUser?.uid;
   if (!uid) throw new Error("Not logged in");
-  const ref = doc(getFirebaseDb(), COLLECTIONS.USERS, uid, "favoriteCategories", categoryId);
+  const normalizedId = categoryId?.trim();
+  const displayName = name?.trim();
+  if (!normalizedId || !displayName) {
+    throw new Error("Invalid topic name.");
+  }
+  const ref = doc(getFirebaseDb(), COLLECTIONS.USERS, uid, "favoriteCategories", normalizedId);
   const snap = await getDoc(ref);
   if (snap.exists()) {
     await deleteDoc(ref);
@@ -391,8 +399,8 @@ export async function toggleFavoriteCategory(categoryId: string, name: string): 
     throw new Error(`You can pin up to ${MAX_FAVORITE_CATEGORIES} communities.`);
   }
   await setDoc(ref, {
-    categoryId,
-    name,
+    categoryId: normalizedId,
+    name: displayName,
     pinnedAt: Timestamp.now(),
   });
   return true;
