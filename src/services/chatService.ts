@@ -40,9 +40,20 @@ import {
 import { fetchFirestoreRole, fetchUser } from "./authService";
 
 function toRoom(id: string, data: Record<string, unknown>): ChatRoom {
+  const rawType = typeof data.type === "string" ? data.type.toLowerCase() : "";
+  const type =
+    rawType === CHAT_TYPE_DM || rawType === CHAT_TYPE_GROUP || rawType === CHAT_TYPE_TOPIC
+      ? rawType
+      : id.startsWith("dm_")
+        ? CHAT_TYPE_DM
+        : id.startsWith("group_")
+          ? CHAT_TYPE_GROUP
+          : id.startsWith("topic_")
+            ? CHAT_TYPE_TOPIC
+            : CHAT_TYPE_TOPIC;
   return {
     id,
-    type: (data.type as string) || CHAT_TYPE_TOPIC,
+    type,
     title: (data.title as string) || "",
     topicId: (data.topicId as string) || null,
     topicName: (data.topicName as string) || null,
