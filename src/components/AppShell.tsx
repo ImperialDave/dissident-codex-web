@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
+import { AppearanceMenu } from "@/components/AppearanceMenu";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
+import { ColorModeToggle } from "@/components/ColorModeToggle";
 import { VoiceIncomingListener } from "@/components/VoiceIncomingListener";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuthStore } from "@/stores/authStore";
@@ -110,7 +112,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             )}
           </nav>
-          <div className="relative shrink-0" ref={accountMenuRef}>
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <ColorModeToggle variant="compact" />
+            <AppearanceMenu />
+            <div className="relative" ref={accountMenuRef}>
             <button
               type="button"
               onClick={() => setAccountMenuOpen((open) => !open)}
@@ -163,6 +168,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
             )}
+            </div>
           </div>
         </div>
         <nav className="flex gap-2 overflow-x-auto border-t border-[var(--color-border)] px-4 py-2 text-sm lg:hidden">
