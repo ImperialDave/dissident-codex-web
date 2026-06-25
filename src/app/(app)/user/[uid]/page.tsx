@@ -7,54 +7,41 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { fetchUser } from "@/services/authService";
 import { getOrCreateDmRoom } from "@/services/chatService";
 import { getPostsByUser } from "@/services/postService";
-import { getFriendshipStatus, sendFriendRequest } from "@/services/friendService";
+import {
+  getFriendshipStatus,
+  getIncomingRequestFrom,
+  respondToFriendRequest,
+  sendFriendRequest,
+} from "@/services/friendService";
 import { startChessGame } from "@/services/chessService";
+import { useAuthStore } from "@/stores/authStore";
 import type { Post, User } from "@/models";
 
 export default function UserProfilePage() {
   const { uid } = useParams<{ uid: string }>();
   const router = useRouter();
+  const { user: me } = useAuthStore();
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [friendStatus, setFriendStatus] = useState<string>("none");
-  const [busy, setBusy] = useState<"message" | "chess" | null>(null);
+  const [busy, setBusy] = useState<"message" | "chess" | "friend" | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
+
+  const isSelf = me?.uid === uid;
 
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setLoadError("");
-    Promise.all([fetchUser(uid), getPostsByUser(uid), getFriendshipStatus(uid)])
-      .then(([profile, userPosts, status]) => {
-        if (cancelled) return;
-        setUser(profile);
-        setPosts(userPosts);
-        setFriendStatus(status);
-        if (!profile) setLoadError("User not found.");
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setUser(null);
-        setLoadError(err instanceof Error ? err.message : "Failed to load profile");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [uid]);
+    if (me?.uid && me.uid === uid) {
+      router.replace("/profile");
+    }
+  }, [me?.uid, uid, router]);
 
-  if (loading) return <p className="text-slate-400">Loading profile...</p>;
-  if (loadError || !user) {
-    return (
-      <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
-        {loadError || "User not found."}
-      </div>
-    );
-  }
+  useEffect(() => {
+    fetchUser(uid).then(setUser);
+    getPostsByUser(uid).then(setPosts);
+    if (!isSelf) getFriendshipStatus(uid).then(setFriendStatus);
+  }, [uid, isSelf]);
+
+  if (!user) return <p className="text-slate-400">Loading profile...</p>;
 
   async function openChat() {
     setError("");
@@ -82,6 +69,34 @@ export default function UserProfilePage() {
     }
   }
 
+  async function addFriend() {
+    setError("");
+    setBusy("friend");
+    try {
+      await sendFriendRequest(uid);
+      setFriendStatus("pending_out");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send friend request");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function acceptFriend() {
+    setError("");
+    setBusy("friend");
+    try {
+      const req = await getIncomingRequestFrom(uid);
+      if (!req) throw new Error("Friend request not found");
+      await respondToFriendRequest(req.id, true);
+      setFriendStatus("friends");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not accept request");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
@@ -96,22 +111,41 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+      {error && (
+        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          {error}
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {friendStatus === "none" && (
           <button
-            onClick={async () => {
-              await sendFriendRequest(uid);
-              setFriendStatus("pending_out");
-            }}
-            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black"
+            onClick={addFriend}
+            disabled={busy !== null}
+            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
           >
-            Add friend
+            {busy === "friend" ? "Sending..." : "Add friend"}
           </button>
         )}
-        {friendStatus === "pending_out" && <span className="text-sm text-slate-400">Request sent</span>}
-        {friendStatus === "friends" && <span className="text-sm text-green-400">Friends</span>}
+        {friendStatus === "pending_out" && (
+          <span className="rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-400">
+            Request sent
+          </span>
+        )}
+        {friendStatus === "pending_in" && (
+          <button
+            onClick={acceptFriend}
+            disabled={busy !== null}
+            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+          >
+            {busy === "friend" ? "Accepting..." : "Accept friend request"}
+          </button>
+        )}
+        {friendStatus === "friends" && (
+          <span className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm text-green-400">
+            Friends
+          </span>
+        )}
         <button
           onClick={openChat}
           disabled={busy !== null}
@@ -135,11 +169,15 @@ export default function UserProfilePage() {
       <div>
         <h2 className="mb-2 font-semibold">Posts ({posts.length})</h2>
         <div className="space-y-2">
-          {posts.map((p) => (
-            <a key={p.id} href={`/post/${p.id}`} className="block rounded-lg border border-white/10 p-3">
-              {p.title}
-            </a>
-          ))}
+          {posts.length === 0 ? (
+            <p className="text-slate-400">No posts yet.</p>
+          ) : (
+            posts.map((p) => (
+              <a key={p.id} href={`/post/${p.id}`} className="block rounded-lg border border-white/10 p-3 hover:border-[var(--color-accent)]/40">
+                {p.title}
+              </a>
+            ))
+          )}
         </div>
       </div>
     </div>

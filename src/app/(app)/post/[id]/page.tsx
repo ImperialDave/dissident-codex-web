@@ -1,18 +1,38 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
+import { ChatMedia } from "@/components/ChatMedia";
+import { GifPicker } from "@/components/GifPicker";
+import { PostFeedVisibilityToggle } from "@/components/PostFeedVisibilityToggle";
 import { PostMedia } from "@/components/PostMedia";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { flattenComments } from "@/lib/commentThread";
 import { mapFirestoreError, timeAgo } from "@/lib/utils";
 import { addComment, deleteComment, getComments } from "@/services/commentService";
-import { deletePost, getPost, hasLikedPost, toggleLikePost } from "@/services/postService";
+import {
+  deletePost,
+  getPost,
+  hasLikedPost,
+  toggleLikePost,
+  togglePostFeedVisibility,
+} from "@/services/postService";
+import {
+  isImageFile,
+  uploadCommentImage,
+  uploadCommentVideo,
+} from "@/services/mediaService";
+import type { GifResult } from "@/services/giphyService";
 import { useAuthStore } from "@/stores/authStore";
 import type { Comment, Post } from "@/models";
 import { canModerate } from "@/models";
 import { resolveRole } from "@/lib/utils";
+
+type PendingMedia =
+  | { kind: "file"; file: File; previewUrl: string; mediaType: "image" | "gif" | "video" }
+  | { kind: "remote"; url: string; mediaType: "gif" };
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,77 +44,163 @@ export default function PostDetailPage() {
   const [liked, setLiked] = useState(false);
   const [error, setError] = useState("");
   const [likeError, setLikeError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [visibilityLoading, setVisibilityLoading] = useState(false);
+  const [gifOpen, setGifOpen] = useState(false);
+  const [pendingMedia, setPendingMedia] = useState<PendingMedia | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setLoadError("");
-    try {
-      const [p, c, l] = await Promise.all([getPost(id), getComments(id), hasLikedPost(id)]);
-      setPost(p);
-      setComments(c);
-      setLiked(l);
-      if (!p) setLoadError("Post not found.");
-    } catch (err) {
-      setPost(null);
-      setComments([]);
-      setLoadError(mapFirestoreError(err instanceof Error ? err.message : "Failed to load post"));
-    } finally {
-      setLoading(false);
-    }
+    const [p, c, l] = await Promise.all([getPost(id), getComments(id), hasLikedPost(id)]);
+    setPost(p);
+    setComments(c);
+    setLiked(l);
   }, [id]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  useEffect(() => {
+    return () => {
+      if (pendingMedia?.kind === "file") {
+        URL.revokeObjectURL(pendingMedia.previewUrl);
+      }
+    };
+  }, [pendingMedia]);
+
+  function clearPendingMedia() {
+    if (pendingMedia?.kind === "file") {
+      URL.revokeObjectURL(pendingMedia.previewUrl);
+    }
+    setPendingMedia(null);
+  }
+
+  function handleImagePick(file: File | undefined) {
+    if (!file) return;
+    if (!isImageFile(file)) {
+      setError("Only images are allowed");
+      return;
+    }
+    clearPendingMedia();
+    setPendingMedia({
+      kind: "file",
+      file,
+      previewUrl: URL.createObjectURL(file),
+      mediaType: file.type === "image/gif" ? "gif" : "image",
+    });
+  }
+
+  function handleVideoPick(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      setError("Only videos are allowed");
+      return;
+    }
+    clearPendingMedia();
+    setPendingMedia({
+      kind: "file",
+      file,
+      previewUrl: URL.createObjectURL(file),
+      mediaType: "video",
+    });
+  }
+
+  function handleGifSelect(gif: GifResult) {
+    clearPendingMedia();
+    setPendingMedia({ kind: "remote", url: gif.fullUrl, mediaType: "gif" });
+    setGifOpen(false);
+  }
+
   async function handleComment(e: FormEvent) {
     e.preventDefault();
     setError("");
+    const trimmed = text.trim();
+    if (!trimmed && !pendingMedia) return;
+
+    setSubmitting(true);
     try {
-      await addComment(id, text, {
+      let imageUrl: string | null = null;
+      let mediaType: string | null = null;
+
+      if (pendingMedia?.kind === "file") {
+        if (pendingMedia.mediaType === "video") {
+          imageUrl = await uploadCommentVideo(pendingMedia.file);
+          mediaType = "video";
+        } else {
+          imageUrl = await uploadCommentImage(pendingMedia.file);
+          mediaType = pendingMedia.mediaType;
+        }
+      } else if (pendingMedia?.kind === "remote") {
+        imageUrl = pendingMedia.url;
+        mediaType = pendingMedia.mediaType;
+      }
+
+      await addComment(id, trimmed, {
+        imageUrl,
+        mediaType,
         parentCommentId: replyTo?.id,
         replyToAuthorName: replyTo?.authorName,
       });
       setText("");
       setReplyTo(null);
+      clearPendingMedia();
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to comment");
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  if (loading) return <p className="text-slate-400">Loading post...</p>;
-  if (loadError || !post) {
-    return (
-      <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
-        {loadError || "Post not found."}
-      </div>
-    );
-  }
+  if (!post) return <p className="text-slate-400">Loading post...</p>;
 
+  const modView = isModerator();
   const canDelete =
     post.authorId === user?.uid ||
-    isModerator() ||
+    modView ||
     canModerate(resolveRole(user, firebaseUser?.email));
+
+  const canSubmit = Boolean(text.trim() || pendingMedia);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <article className="codex-surface rounded-xl p-6">
+      <article className="rounded-xl border border-white/10 bg-[var(--color-surface)] p-6">
         <div className="mb-4 flex items-center gap-3">
-          <UserAvatar name={post.authorName} photoUrl={post.authorPhotoUrl} />
+          <UserAvatar
+            name={post.authorName}
+            photoUrl={post.authorPhotoUrl}
+            userId={post.authorId}
+          />
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-semibold">{post.authorName}</span>
+              <Link
+                href={`/user/${post.authorId}`}
+                className="font-semibold hover:text-[var(--color-accent)]"
+              >
+                {post.authorName}
+              </Link>
               <RoleBadge role={post.authorRole} />
             </div>
             <p className="text-xs text-slate-400">{timeAgo(post.createdAt)} · {post.category}</p>
           </div>
         </div>
-        <h1 className="mb-3 text-2xl font-bold text-white">{post.title}</h1>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-bold text-white">{post.title}</h1>
+          {post.hiddenFromFeed && (
+            <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-xs font-medium text-orange-200">
+              Hidden from feed
+            </span>
+          )}
+        </div>
         <p className="whitespace-pre-wrap text-slate-200">{post.body}</p>
-        <PostMedia url={post.imageUrl} mediaType={post.mediaType} alt={post.title} />
+        <PostMedia
+          url={post.imageUrl}
+          mediaType={post.mediaType}
+          alt={post.title}
+          enlargeable
+        />
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             onClick={async () => {
@@ -113,6 +219,24 @@ export default function PostDetailPage() {
             {liked ? "Liked" : "Like"} ({post.likeCount})
           </button>
           {likeError && <p className="text-sm text-red-400">{likeError}</p>}
+          {modView && (
+            <PostFeedVisibilityToggle
+              hiddenFromFeed={post.hiddenFromFeed}
+              disabled={visibilityLoading}
+              onToggle={async () => {
+                setVisibilityLoading(true);
+                setError("");
+                try {
+                  const hidden = await togglePostFeedVisibility(id);
+                  setPost((p) => p && { ...p, hiddenFromFeed: hidden });
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Failed to update visibility");
+                } finally {
+                  setVisibilityLoading(false);
+                }
+              }}
+            />
+          )}
           {canDelete && (
             <button
               onClick={async () => {
@@ -138,15 +262,35 @@ export default function PostDetailPage() {
             className="rounded-lg border border-white/10 bg-black/20 p-4"
           >
             <div className="mb-2 flex items-center gap-2">
-              <UserAvatar name={comment.authorName} photoUrl={comment.authorPhotoUrl} size="sm" />
-              <span className="text-sm font-medium">{comment.authorName}</span>
+              <UserAvatar
+                name={comment.authorName}
+                photoUrl={comment.authorPhotoUrl}
+                size="sm"
+                userId={comment.authorId}
+              />
+              <Link
+                href={`/user/${comment.authorId}`}
+                className="text-sm font-medium hover:text-[var(--color-accent)]"
+              >
+                {comment.authorName}
+              </Link>
               <RoleBadge role={comment.authorRole} />
               <span className="text-xs text-slate-500">{timeAgo(comment.createdAt)}</span>
             </div>
             {comment.replyToAuthorName && (
               <p className="mb-1 text-xs text-[var(--color-accent)]">@{comment.replyToAuthorName}</p>
             )}
-            <p className="text-sm text-slate-200">{comment.text}</p>
+            {comment.imageUrl && (
+              <ChatMedia
+                url={comment.imageUrl}
+                mediaType={comment.mediaType}
+                className="mb-2"
+                enlargeable
+              />
+            )}
+            {comment.text?.trim() && (
+              <p className="text-sm text-slate-200">{comment.text}</p>
+            )}
             <div className="mt-2 flex gap-3 text-xs">
               <button onClick={() => setReplyTo(comment)} className="text-[var(--color-accent)]">
                 Reply
@@ -175,20 +319,98 @@ export default function PostDetailPage() {
               </button>
             </p>
           )}
+          {pendingMedia && (
+            <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/20 p-3">
+              {pendingMedia.kind === "file" && pendingMedia.mediaType === "video" ? (
+                <video
+                  src={pendingMedia.previewUrl}
+                  className="h-14 w-20 rounded-lg object-cover"
+                  muted
+                  playsInline
+                />
+              ) : (
+                <img
+                  src={pendingMedia.kind === "file" ? pendingMedia.previewUrl : pendingMedia.url}
+                  alt="Pending attachment"
+                  className="h-14 w-20 rounded-lg object-cover"
+                />
+              )}
+              <span className="flex-1 text-sm text-slate-400">
+                {pendingMedia.kind === "remote" || pendingMedia.mediaType === "gif"
+                  ? "GIF ready to post"
+                  : pendingMedia.mediaType === "video"
+                    ? "Video ready to post"
+                    : "Image ready to post"}
+              </span>
+              <button
+                type="button"
+                onClick={clearPendingMedia}
+                className="text-sm text-slate-400 hover:text-white"
+              >
+                Remove
+              </button>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleImagePick(e.target.files?.[0])}
+            />
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={(e) => handleVideoPick(e.target.files?.[0])}
+            />
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              disabled={submitting}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+            >
+              Image
+            </button>
+            <button
+              type="button"
+              onClick={() => setGifOpen(true)}
+              disabled={submitting}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+            >
+              GIF
+            </button>
+            <button
+              type="button"
+              onClick={() => videoInputRef.current?.click()}
+              disabled={submitting}
+              disabled={submitting}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+            >
+              Video
+            </button>
+          </div>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Write a comment..."
             rows={3}
             className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--color-accent)]"
-            required
           />
           {error && <p className="text-red-400">{error}</p>}
-          <button type="submit" className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black">
-            Post comment
+          <button
+            type="submit"
+            disabled={submitting || !canSubmit}
+            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+          >
+            {submitting ? "Posting..." : "Post comment"}
           </button>
         </form>
       </section>
+
+      <GifPicker open={gifOpen} onClose={() => setGifOpen(false)} onSelect={handleGifSelect} />
     </div>
   );
 }
