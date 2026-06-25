@@ -14,6 +14,7 @@ import {
   sendFriendRequest,
 } from "@/services/friendService";
 import { startChessGame } from "@/services/chessService";
+import { ensureMicrophoneForVoice } from "@/lib/microphonePermission";
 import { startDmVoiceCall } from "@/services/voiceService";
 import { useAuthStore } from "@/stores/authStore";
 import type { Post, User } from "@/models";
@@ -72,6 +73,12 @@ export default function UserProfilePage() {
 
   async function startVoiceCall() {
     setError("");
+    const mic = await ensureMicrophoneForVoice();
+    if (mic.status !== "granted") {
+      if (mic.message && mic.status !== "denied") setError(mic.message);
+      return;
+    }
+
     setBusy("call");
     try {
       const room = await getOrCreateDmRoom(uid);
