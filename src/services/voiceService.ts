@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { getFirebaseAuth, getFirebaseDb, getFirebaseFunctions } from "@/lib/firebase";
+import { mapCallableError } from "@/lib/utils";
 import { COLLECTIONS, VOICE_MAX_DM, VOICE_MAX_GROUP, VOICE_MAX_TOPIC } from "@/lib/constants";
 import {
   CHAT_TYPE_DM,
@@ -269,16 +270,24 @@ export async function fetchVoiceToken(
   sessionId: string,
   displayName: string
 ): Promise<VoiceTokenResult> {
-  const fn = httpsCallable(getFirebaseFunctions(), "createVoiceToken");
-  const result = await fn({ sessionId, displayName });
-  const data = result.data as VoiceTokenResult;
-  if (!data?.token || !data?.url) {
-    throw new Error("Could not get voice token. Is LiveKit configured?");
+  try {
+    const fn = httpsCallable(getFirebaseFunctions(), "createVoiceToken");
+    const result = await fn({ sessionId, displayName });
+    const data = result.data as VoiceTokenResult;
+    if (!data?.token || !data?.url) {
+      throw new Error("Could not get voice token. Is LiveKit configured?");
+    }
+    return data;
+  } catch (err) {
+    throw new Error(mapCallableError(err));
   }
-  return data;
 }
 
 export async function endVoiceSessionRemote(sessionId: string): Promise<void> {
-  const fn = httpsCallable(getFirebaseFunctions(), "endVoiceSession");
-  await fn({ sessionId });
+  try {
+    const fn = httpsCallable(getFirebaseFunctions(), "endVoiceSession");
+    await fn({ sessionId });
+  } catch (err) {
+    throw new Error(mapCallableError(err));
+  }
 }

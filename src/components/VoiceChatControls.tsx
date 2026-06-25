@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { VoiceCallBar } from "@/components/VoiceCallBar";
 import { useVoiceRoom } from "@/hooks/useVoiceRoom";
 import {
+  declineDmVoiceCall,
   getActiveVoiceSessionForRoom,
   joinTopicOrGroupVoice,
   listenVoiceSession,
@@ -75,6 +76,32 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
     }
   }
 
+  async function handleCancelRinging() {
+    if (!session) return;
+    setVoiceBusy(true);
+    setVoiceError("");
+    try {
+      await declineDmVoiceCall(session);
+      setSession(null);
+    } catch (err) {
+      setVoiceError(err instanceof Error ? err.message : "Could not cancel call");
+    } finally {
+      setVoiceBusy(false);
+    }
+  }
+
+  async function handleLeaveVoice() {
+    setVoiceError("");
+    try {
+      await voice.leave();
+      if (session?.status === "active" || session?.status === "ringing") {
+        setSession((prev) => (prev ? { ...prev, status: "ended" } : null));
+      }
+    } catch (err) {
+      setVoiceError(err instanceof Error ? err.message : "Could not end call");
+    }
+  }
+
   if (!room || !myUid) return null;
 
   const isDm = room.type === CHAT_TYPE_DM;
@@ -118,7 +145,17 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
           </button>
         )}
         {isCallerRinging && (
-          <span className="text-sm text-slate-400">Ringing...</span>
+          <>
+            <span className="text-sm text-slate-400">Ringing...</span>
+            <button
+              type="button"
+              onClick={handleCancelRinging}
+              disabled={voiceBusy}
+              className="rounded-lg border border-red-500/40 px-3 py-1.5 text-sm text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+            >
+              Cancel call
+            </button>
+          </>
         )}
         {isCallee && (
           <span className="text-sm text-emerald-300">Incoming call — use the pop-up to respond</span>
@@ -131,11 +168,15 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
       <VoiceCallBar
         connected={voice.connected}
         connecting={voice.connecting}
+        leaving={voice.leaving}
         muted={voice.muted}
         participants={voice.participants}
-        error={voice.error}
+        error={voice.error || voiceError}
+        needsAudioUnlock={voice.needsAudioUnlock}
         onToggleMute={voice.toggleMute}
-        onLeave={voice.leave}
+        onLeave={handleLeaveVoice}
+        onUnlockAudio={voice.unlockAudio}
+        audioContainerRef={voice.audioContainerRef}
         label={room.type === CHAT_TYPE_TOPIC ? "Topic voice" : room.type === CHAT_TYPE_GROUP ? "Group voice" : "Call"}
       />
     </>
