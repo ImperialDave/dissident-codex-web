@@ -103,10 +103,10 @@ export function listenVoiceSession(
 }
 
 export function listenIncomingDmCalls(
+  uid: string,
   onUpdate: (sessions: VoiceSession[]) => void,
   onError?: (err: Error) => void
 ): Unsubscribe {
-  const uid = getFirebaseAuth().currentUser?.uid;
   if (!uid) return () => {};
 
   return onSnapshot(
