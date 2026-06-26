@@ -10,6 +10,11 @@ import {
   type RemoteTrack,
 } from "livekit-client";
 import { mapMicrophoneConnectError } from "@/lib/microphonePermission";
+import {
+  applyMicVolumeToRoom,
+  applySpeakerVolumeToRoom,
+  teardownMicGainPipeline,
+} from "@/lib/voiceVolume";
 import { mapCallableError } from "@/lib/utils";
 import { useVoiceUiStore } from "@/stores/voiceUiStore";
 import {
@@ -67,11 +72,16 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
 
 export function useVoiceRoom({ session, displayName, shouldConnect }: UseVoiceRoomOptions) {
   const micPreflightGranted = useVoiceUiStore((s) => s.micPreflightGranted);
+  const micVolumePercent = useVoiceUiStore((s) => s.micVolumePercent);
+  const speakerVolumePercent = useVoiceUiStore((s) => s.speakerVolumePercent);
+  const setMicVolumePercent = useVoiceUiStore((s) => s.setMicVolumePercent);
+  const setSpeakerVolumePercent = useVoiceUiStore((s) => s.setSpeakerVolumePercent);
   const [room] = useState(
     () =>
       new Room({
         adaptiveStream: true,
         dynacast: true,
+        webAudioMix: true,
       })
   );
   const roomRef = useRef(room);
@@ -137,6 +147,7 @@ export function useVoiceRoom({ session, displayName, shouldConnect }: UseVoiceRo
       activeRoom.on(RoomEvent.TrackUnmuted, () => refreshParticipants(activeRoom));
       activeRoom.on(RoomEvent.TrackSubscribed, (track) => {
         attachRemoteAudio(track, audioContainerRef.current);
+        applySpeakerVolumeToRoom(activeRoom, useVoiceUiStore.getState().speakerVolumePercent);
         refreshParticipants(activeRoom);
       });
       activeRoom.on(RoomEvent.TrackUnsubscribed, (track) => {
@@ -163,6 +174,7 @@ export function useVoiceRoom({ session, displayName, shouldConnect }: UseVoiceRo
       // Best-effort teardown.
     }
     clearAudioElements();
+    teardownMicGainPipeline();
     setConnected(false);
     setConnecting(false);
     setParticipants([]);
@@ -231,6 +243,11 @@ export function useVoiceRoom({ session, displayName, shouldConnect }: UseVoiceRo
       } catch {
         setNeedsAudioUnlock(true);
       }
+
+      const { micVolumePercent: micVol, speakerVolumePercent: speakerVol } =
+        useVoiceUiStore.getState();
+      await applyMicVolumeToRoom(activeRoom, micVol);
+      applySpeakerVolumeToRoom(activeRoom, speakerVol);
     } catch (err) {
       connectFailedRef.current = true;
       setConnectFailed(true);
@@ -284,6 +301,20 @@ export function useVoiceRoom({ session, displayName, shouldConnect }: UseVoiceRo
       void disconnect();
     };
   }, [disconnect]);
+
+  useEffect(() => {
+    if (!connected) return;
+    const activeRoom = roomRef.current;
+    if (activeRoom.state !== "connected") return;
+    void applyMicVolumeToRoom(activeRoom, micVolumePercent);
+  }, [connected, micVolumePercent]);
+
+  useEffect(() => {
+    if (!connected) return;
+    const activeRoom = roomRef.current;
+    if (activeRoom.state !== "connected") return;
+    applySpeakerVolumeToRoom(activeRoom, speakerVolumePercent);
+  }, [connected, speakerVolumePercent]);
 
   const toggleMute = useCallback(async () => {
     const activeRoom = roomRef.current;
@@ -368,5 +399,9 @@ export function useVoiceRoom({ session, displayName, shouldConnect }: UseVoiceRo
     connect,
     disconnect,
     audioContainerRef,
+    micVolumePercent,
+    speakerVolumePercent,
+    setMicVolumePercent,
+    setSpeakerVolumePercent,
   };
 }
