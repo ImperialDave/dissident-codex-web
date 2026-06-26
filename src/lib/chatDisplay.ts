@@ -1,5 +1,37 @@
 import { fetchUser } from "@/services/authService";
-import { CHAT_TYPE_DM, type ChatRoom } from "@/models";
+import {
+  CHAT_TYPE_DM,
+  CHAT_TYPE_GROUP,
+  CHAT_TYPE_TOPIC,
+  type ChatRoom,
+} from "@/models";
+
+export function sortChatRooms(rooms: ChatRoom[], favoriteIds: Set<string>): ChatRoom[] {
+  return [...rooms].sort((a, b) => {
+    const af = favoriteIds.has(a.id) ? 1 : 0;
+    const bf = favoriteIds.has(b.id) ? 1 : 0;
+    if (af !== bf) return bf - af;
+    return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
+  });
+}
+
+export function groupChatRoomsByType(rooms: ChatRoom[]): {
+  dms: ChatRoom[];
+  privateGroups: ChatRoom[];
+  publicGroups: ChatRoom[];
+} {
+  const dms: ChatRoom[] = [];
+  const privateGroups: ChatRoom[] = [];
+  const publicGroups: ChatRoom[] = [];
+
+  for (const room of rooms) {
+    if (room.type === CHAT_TYPE_DM) dms.push(room);
+    else if (room.type === CHAT_TYPE_GROUP) privateGroups.push(room);
+    else if (room.type === CHAT_TYPE_TOPIC) publicGroups.push(room);
+  }
+
+  return { dms, privateGroups, publicGroups };
+}
 
 export function isDmRoom(room: ChatRoom): boolean {
   return room.type === CHAT_TYPE_DM || room.id.startsWith("dm_");

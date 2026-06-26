@@ -1,14 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FavoriteStar } from "@/components/FavoriteStar";
 import { useDmDisplayNames } from "@/hooks/useDmDisplayNames";
-import { chatRoomDisplayTitle } from "@/lib/chatDisplay";
+import {
+  chatRoomDisplayTitle,
+  groupChatRoomsByType,
+  sortChatRooms,
+} from "@/lib/chatDisplay";
 import { mapFirestoreError, timeAgo } from "@/lib/utils";
 import { getFavoriteRoomIds, listenChatRooms, toggleFavoriteRoom } from "@/services/chatService";
 import { useAuthStore } from "@/stores/authStore";
 import type { ChatRoom } from "@/models";
+
+const CHAT_SECTIONS = [
+  { key: "dms" as const, title: "DMs" },
+  { key: "privateGroups" as const, title: "Private group chats" },
+  { key: "publicGroups" as const, title: "Public group chats", browseTopics: true },
+];
 
 export default function ChatsPage() {
   const { user } = useAuthStore();
@@ -25,12 +35,32 @@ export default function ChatsPage() {
     );
   }, []);
 
-  const sorted = [...rooms].sort((a, b) => {
-    const af = favorites.has(a.id) ? 1 : 0;
-    const bf = favorites.has(b.id) ? 1 : 0;
-    if (af !== bf) return bf - af;
-    return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
-  });
+  const sections = useMemo(() => {
+    const grouped = groupChatRoomsByType(rooms);
+    return CHAT_SECTIONS.map((section) => ({
+      ...section,
+      rooms: sortChatRooms(grouped[section.key], favorites),
+    })).filter((section) => section.rooms.length > 0);
+  }, [rooms, favorites]);
+
+  const hasRooms = sections.length > 0;
+
+  async function handleToggleFavorite(roomId: string) {
+    setTogglingFavorite(roomId);
+    try {
+      const nowFav = await toggleFavoriteRoom(roomId);
+      setFavorites((prev) => {
+        const next = new Set(prev);
+        if (nowFav) next.add(roomId);
+        else next.delete(roomId);
+        return next;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? mapFirestoreError(err.message) : "Failed to update favorite");
+    } finally {
+      setTogglingFavorite(null);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -46,52 +76,60 @@ export default function ChatsPage() {
         </div>
       </div>
       {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
-      {sorted.length === 0 ? (
-        <p className="text-slate-400">No chats yet. Start a DM or join a topic room.</p>
+      {!hasRooms ? (
+        <p className="text-slate-400">
+          No chats yet. Start a DM, create a private group, or{" "}
+          <Link href="/topics" className="text-[var(--color-accent)] hover:underline">
+            browse topics
+          </Link>
+          .
+        </p>
       ) : (
-        <div className="space-y-2">
-          {sorted.map((room) => (
-            <Link
-              key={room.id}
-              href={`/chat/${room.id}`}
-              className="flex items-center gap-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 hover:border-[var(--color-accent)]/40"
-            >
-              <FavoriteStar
-                favorited={favorites.has(room.id)}
-                disabled={togglingFavorite === room.id}
-                size="sm"
-                onToggle={async () => {
-                  setTogglingFavorite(room.id);
-                  try {
-                    const nowFav = await toggleFavoriteRoom(room.id);
-                    setFavorites((prev) => {
-                      const next = new Set(prev);
-                      if (nowFav) next.add(room.id);
-                      else next.delete(room.id);
-                      return next;
-                    });
-                  } catch (err) {
-                    setError(err instanceof Error ? mapFirestoreError(err.message) : "Failed to update favorite");
-                  } finally {
-                    setTogglingFavorite(null);
-                  }
-                }}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">
-                  {user?.uid
-                    ? chatRoomDisplayTitle(room, user.uid, dmDisplayNames)
-                    : room.title}
-                  {room.type === "group" && <span className="ml-2 text-xs text-slate-500">group</span>}
-                  {room.activeVoiceSessionId && (
-                    <span className="ml-2 text-xs text-emerald-300">voice active</span>
-                  )}
-                  {room.locked && <span className="ml-2 text-xs text-orange-300">locked</span>}
-                </p>
-                <p className="line-clamp-1 text-sm text-slate-400">{room.lastMessagePreview || "No messages yet"}</p>
+        <div className="space-y-6">
+          {sections.map((section) => (
+            <section key={section.key} className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+                  {section.title}
+                </h2>
+                {section.browseTopics && (
+                  <Link href="/topics" className="text-xs text-[var(--color-accent)] hover:underline">
+                    Browse topics
+                  </Link>
+                )}
               </div>
-              <span className="shrink-0 text-xs text-slate-500">{timeAgo(room.lastMessageAt)}</span>
-            </Link>
+              <div className="space-y-2">
+                {section.rooms.map((room) => (
+                  <Link
+                    key={room.id}
+                    href={`/chat/${room.id}`}
+                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 hover:border-[var(--color-accent)]/40"
+                  >
+                    <FavoriteStar
+                      favorited={favorites.has(room.id)}
+                      disabled={togglingFavorite === room.id}
+                      size="sm"
+                      onToggle={() => void handleToggleFavorite(room.id)}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">
+                        {user?.uid
+                          ? chatRoomDisplayTitle(room, user.uid, dmDisplayNames)
+                          : room.title}
+                        {room.activeVoiceSessionId && (
+                          <span className="ml-2 text-xs text-emerald-300">voice active</span>
+                        )}
+                        {room.locked && <span className="ml-2 text-xs text-orange-300">locked</span>}
+                      </p>
+                      <p className="line-clamp-1 text-sm text-slate-400">
+                        {room.lastMessagePreview || "No messages yet"}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-500">{timeAgo(room.lastMessageAt)}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       )}
