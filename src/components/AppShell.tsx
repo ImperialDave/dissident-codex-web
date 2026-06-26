@@ -14,7 +14,7 @@ import { listenNotifications } from "@/services/notificationService";
 
 const MOBILE_NAV = [
   { href: "/feed", label: "Feed", icon: "📰" },
-  { href: "/chats", label: "Chats", icon: "💬" },
+  { href: "/topics", label: "Topics", icon: "🏷️" },
   { href: "/notifications", label: "Alerts", icon: "🔔" },
   { href: "/chess", label: "Chess", icon: "♟️" },
   { href: "/create", label: "Create", icon: "✏️" },
@@ -23,21 +23,21 @@ const MOBILE_NAV = [
 
 const MOBILE_HEADER_NAV = [
   { href: "/feed", label: "Feed" },
-  { href: "/chats", label: "Chats" },
+  { href: "/topics", label: "Topics" },
   { href: "/friends", label: "Friends" },
   { href: "/notifications", label: "Alerts" },
   { href: "/chess", label: "Chess" },
   { href: "/search", label: "Search" },
-  { href: "/topics", label: "Topics" },
+  { href: "/chats", label: "Chats" },
 ];
 
 const DESKTOP_NAV = [
   { href: "/feed", label: "Feed" },
-  { href: "/chats", label: "Chats" },
+  { href: "/topics", label: "Topics" },
   { href: "/friends", label: "Friends" },
   { href: "/chess", label: "Chess" },
   { href: "/search", label: "Search" },
-  { href: "/topics", label: "Topics" },
+  { href: "/chats", label: "Chats" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/create", label: "Create" },
   { href: "/notifications", label: "Alerts" },
