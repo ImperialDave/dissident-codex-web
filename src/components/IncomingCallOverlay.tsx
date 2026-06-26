@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { usePathname, useRouter } from "next/navigation";
 import { IncomingCallBanner, IncomingCallModal } from "@/components/IncomingCallModal";
 import { VoiceIncomingListener } from "@/components/VoiceIncomingListener";
 import { acceptDmVoiceCall, declineDmVoiceCall } from "@/services/voiceService";
@@ -11,8 +10,6 @@ import { useIncomingCallStore } from "@/stores/incomingCallStore";
 import { useVoiceUiStore } from "@/stores/voiceUiStore";
 
 function IncomingCallUi() {
-  const router = useRouter();
-  const pathname = usePathname();
   const session = useIncomingCallStore((s) => s.session);
   const callerName = useIncomingCallStore((s) => s.callerName);
   const callerPhotoUrl = useIncomingCallStore((s) => s.callerPhotoUrl);
@@ -45,14 +42,10 @@ function IncomingCallUi() {
       setJoinIntent(session.id);
       stopIncomingCallAlerts();
       clear();
-      const target = `/chat/${session.chatRoomId}`;
-      if (pathname !== target) {
-        router.push(target);
-      }
     } finally {
       setBusy(false);
     }
-  }, [session, pathname, router, setBusy, clear, resetMicPreflight, setJoinIntent]);
+  }, [session, setBusy, clear, resetMicPreflight, setJoinIntent]);
 
   const handleReject = useCallback(async () => {
     if (!session) return;
