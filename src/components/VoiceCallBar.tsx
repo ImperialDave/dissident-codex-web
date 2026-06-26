@@ -11,8 +11,9 @@ export type VoiceCallPhase =
   | "connecting"
   | "connected";
 
-interface VoiceCallBarProps {
+export interface VoiceCallBarProps {
   phase: VoiceCallPhase;
+  variant?: "inline" | "floating";
   connected: boolean;
   connecting: boolean;
   leaving?: boolean;
@@ -43,6 +44,7 @@ interface VoiceCallBarProps {
 
 export function VoiceCallBar({
   phase,
+  variant = "inline",
   connected,
   connecting,
   leaving = false,
@@ -96,10 +98,13 @@ export function VoiceCallBar({
 
   const showEndCall = connected || phase === "join-ready" || phase === "connecting";
 
+  const containerClass =
+    variant === "floating"
+      ? "fixed bottom-20 left-3 right-3 z-40 mx-auto max-w-lg rounded-xl border border-emerald-500/40 bg-emerald-950/95 px-4 py-3 shadow-2xl shadow-black/50 backdrop-blur-md lg:bottom-6"
+      : `border-b border-emerald-500/30 bg-emerald-500/10 px-4 py-3 ${phase !== "idle" ? "min-h-[3.5rem]" : ""}`;
+
   return (
-    <div
-      className={`border-b border-emerald-500/30 bg-emerald-500/10 px-4 py-3 ${phase !== "idle" ? "min-h-[3.5rem]" : ""}`}
-    >
+    <div className={containerClass}>
       <div ref={audioContainerRef} className="hidden" aria-hidden />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
