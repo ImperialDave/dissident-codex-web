@@ -21,6 +21,13 @@ import type { VoiceSession } from "@/models";
 
 const CONNECT_TIMEOUT_MS = 20_000;
 
+export type VoiceConnectionState =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "failed";
+
 export interface VoiceParticipantInfo {
   identity: string;
   name: string;
@@ -32,7 +39,8 @@ export interface VoiceParticipantInfo {
 interface UseVoiceRoomOptions {
   session: VoiceSession | null;
   displayName: string;
-  enabled: boolean;
+  /** Stable intent to join LiveKit — must not flicker on transient Firestore updates. */
+  shouldConnect: boolean;
 }
 
 function attachRemoteAudio(track: RemoteTrack, container: HTMLElement | null) {
@@ -57,14 +65,22 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
   });
 }
 
-export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOptions) {
+export function useVoiceRoom({ session, displayName, shouldConnect }: UseVoiceRoomOptions) {
   const micPreflightGranted = useVoiceUiStore((s) => s.micPreflightGranted);
-  const roomRef = useRef<Room | null>(null);
+  const [room] = useState(
+    () =>
+      new Room({
+        adaptiveStream: true,
+        dynacast: true,
+      })
+  );
+  const roomRef = useRef(room);
   const audioContainerRef = useRef<HTMLDivElement>(null);
   const leavingRef = useRef(false);
   const suppressConnectRef = useRef(false);
   const connectingRef = useRef(false);
   const connectFailedRef = useRef(false);
+  const listenersBoundRef = useRef(false);
   const sessionRef = useRef(session);
   sessionRef.current = session;
 
@@ -73,10 +89,11 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
   const [leaving, setLeaving] = useState(false);
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState("");
+  const [connectFailed, setConnectFailed] = useState(false);
   const [participants, setParticipants] = useState<VoiceParticipantInfo[]>([]);
   const [needsAudioUnlock, setNeedsAudioUnlock] = useState(false);
 
-  const refreshParticipants = useCallback((room: Room) => {
+  const refreshParticipants = useCallback((activeRoom: Room) => {
     const list: VoiceParticipantInfo[] = [];
     const add = (p: LocalParticipant | RemoteParticipant, isLocal: boolean) => {
       const mic = p.getTrackPublication(Track.Source.Microphone);
@@ -88,8 +105,8 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
         isMuted: mic?.isMuted ?? !mic?.track,
       });
     };
-    add(room.localParticipant, true);
-    room.remoteParticipants.forEach((p) => add(p, false));
+    add(activeRoom.localParticipant, true);
+    activeRoom.remoteParticipants.forEach((p) => add(p, false));
     setParticipants(list);
   }, []);
 
@@ -97,13 +114,53 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
     audioContainerRef.current?.querySelectorAll("[data-livekit-audio]").forEach((el) => el.remove());
   }, []);
 
+  const bindRoomListeners = useCallback(
+    (activeRoom: Room) => {
+      if (listenersBoundRef.current) return;
+      listenersBoundRef.current = true;
+
+      activeRoom.on(RoomEvent.Connected, () => {
+        setConnected(true);
+        setConnecting(false);
+        connectingRef.current = false;
+        refreshParticipants(activeRoom);
+      });
+      activeRoom.on(RoomEvent.Disconnected, () => {
+        setConnected(false);
+        setConnecting(false);
+        connectingRef.current = false;
+      });
+      activeRoom.on(RoomEvent.ParticipantConnected, () => refreshParticipants(activeRoom));
+      activeRoom.on(RoomEvent.ParticipantDisconnected, () => refreshParticipants(activeRoom));
+      activeRoom.on(RoomEvent.ActiveSpeakersChanged, () => refreshParticipants(activeRoom));
+      activeRoom.on(RoomEvent.TrackMuted, () => refreshParticipants(activeRoom));
+      activeRoom.on(RoomEvent.TrackUnmuted, () => refreshParticipants(activeRoom));
+      activeRoom.on(RoomEvent.TrackSubscribed, (track) => {
+        attachRemoteAudio(track, audioContainerRef.current);
+        refreshParticipants(activeRoom);
+      });
+      activeRoom.on(RoomEvent.TrackUnsubscribed, (track) => {
+        track.detach().forEach((el) => el.remove());
+        refreshParticipants(activeRoom);
+      });
+    },
+    [refreshParticipants]
+  );
+
   const disconnect = useCallback(async () => {
-    const room = roomRef.current;
-    roomRef.current = null;
     connectingRef.current = false;
-    if (room) {
-      room.removeAllListeners();
-      await room.disconnect();
+    const activeRoom = roomRef.current;
+    if (activeRoom.state === "disconnected") {
+      setConnected(false);
+      setConnecting(false);
+      setParticipants([]);
+      setNeedsAudioUnlock(false);
+      return;
+    }
+    try {
+      await activeRoom.disconnect();
+    } catch {
+      // Best-effort teardown.
     }
     clearAudioElements();
     setConnected(false);
@@ -113,10 +170,10 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
   }, [clearAudioElements]);
 
   const unlockAudio = useCallback(async () => {
-    const room = roomRef.current;
-    if (!room) return;
+    const activeRoom = roomRef.current;
+    if (!activeRoom) return;
     try {
-      await room.startAudio();
+      await activeRoom.startAudio();
       setNeedsAudioUnlock(false);
       setError("");
     } catch (err) {
@@ -129,58 +186,33 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
     if (
       !activeSession ||
       activeSession.status !== "active" ||
-      !enabled ||
+      !shouldConnect ||
       leavingRef.current ||
-      suppressConnectRef.current ||
-      connectFailedRef.current
+      suppressConnectRef.current
     ) {
       return;
     }
-    if (roomRef.current || connectingRef.current) return;
+    if (connectingRef.current || roomRef.current.state === "connected") return;
 
     connectingRef.current = true;
     setConnecting(true);
     setError("");
+    setConnectFailed(false);
+    connectFailedRef.current = false;
+
+    const activeRoom = roomRef.current;
+    bindRoomListeners(activeRoom);
+
     try {
       const { token, url } = await fetchVoiceToken(activeSession.id, displayName);
-      const room = new Room({
-        adaptiveStream: true,
-        dynacast: true,
-      });
-      roomRef.current = room;
-
-      room.on(RoomEvent.Connected, () => {
-        setConnected(true);
-        setConnecting(false);
-        connectingRef.current = false;
-        refreshParticipants(room);
-      });
-      room.on(RoomEvent.Disconnected, () => {
-        setConnected(false);
-        setConnecting(false);
-        connectingRef.current = false;
-      });
-      room.on(RoomEvent.ParticipantConnected, () => refreshParticipants(room));
-      room.on(RoomEvent.ParticipantDisconnected, () => refreshParticipants(room));
-      room.on(RoomEvent.ActiveSpeakersChanged, () => refreshParticipants(room));
-      room.on(RoomEvent.TrackMuted, () => refreshParticipants(room));
-      room.on(RoomEvent.TrackUnmuted, () => refreshParticipants(room));
-      room.on(RoomEvent.TrackSubscribed, (track) => {
-        attachRemoteAudio(track, audioContainerRef.current);
-        refreshParticipants(room);
-      });
-      room.on(RoomEvent.TrackUnsubscribed, (track) => {
-        track.detach().forEach((el) => el.remove());
-        refreshParticipants(room);
-      });
 
       await withTimeout(
-        room.connect(url, token, { autoSubscribe: true }),
+        activeRoom.connect(url, token, { autoSubscribe: true }),
         CONNECT_TIMEOUT_MS,
         "Voice connection timed out. Check microphone permission and try again."
       );
       try {
-        await room.localParticipant.setMicrophoneEnabled(true);
+        await activeRoom.localParticipant.setMicrophoneEnabled(true);
       } catch (micErr) {
         useVoiceUiStore.getState().setMicPreflightGranted(false);
         throw new Error(mapMicrophoneConnectError(micErr));
@@ -190,48 +222,62 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
       setConnecting(false);
       connectingRef.current = false;
       connectFailedRef.current = false;
-      refreshParticipants(room);
+      setConnectFailed(false);
+      refreshParticipants(activeRoom);
 
       try {
-        await room.startAudio();
+        await activeRoom.startAudio();
         setNeedsAudioUnlock(false);
       } catch {
         setNeedsAudioUnlock(true);
       }
     } catch (err) {
       connectFailedRef.current = true;
+      setConnectFailed(true);
       setError(mapCallableError(err));
       setConnecting(false);
       connectingRef.current = false;
       await disconnect();
     }
-  }, [displayName, enabled, disconnect, refreshParticipants]);
+  }, [displayName, shouldConnect, disconnect, refreshParticipants, bindRoomListeners]);
 
   useEffect(() => {
-    if (session?.status === "ended") {
-      suppressConnectRef.current = false;
-      connectFailedRef.current = false;
-    }
-  }, [session?.status]);
+    connectFailedRef.current = false;
+    setConnectFailed(false);
+    setError("");
+  }, [session?.id]);
 
   useEffect(() => {
     if (leavingRef.current || suppressConnectRef.current) return;
-    if (
-      enabled &&
-      session?.status === "active" &&
-      !connectFailedRef.current &&
-      micPreflightGranted
-    ) {
-      void connect();
+
+    if (!session || session.status === "ended") {
+      void disconnect();
+      if (!session || session.status === "ended") {
+        useVoiceUiStore.getState().resetMicPreflight();
+        useVoiceUiStore.getState().clearJoinIntent();
+      }
       return;
     }
-    if (!enabled || session?.status === "ended" || !session) {
-      void disconnect();
-      if (session?.status === "ended" || !session) {
-        useVoiceUiStore.getState().resetMicPreflight();
-      }
+
+    if (
+      shouldConnect &&
+      session.status === "active" &&
+      micPreflightGranted &&
+      !connectFailedRef.current &&
+      !connected &&
+      !connectingRef.current
+    ) {
+      void connect();
     }
-  }, [enabled, session?.id, session?.status, connect, disconnect, micPreflightGranted]);
+  }, [
+    shouldConnect,
+    session?.id,
+    session?.status,
+    micPreflightGranted,
+    connected,
+    connect,
+    disconnect,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -240,12 +286,12 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
   }, [disconnect]);
 
   const toggleMute = useCallback(async () => {
-    const room = roomRef.current;
-    if (!room) return;
+    const activeRoom = roomRef.current;
+    if (!activeRoom || activeRoom.state !== "connected") return;
     const next = !muted;
-    await room.localParticipant.setMicrophoneEnabled(!next);
+    await activeRoom.localParticipant.setMicrophoneEnabled(!next);
     setMuted(next);
-    refreshParticipants(room);
+    refreshParticipants(activeRoom);
   }, [muted, refreshParticipants]);
 
   const leave = useCallback(async () => {
@@ -270,24 +316,37 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
       setError(mapCallableError(err));
     } finally {
       leavingRef.current = false;
+      suppressConnectRef.current = false;
       setLeaving(false);
+      useVoiceUiStore.getState().clearJoinIntent();
     }
   }, [disconnect]);
 
   const resetConnect = useCallback(() => {
     connectFailedRef.current = false;
+    setConnectFailed(false);
     suppressConnectRef.current = false;
     setError("");
   }, []);
 
   const needsJoin =
-    enabled &&
+    shouldConnect &&
     session?.status === "active" &&
     !connected &&
     !connecting &&
     !leaving;
 
   const needsManualJoin = needsJoin && !micPreflightGranted;
+  const needsAutoJoin = needsJoin && micPreflightGranted && !connectFailed;
+
+  const connectionState: VoiceConnectionState = (() => {
+    if (leaving) return "disconnected";
+    if (connectFailed && !connected) return "failed";
+    if (connecting) return "connecting";
+    if (connected) return "connected";
+    if (shouldConnect && session?.status === "active") return "disconnected";
+    return "idle";
+  })();
 
   return {
     connected,
@@ -295,10 +354,13 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
     leaving,
     muted,
     error,
+    connectFailed,
+    connectionState,
     participants,
     needsAudioUnlock,
     needsJoin,
     needsManualJoin,
+    needsAutoJoin,
     toggleMute,
     leave,
     unlockAudio,
