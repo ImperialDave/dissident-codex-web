@@ -4,15 +4,16 @@ import type { ChatRoom } from "@/models";
 
 interface DmStripCardProps {
   room: ChatRoom;
+  displayTitle?: string;
 }
 
-export function DmStripCard({ room }: DmStripCardProps) {
+export function DmStripCard({ room, displayTitle }: DmStripCardProps) {
   return (
     <Link
       href={`/chat/${room.id}`}
       className="codex-surface block w-56 shrink-0 rounded-xl border border-white/10 p-3 transition hover:border-[var(--color-accent)]/40"
     >
-      <p className="truncate font-medium text-white">{room.title}</p>
+      <p className="truncate font-medium text-white">{displayTitle ?? room.title}</p>
       <p className="mt-1 line-clamp-2 text-xs text-slate-400">
         {room.lastMessagePreview || "No messages yet"}
       </p>

@@ -3,12 +3,17 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FavoriteStar } from "@/components/FavoriteStar";
+import { useDmDisplayNames } from "@/hooks/useDmDisplayNames";
+import { chatRoomDisplayTitle } from "@/lib/chatDisplay";
 import { mapFirestoreError, timeAgo } from "@/lib/utils";
 import { getFavoriteRoomIds, listenChatRooms, toggleFavoriteRoom } from "@/services/chatService";
+import { useAuthStore } from "@/stores/authStore";
 import type { ChatRoom } from "@/models";
 
 export default function ChatsPage() {
+  const { user } = useAuthStore();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
+  const dmDisplayNames = useDmDisplayNames(rooms, user?.uid);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [togglingFavorite, setTogglingFavorite] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -74,7 +79,9 @@ export default function ChatsPage() {
               />
               <div className="min-w-0 flex-1">
                 <p className="font-medium">
-                  {room.title}
+                  {user?.uid
+                    ? chatRoomDisplayTitle(room, user.uid, dmDisplayNames)
+                    : room.title}
                   {room.type === "group" && <span className="ml-2 text-xs text-slate-500">group</span>}
                   {room.activeVoiceSessionId && (
                     <span className="ml-2 text-xs text-emerald-300">voice active</span>
