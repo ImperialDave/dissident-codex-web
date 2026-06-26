@@ -14,6 +14,12 @@ import {
 } from "@/services/voiceService";
 import { CHAT_TYPE_DM, CHAT_TYPE_GROUP, CHAT_TYPE_TOPIC, type ChatRoom, type VoiceSession } from "@/models";
 
+/** Ended sessions are treated as idle so the Voice call button can return without a refresh. */
+function toUiVoiceSession(session: VoiceSession | null): VoiceSession | null {
+  if (!session || session.status === "ended") return null;
+  return session;
+}
+
 interface VoiceChatControlsProps {
   room: ChatRoom | null;
   roomId: string;
@@ -44,19 +50,23 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
     enabled: inActiveCall,
   });
 
+  const applySession = useCallback((next: VoiceSession | null) => {
+    setSession(toUiVoiceSession(next));
+  }, []);
+
   useEffect(() => {
     if (!roomId) return;
-    getActiveVoiceSessionForRoom(roomId).then(setSession);
+    getActiveVoiceSessionForRoom(roomId).then(applySession);
     if (room?.activeVoiceSessionId) {
-      return listenVoiceSession(room.activeVoiceSessionId, setSession);
+      return listenVoiceSession(room.activeVoiceSessionId, applySession);
     }
     return undefined;
-  }, [roomId, room?.activeVoiceSessionId]);
+  }, [roomId, room?.activeVoiceSessionId, applySession]);
 
   useEffect(() => {
     if (!session?.id) return;
-    return listenVoiceSession(session.id, setSession);
-  }, [session?.id]);
+    return listenVoiceSession(session.id, applySession);
+  }, [session?.id, applySession]);
 
   async function handleStartDmCall() {
     if (!room) return;
@@ -132,7 +142,6 @@ export function VoiceChatControls({ room, roomId, displayName, myUid }: VoiceCha
 
   async function handleLeaveVoice() {
     setVoiceError("");
-    setSession((prev) => (prev ? { ...prev, status: "ended" } : null));
     try {
       await voice.leave();
       resetMicPreflight();
