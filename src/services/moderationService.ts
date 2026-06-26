@@ -7,9 +7,10 @@ import {
   query,
   limit,
 } from "firebase/firestore";
-import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
+import { getFirebaseAuth, getFirebaseDb, getFirebaseFunctions } from "@/lib/firebase";
+import { httpsCallable } from "firebase/functions";
 import { COLLECTIONS } from "@/lib/constants";
-import { isFounderEmail, resolveRole, withResolvedRole } from "@/lib/utils";
+import { isFounderEmail, mapCallableError, resolveRole, withResolvedRole } from "@/lib/utils";
 import { canModerate, roleFromString, type RoleName, type User } from "@/models";
 import { fetchUser } from "./authService";
 
@@ -87,6 +88,43 @@ export async function updateUserRole(targetUid: string, newRole: RoleName): Prom
   }
 
   await updateDoc(doc(getFirebaseDb(), COLLECTIONS.USERS, targetUid), { role: newRole });
+}
+
+export interface DeleteUserAccountResult {
+  deletedUid: string;
+  anonymizedPosts: number;
+  anonymizedComments: number;
+}
+
+export async function deleteUserAccount(targetUid: string): Promise<DeleteUserAccountResult> {
+  const auth = getFirebaseAuth();
+  const callerUid = auth.currentUser?.uid;
+  if (!callerUid) throw new Error("Not logged in");
+
+  const actor = await fetchUser(callerUid);
+  const isFounder =
+    isFounderEmail(auth.currentUser?.email) || resolveRole(actor, auth.currentUser?.email) === "FOUNDER";
+  if (!isFounder) throw new Error("Founder access required.");
+
+  if (targetUid === callerUid) {
+    throw new Error("You cannot delete your own account here.");
+  }
+
+  const target = await fetchUser(targetUid);
+  if (target && isFounderEmail(target.email)) {
+    throw new Error("The founder account cannot be deleted.");
+  }
+
+  try {
+    const fn = httpsCallable<{ targetUid: string }, DeleteUserAccountResult>(
+      getFirebaseFunctions(),
+      "deleteUserAccount"
+    );
+    const result = await fn({ targetUid });
+    return result.data;
+  } catch (err) {
+    throw new Error(mapCallableError(err));
+  }
 }
 
 export async function getRecentComments(max = 40) {
