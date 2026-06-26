@@ -272,3 +272,99 @@ export async function unlikePost(postId: string): Promise<void> {
   const cache = likedCache.get(uid);
   if (cache) cache.delete(postId);
 }
+
+const savedCache = new Map<string, Set<string>>();
+
+export async function refreshSavedPostIds(): Promise<Set<string>> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) return new Set();
+  const snap = await getDocs(
+    collection(getFirebaseDb(), COLLECTIONS.USERS, uid, "savedPosts")
+  );
+  const ids = new Set(snap.docs.map((d) => d.id));
+  savedCache.set(uid, ids);
+  return ids;
+}
+
+export async function hasSavedPost(postId: string): Promise<boolean> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) return false;
+  let cache = savedCache.get(uid);
+  if (!cache) cache = await refreshSavedPostIds();
+  return cache.has(postId);
+}
+
+export async function toggleSavePost(postId: string): Promise<boolean> {
+  const saved = await hasSavedPost(postId);
+  if (saved) {
+    await unsavePost(postId);
+    return false;
+  }
+  await savePost(postId);
+  return true;
+}
+
+export async function savePost(postId: string): Promise<void> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) throw new Error("Not logged in");
+  const db = getFirebaseDb();
+  const saveRef = doc(db, COLLECTIONS.USERS, uid, "savedPosts", postId);
+  const existing = await getDoc(saveRef);
+  if (existing.exists()) throw new Error("You already saved this post.");
+
+  try {
+    await setDoc(saveRef, { savedAt: Timestamp.now() });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to save post";
+    throw new Error(mapFirestoreError(message));
+  }
+  const cache = savedCache.get(uid) || new Set();
+  cache.add(postId);
+  savedCache.set(uid, cache);
+}
+
+export async function unsavePost(postId: string): Promise<void> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) throw new Error("Not logged in");
+  const db = getFirebaseDb();
+  const saveRef = doc(db, COLLECTIONS.USERS, uid, "savedPosts", postId);
+  const existing = await getDoc(saveRef);
+  if (!existing.exists()) throw new Error("You have not saved this post.");
+
+  try {
+    await deleteDoc(saveRef);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to unsave post";
+    throw new Error(mapFirestoreError(message));
+  }
+  const cache = savedCache.get(uid);
+  if (cache) cache.delete(postId);
+}
+
+export async function getSavedPosts(max = 100): Promise<Post[]> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) return [];
+
+  const snap = await getDocs(
+    collection(getFirebaseDb(), COLLECTIONS.USERS, uid, "savedPosts")
+  );
+  const entries = snap.docs
+    .map((d) => ({
+      postId: d.id,
+      savedAt: (d.data().savedAt as Timestamp | undefined)?.seconds ?? 0,
+    }))
+    .sort((a, b) => b.savedAt - a.savedAt)
+    .slice(0, max);
+
+  const blockedIds = await getBlockedUserIds();
+  const posts: Post[] = [];
+
+  for (const { postId } of entries) {
+    const post = await getPost(postId);
+    if (!post) continue;
+    if (blockedIds.has(post.authorId)) continue;
+    posts.push(post);
+  }
+
+  return posts;
+}
