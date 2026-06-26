@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Post } from "@/models";
+import { BookmarkButton } from "./BookmarkButton";
 import { PostFeedVisibilityToggle } from "./PostFeedVisibilityToggle";
 import { PostMedia } from "./PostMedia";
 import { RoleBadge } from "./RoleBadge";
@@ -12,6 +13,9 @@ interface PostCardProps {
   canModerate?: boolean;
   togglingVisibility?: boolean;
   onToggleFeedVisibility?: (postId: string) => void | Promise<void>;
+  saved?: boolean;
+  togglingSave?: boolean;
+  onToggleSave?: (postId: string) => void | Promise<void>;
   priorityLabel?: string;
 }
 
@@ -20,6 +24,9 @@ export function PostCard({
   canModerate = false,
   togglingVisibility = false,
   onToggleFeedVisibility,
+  saved = false,
+  togglingSave = false,
+  onToggleSave,
   priorityLabel,
 }: PostCardProps) {
   const hidden = Boolean(post.hiddenFromFeed);
@@ -60,6 +67,14 @@ export function PostCard({
           <p className="text-xs text-slate-400">{timeAgo(post.createdAt)}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {onToggleSave && (
+            <BookmarkButton
+              saved={saved}
+              disabled={togglingSave}
+              size="sm"
+              onToggle={() => onToggleSave(post.id)}
+            />
+          )}
           {canModerate && onToggleFeedVisibility && (
             <PostFeedVisibilityToggle
               hiddenFromFeed={hidden}
