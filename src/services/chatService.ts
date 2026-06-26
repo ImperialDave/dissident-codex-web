@@ -15,6 +15,7 @@ import {
   increment,
   type Unsubscribe,
 } from "firebase/firestore";
+import { chatRoomDisplayTitle } from "@/lib/chatDisplay";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_CHAT_MESSAGE } from "@/lib/constants";
 import {
@@ -506,15 +507,28 @@ export async function getTopicRooms(max = 100): Promise<ChatRoom[]> {
     .sort((a, b) => (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0));
 }
 
-export function searchChatRooms(q: string, rooms: ChatRoom[], max = 20): ChatRoom[] {
+export function searchChatRooms(
+  q: string,
+  rooms: ChatRoom[],
+  max = 20,
+  options?: { myUid?: string; displayNamesByUid?: Record<string, string> }
+): ChatRoom[] {
   const needle = q.trim().toLowerCase();
   if (!needle) return [];
+
+  const { myUid, displayNamesByUid = {} } = options ?? {};
+
   return rooms
-    .filter(
-      (r) =>
-        r.title.toLowerCase().includes(needle) ||
+    .filter((r) => {
+      const titleLabel =
+        myUid != null
+          ? chatRoomDisplayTitle(r, myUid, displayNamesByUid).toLowerCase()
+          : r.title.toLowerCase();
+      return (
+        titleLabel.includes(needle) ||
         r.topicName?.toLowerCase().includes(needle) ||
         r.lastMessagePreview.toLowerCase().includes(needle)
-    )
+      );
+    })
     .slice(0, max);
 }
