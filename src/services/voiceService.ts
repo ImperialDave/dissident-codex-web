@@ -287,6 +287,43 @@ export async function markParticipantLeft(sessionId: string, uid: string): Promi
   });
 }
 
+export function countActiveVoiceParticipants(session: VoiceSession): number {
+  return Object.values(session.participants).filter((p) => p && !p.leftAt).length;
+}
+
+export function isDmVoiceSession(session: VoiceSession): boolean {
+  return session.voiceType === VOICE_TYPE_DM;
+}
+
+/** Leave a topic/group voice session without ending it for others. Ends only when last participant leaves. */
+export async function leaveVoiceSession(session: VoiceSession): Promise<void> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) throw new Error("Not logged in");
+
+  await markParticipantLeft(session.id, uid);
+
+  const updated = (await getVoiceSession(session.id)) ?? session;
+  if (updated.status === "ended") return;
+
+  const activeCount = countActiveVoiceParticipants(updated);
+  if (activeCount > 0) return;
+
+  await updateDoc(doc(getFirebaseDb(), COLLECTIONS.VOICE_SESSIONS, session.id), {
+    status: "ended",
+    endedAt: Timestamp.now(),
+    endedBy: uid,
+  });
+  await updateDoc(doc(getFirebaseDb(), COLLECTIONS.CHAT_ROOMS, session.chatRoomId), {
+    activeVoiceSessionId: null,
+  });
+
+  try {
+    await endVoiceSessionRemote(session.id);
+  } catch {
+    // LiveKit cleanup is best-effort when the room is already empty.
+  }
+}
+
 export async function endVoiceSessionLocal(session: VoiceSession): Promise<void> {
   const uid = getFirebaseAuth().currentUser?.uid;
   if (!uid) throw new Error("Not logged in");
