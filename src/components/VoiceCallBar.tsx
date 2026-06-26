@@ -2,6 +2,10 @@
 
 import type { RefObject } from "react";
 import type { VoiceParticipantInfo } from "@/hooks/useVoiceRoom";
+import {
+  VOICE_VOLUME_MAX_PERCENT,
+  VOICE_VOLUME_MIN_PERCENT,
+} from "@/lib/voiceVolume";
 
 export type VoiceCallPhase =
   | "idle"
@@ -40,6 +44,10 @@ export interface VoiceCallBarProps {
   onRetryConnect?: () => void;
   audioContainerRef?: RefObject<HTMLDivElement>;
   label?: string;
+  micVolumePercent?: number;
+  speakerVolumePercent?: number;
+  onMicVolumeChange?: (percent: number) => void;
+  onSpeakerVolumeChange?: (percent: number) => void;
 }
 
 export function VoiceCallBar({
@@ -71,6 +79,10 @@ export function VoiceCallBar({
   onRetryConnect,
   audioContainerRef,
   label = "Voice",
+  micVolumePercent = 100,
+  speakerVolumePercent = 100,
+  onMicVolumeChange,
+  onSpeakerVolumeChange,
 }: VoiceCallBarProps) {
   const showPanel =
     phase !== "idle" ||
@@ -97,6 +109,10 @@ export function VoiceCallBar({
   })();
 
   const showEndCall = connected || phase === "join-ready" || phase === "connecting";
+  const showVolumeControls =
+    variant === "floating" &&
+    connected &&
+    Boolean(onMicVolumeChange && onSpeakerVolumeChange);
 
   const containerClass =
     variant === "floating"
@@ -221,12 +237,49 @@ export function VoiceCallBar({
                 disabled={leaving}
                 className="rounded-lg bg-red-500/80 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
               >
-                {leaving ? "Ending..." : "End call"}
+              {leaving ? "Ending..." : "End call"}
               </button>
             </>
           )}
         </div>
       </div>
+
+      {showVolumeControls && (
+        <div className="mt-3 space-y-2 border-t border-emerald-500/20 pt-3">
+          <label className="flex items-center gap-3 text-xs text-slate-300">
+            <span className="w-16 shrink-0 font-medium text-emerald-200">Mic</span>
+            <input
+              type="range"
+              min={VOICE_VOLUME_MIN_PERCENT}
+              max={VOICE_VOLUME_MAX_PERCENT}
+              step={1}
+              value={micVolumePercent}
+              onChange={(e) => onMicVolumeChange?.(Number(e.target.value))}
+              className="h-1.5 flex-1 cursor-pointer accent-emerald-400"
+              aria-label="Microphone volume"
+            />
+            <span className="w-10 shrink-0 text-right tabular-nums text-slate-400">
+              {micVolumePercent}%
+            </span>
+          </label>
+          <label className="flex items-center gap-3 text-xs text-slate-300">
+            <span className="w-16 shrink-0 font-medium text-emerald-200">Speaker</span>
+            <input
+              type="range"
+              min={VOICE_VOLUME_MIN_PERCENT}
+              max={VOICE_VOLUME_MAX_PERCENT}
+              step={1}
+              value={speakerVolumePercent}
+              onChange={(e) => onSpeakerVolumeChange?.(Number(e.target.value))}
+              className="h-1.5 flex-1 cursor-pointer accent-emerald-400"
+              aria-label="Speaker volume"
+            />
+            <span className="w-10 shrink-0 text-right tabular-nums text-slate-400">
+              {speakerVolumePercent}%
+            </span>
+          </label>
+        </div>
+      )}
     </div>
   );
 }

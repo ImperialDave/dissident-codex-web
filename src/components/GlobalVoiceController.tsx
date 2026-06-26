@@ -283,6 +283,10 @@ export function GlobalVoiceController() {
       onRetryConnect={() => void handleRetryConnect()}
       audioContainerRef={voice.audioContainerRef}
       label={callLabel}
+      micVolumePercent={voice.micVolumePercent}
+      speakerVolumePercent={voice.speakerVolumePercent}
+      onMicVolumeChange={voice.setMicVolumePercent}
+      onSpeakerVolumeChange={voice.setSpeakerVolumePercent}
     />
   );
 }
