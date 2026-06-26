@@ -82,6 +82,7 @@ export interface Post {
   mediaType?: string | null;
   category: string;
   likeCount: number;
+  reactionSummary?: Record<string, number>;
   commentCount: number;
   hiddenFromFeed?: boolean;
   hiddenBy?: string | null;
@@ -103,6 +104,7 @@ export interface Comment {
   imageUrl?: string | null;
   mediaType?: string | null;
   likeCount: number;
+  reactionSummary?: Record<string, number>;
   createdAt?: Timestamp | null;
 }
 
@@ -183,6 +185,7 @@ export interface ChatMessage {
   mediaType?: string | null;
   createdAt?: Timestamp | null;
   type: string;
+  reactionSummary?: Record<string, number>;
 }
 
 export interface Friend {
