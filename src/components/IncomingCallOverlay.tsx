@@ -24,6 +24,7 @@ function IncomingCallUi() {
   const expand = useIncomingCallStore((s) => s.expand);
   const clear = useIncomingCallStore((s) => s.clear);
   const resetMicPreflight = useVoiceUiStore((s) => s.resetMicPreflight);
+  const setJoinIntent = useVoiceUiStore((s) => s.setJoinIntent);
 
   useEffect(() => {
     if (session?.status === "ringing") {
@@ -41,6 +42,7 @@ function IncomingCallUi() {
     try {
       resetMicPreflight();
       await acceptDmVoiceCall(session);
+      setJoinIntent(session.id);
       stopIncomingCallAlerts();
       clear();
       const target = `/chat/${session.chatRoomId}`;
@@ -50,7 +52,7 @@ function IncomingCallUi() {
     } finally {
       setBusy(false);
     }
-  }, [session, pathname, router, setBusy, clear, resetMicPreflight]);
+  }, [session, pathname, router, setBusy, clear, resetMicPreflight, setJoinIntent]);
 
   const handleReject = useCallback(async () => {
     if (!session) return;
