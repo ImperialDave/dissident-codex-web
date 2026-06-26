@@ -280,14 +280,14 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
     setError("");
   }, []);
 
-  const needsManualJoin =
+  const needsJoin =
     enabled &&
     session?.status === "active" &&
-    !micPreflightGranted &&
     !connected &&
     !connecting &&
-    !leaving &&
-    !connectFailedRef.current;
+    !leaving;
+
+  const needsManualJoin = needsJoin && !micPreflightGranted;
 
   return {
     connected,
@@ -297,6 +297,7 @@ export function useVoiceRoom({ session, displayName, enabled }: UseVoiceRoomOpti
     error,
     participants,
     needsAudioUnlock,
+    needsJoin,
     needsManualJoin,
     toggleMute,
     leave,

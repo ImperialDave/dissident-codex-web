@@ -6,6 +6,7 @@ import { ChatMedia } from "@/components/ChatMedia";
 import { GifPicker } from "@/components/GifPicker";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
+import { scrollToBottomIfPinned } from "@/lib/chatScroll";
 import { timeAgo } from "@/lib/utils";
 import { ChatRoomTitle } from "@/components/ChatRoomTitle";
 import { FavoriteStar } from "@/components/FavoriteStar";
@@ -39,6 +40,9 @@ export default function ChatRoomPage() {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [pendingMedia, setPendingMedia] = useState<PendingMedia | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const voicePanelRef = useRef<HTMLDivElement>(null);
+  const prevMessageCountRef = useRef(0);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -52,8 +56,16 @@ export default function ChatRoomPage() {
   }, [roomId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!messages.length) return;
+    const grew = messages.length > prevMessageCountRef.current;
+    prevMessageCountRef.current = messages.length;
+    const last = messages[messages.length - 1];
+    const iSent = grew && last?.authorId === user?.uid;
+    scrollToBottomIfPinned(messagesContainerRef.current, bottomRef.current, {
+      force: iSent,
+      behavior: iSent ? "smooth" : "auto",
+    });
+  }, [messages, user?.uid]);
 
   useEffect(() => {
     return () => {
@@ -144,37 +156,40 @@ export default function ChatRoomPage() {
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col rounded-xl border border-white/10 bg-[var(--color-surface)]">
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-        <div>
-          <h1 className="font-semibold">
-            <ChatRoomTitle room={room} myUid={user?.uid} />
-          </h1>
-          {room?.locked && <p className="text-xs text-orange-300">This room is locked</p>}
+      <div className="sticky top-0 z-10 shrink-0 bg-[var(--color-surface)]">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <div>
+            <h1 className="font-semibold">
+              <ChatRoomTitle room={room} myUid={user?.uid} />
+            </h1>
+            {room?.locked && <p className="text-xs text-orange-300">This room is locked</p>}
+          </div>
+          <FavoriteStar
+            favorited={favorited}
+            disabled={favoriteLoading}
+            onToggle={async () => {
+              setFavoriteLoading(true);
+              try {
+                setFavorited(await toggleFavoriteRoom(roomId));
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Failed to update favorite");
+              } finally {
+                setFavoriteLoading(false);
+              }
+            }}
+          />
         </div>
-        <FavoriteStar
-          favorited={favorited}
-          disabled={favoriteLoading}
-          onToggle={async () => {
-            setFavoriteLoading(true);
-            try {
-              setFavorited(await toggleFavoriteRoom(roomId));
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Failed to update favorite");
-            } finally {
-              setFavoriteLoading(false);
-            }
-          }}
+
+        <VoiceChatControls
+          room={room}
+          roomId={roomId}
+          displayName={user?.displayName || "User"}
+          myUid={user?.uid}
+          panelRef={voicePanelRef}
         />
       </div>
 
-      <VoiceChatControls
-        room={room}
-        roomId={roomId}
-        displayName={user?.displayName || "User"}
-        myUid={user?.uid}
-      />
-
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div ref={messagesContainerRef} className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.map((msg) => {
           const mine = msg.authorId === user?.uid;
           return (
