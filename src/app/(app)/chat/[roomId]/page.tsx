@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { ChatMedia } from "@/components/ChatMedia";
+import { MessageReactions } from "@/components/MessageReactions";
 import { GifPicker } from "@/components/GifPicker";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -153,6 +154,15 @@ export default function ChatRoomPage() {
 
   const canSend = Boolean(text.trim() || pendingMedia);
 
+  const handleMessageSummaryChange = useCallback(
+    (messageId: string, summary: Record<string, number>) => {
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? { ...msg, reactionSummary: summary } : msg))
+      );
+    },
+    []
+  );
+
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col rounded-xl border border-white/10 bg-[var(--color-surface)]">
       <div className="sticky top-0 z-10 shrink-0 bg-[var(--color-surface)]">
@@ -186,7 +196,7 @@ export default function ChatRoomPage() {
         {messages.map((msg) => {
           const mine = msg.authorId === user?.uid;
           return (
-            <div key={msg.id} className={`flex gap-2 ${mine ? "flex-row-reverse" : ""}`}>
+            <div key={msg.id} className={`group/reaction flex gap-2 ${mine ? "flex-row-reverse" : ""}`}>
               <UserAvatar
                 name={msg.authorName}
                 photoUrl={msg.authorPhotoUrl}
@@ -214,6 +224,13 @@ export default function ChatRoomPage() {
                 {msg.text?.trim() && (
                   <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                 )}
+                <MessageReactions
+                  roomId={roomId}
+                  messageId={msg.id}
+                  summary={msg.reactionSummary}
+                  onSummaryChange={handleMessageSummaryChange}
+                  alignEnd={mine}
+                />
                 <p className={`mt-1 text-[10px] text-slate-500 ${mine ? "text-right" : ""}`}>{timeAgo(msg.createdAt)}</p>
               </div>
             </div>

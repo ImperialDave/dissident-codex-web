@@ -10,13 +10,12 @@ import { PostMedia } from "@/components/PostMedia";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { flattenComments } from "@/lib/commentThread";
-import { mapFirestoreError, timeAgo } from "@/lib/utils";
+import { timeAgo } from "@/lib/utils";
 import { addComment, deleteComment, getComments } from "@/services/commentService";
+import { ReactionsBlock } from "@/components/ReactionsBlock";
 import {
   deletePost,
   getPost,
-  hasLikedPost,
-  toggleLikePost,
   togglePostFeedVisibility,
 } from "@/services/postService";
 import {
@@ -41,9 +40,7 @@ export default function PostDetailPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
-  const [liked, setLiked] = useState(false);
   const [error, setError] = useState("");
-  const [likeError, setLikeError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
@@ -52,10 +49,9 @@ export default function PostDetailPage() {
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
-    const [p, c, l] = await Promise.all([getPost(id), getComments(id), hasLikedPost(id)]);
+    const [p, c] = await Promise.all([getPost(id), getComments(id)]);
     setPost(p);
     setComments(c);
-    setLiked(l);
   }, [id]);
 
   useEffect(() => {
@@ -201,24 +197,12 @@ export default function PostDetailPage() {
           alt={post.title}
           enlargeable
         />
+        <ReactionsBlock
+          target={{ type: "post", postId: id }}
+          initialSummary={post.reactionSummary}
+          className="mt-4"
+        />
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
-            onClick={async () => {
-              setLikeError("");
-              try {
-                const nowLiked = await toggleLikePost(id);
-                setLiked(nowLiked);
-                setPost((p) => p && { ...p, likeCount: p.likeCount + (nowLiked ? 1 : -1) });
-              } catch (err) {
-                const message = err instanceof Error ? err.message : "Failed to update like";
-                setLikeError(mapFirestoreError(message));
-              }
-            }}
-            className={`rounded-lg px-4 py-2 text-sm ${liked ? "bg-[var(--color-accent)] text-black" : "border border-white/15"}`}
-          >
-            {liked ? "Liked" : "Like"} ({post.likeCount})
-          </button>
-          {likeError && <p className="text-sm text-red-400">{likeError}</p>}
           {modView && (
             <PostFeedVisibilityToggle
               hiddenFromFeed={post.hiddenFromFeed}
@@ -291,6 +275,12 @@ export default function PostDetailPage() {
             {comment.text?.trim() && (
               <p className="text-sm text-slate-200">{comment.text}</p>
             )}
+            <ReactionsBlock
+              target={{ type: "comment", commentId: comment.id }}
+              initialSummary={comment.reactionSummary}
+              compact
+              className="mt-2"
+            />
             <div className="mt-2 flex gap-3 text-xs">
               <button onClick={() => setReplyTo(comment)} className="text-[var(--color-accent)]">
                 Reply
