@@ -90,6 +90,47 @@ export function mapCallableError(err: unknown): string {
   return "Voice call failed. Try again or contact support.";
 }
 
+/** Account-deletion callable errors — not voice/LiveKit. */
+export function mapDeleteAccountError(err: unknown): string {
+  const { code, message, details } = callableErrorFields(err);
+  const combined = [message, details].filter(Boolean).join(" — ");
+
+  if (code.includes("unauthenticated")) {
+    return "Sign in required.";
+  }
+  if (code.includes("permission-denied")) {
+    return "Founder access required to delete accounts.";
+  }
+  if (code.includes("invalid-argument")) {
+    return combined || "Invalid request.";
+  }
+  if (code.includes("failed-precondition")) {
+    return combined || "This account cannot be deleted.";
+  }
+  if (code.includes("not-found")) {
+    if (combined.toLowerCase().includes("user")) {
+      return combined;
+    }
+    return (
+      combined ||
+      "Delete account function not found. Deploy functions:deleteUserAccount to Firebase."
+    );
+  }
+  if (code.includes("internal")) {
+    if (combined && combined !== "internal") {
+      return mapFirestoreError(combined);
+    }
+    return "Account deletion failed on the server. Check Firebase Functions logs for deleteUserAccount.";
+  }
+  if (message && message !== "internal") {
+    return mapFirestoreError(message);
+  }
+  if (err instanceof Error && err.message && err.message !== "internal") {
+    return mapFirestoreError(err.message);
+  }
+  return "Account deletion failed. Try again or contact support.";
+}
+
 /** Safari private mode and some in-app browsers throw on localStorage writes. */
 export const safeLocalStorage = {
   getItem(key: string): string | null {

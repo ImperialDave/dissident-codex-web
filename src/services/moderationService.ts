@@ -10,7 +10,7 @@ import {
 import { getFirebaseAuth, getFirebaseDb, getFirebaseFunctions } from "@/lib/firebase";
 import { httpsCallable } from "firebase/functions";
 import { COLLECTIONS } from "@/lib/constants";
-import { isFounderEmail, mapCallableError, resolveRole, withResolvedRole } from "@/lib/utils";
+import { isFounderEmail, mapDeleteAccountError, resolveRole, withResolvedRole } from "@/lib/utils";
 import { canModerate, roleFromString, type RoleName, type User } from "@/models";
 import { fetchUser } from "./authService";
 
@@ -123,7 +123,10 @@ export async function deleteUserAccount(targetUid: string): Promise<DeleteUserAc
     const result = await fn({ targetUid });
     return result.data;
   } catch (err) {
-    throw new Error(mapCallableError(err));
+    if (process.env.NODE_ENV === "development") {
+      console.error("[deleteUserAccount]", err);
+    }
+    throw new Error(mapDeleteAccountError(err));
   }
 }
 
