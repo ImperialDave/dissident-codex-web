@@ -15,9 +15,20 @@ import { listenNotifications } from "@/services/notificationService";
 const MOBILE_NAV = [
   { href: "/feed", label: "Feed", icon: "📰" },
   { href: "/chats", label: "Chats", icon: "💬" },
+  { href: "/notifications", label: "Alerts", icon: "🔔" },
   { href: "/chess", label: "Chess", icon: "♟️" },
   { href: "/create", label: "Create", icon: "✏️" },
   { href: "/profile", label: "Profile", icon: "👤" },
+];
+
+const MOBILE_HEADER_NAV = [
+  { href: "/feed", label: "Feed" },
+  { href: "/chats", label: "Chats" },
+  { href: "/friends", label: "Friends" },
+  { href: "/notifications", label: "Alerts" },
+  { href: "/chess", label: "Chess" },
+  { href: "/search", label: "Search" },
+  { href: "/topics", label: "Topics" },
 ];
 
 const DESKTOP_NAV = [
@@ -183,18 +194,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <nav className="flex gap-2 overflow-x-auto border-t border-[var(--color-border)] px-4 py-2 text-sm lg:hidden">
-          {DESKTOP_NAV.slice(0, 6).map((item) => (
+          {MOBILE_HEADER_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={clsx(
-                "whitespace-nowrap rounded-full px-3 py-1",
+                "relative whitespace-nowrap rounded-full px-3 py-1",
                 pathname.startsWith(item.href)
                   ? "codex-chip-active"
                   : "text-slate-400 hover:text-slate-200"
               )}
             >
               {item.label}
+              {item.href === "/notifications" && unread > 0 ? ` (${unread})` : ""}
             </Link>
           ))}
         </nav>
@@ -219,14 +231,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={item.href}
               href={item.href}
               className={clsx(
-                "relative flex flex-col items-center px-2 py-1 text-xs",
+                "relative flex min-w-0 flex-1 flex-col items-center px-1 py-1 text-xs",
                 pathname.startsWith(item.href)
                   ? "text-[var(--color-accent)] drop-shadow-[0_0_8px_var(--color-accent)]"
                   : "text-slate-400"
               )}
             >
-              <span className="text-lg">{item.icon}</span>
-              {item.label}
+              <span className="relative text-lg">
+                {item.icon}
+                {item.href === "/notifications" && unread > 0 && (
+                  <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[10px] font-bold leading-none text-black">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </span>
+              <span className="truncate">{item.label}</span>
             </Link>
           ))}
         </div>
