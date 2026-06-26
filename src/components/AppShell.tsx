@@ -166,6 +166,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 >
                   My profile
                 </Link>
+                <Link
+                  href="/saved"
+                  role="menuitem"
+                  onClick={() => setAccountMenuOpen(false)}
+                  className="block px-3 py-2 text-sm text-slate-200 hover:bg-white/5"
+                >
+                  Saved posts
+                </Link>
                 <button
                   type="button"
                   role="menuitem"
