@@ -41,7 +41,6 @@ export default function ChatRoomPage() {
   const [pendingMedia, setPendingMedia] = useState<PendingMedia | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const voicePanelRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef(0);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -180,13 +179,7 @@ export default function ChatRoomPage() {
           />
         </div>
 
-        <VoiceChatControls
-          room={room}
-          roomId={roomId}
-          displayName={user?.displayName || "User"}
-          myUid={user?.uid}
-          panelRef={voicePanelRef}
-        />
+        <VoiceChatControls room={room} roomId={roomId} myUid={user?.uid} />
       </div>
 
       <div ref={messagesContainerRef} className="flex-1 space-y-3 overflow-y-auto p-4">
