@@ -7,6 +7,7 @@ import { RoleBadge } from "./RoleBadge";
 import { UserAvatar } from "./UserAvatar";
 import { timeAgo } from "@/lib/utils";
 import { CategoryTag } from "./CategoryTag";
+import { ReactionPills } from "./ReactionPills";
 
 interface PostCardProps {
   post: Post;
@@ -90,8 +91,8 @@ export function PostCard({
         <h3 className="mb-2 text-lg font-semibold text-white">{post.title}</h3>
         <p className="line-clamp-3 text-sm text-slate-300">{post.body}</p>
         <PostMedia url={post.imageUrl} mediaType={post.mediaType} preview />
-        <div className="mt-3 flex gap-4 text-xs text-slate-400">
-          <span>{post.likeCount} likes</span>
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+          <ReactionPills summary={post.reactionSummary} compact />
           <span>{post.commentCount} comments</span>
         </div>
       </Link>
