@@ -200,6 +200,21 @@ export default function ProfilePage() {
         <AppearancePicker compact />
       </div>
 
+      <div className="codex-surface rounded-xl p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">Saved posts</h2>
+            <p className="text-xs text-slate-400">Posts you bookmarked for later.</p>
+          </div>
+          <Link
+            href="/saved"
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-200 hover:bg-white/5"
+          >
+            View saved
+          </Link>
+        </div>
+      </div>
+
       <div>
         <h2 className="mb-3 text-lg font-semibold">Your Posts ({posts.length})</h2>
         {posts.length === 0 ? (

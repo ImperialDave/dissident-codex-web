@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PostCard } from "@/components/PostCard";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { chatRoomDisplayTitle, resolveDmDisplayNames } from "@/lib/chatDisplay";
 import { mapFirestoreError } from "@/lib/utils";
 import { searchTopics } from "@/services/categoryService";
-import { searchPosts } from "@/services/postService";
+import {
+  refreshSavedPostIds,
+  searchPosts,
+  toggleSavePost,
+} from "@/services/postService";
 import { getChatRoomsForInbox, searchChatRooms } from "@/services/chatService";
 import { searchUsers } from "@/services/userService";
 import { useAuthStore } from "@/stores/authStore";
@@ -25,6 +29,31 @@ export default function SearchPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
+  const [togglingSavePostId, setTogglingSavePostId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    refreshSavedPostIds().then(setSavedPostIds);
+  }, [user]);
+
+  async function handleToggleSave(postId: string) {
+    setTogglingSavePostId(postId);
+    setError("");
+    try {
+      const nowSaved = await toggleSavePost(postId);
+      setSavedPostIds((prev) => {
+        const next = new Set(prev);
+        if (nowSaved) next.add(postId);
+        else next.delete(postId);
+        return next;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? mapFirestoreError(err.message) : "Failed to update save");
+    } finally {
+      setTogglingSavePostId(null);
+    }
+  }
 
   async function search() {
     const q = query.trim();
@@ -139,7 +168,15 @@ export default function SearchPage() {
           {posts.length === 0 ? (
             <p className="text-slate-400">No matching posts.</p>
           ) : (
-            posts.map((p) => <PostCard key={p.id} post={p} />)
+            posts.map((p) => (
+              <PostCard
+                key={p.id}
+                post={p}
+                saved={savedPostIds.has(p.id)}
+                togglingSave={togglingSavePostId === p.id}
+                onToggleSave={handleToggleSave}
+              />
+            ))
           )}
         </div>
       )}
