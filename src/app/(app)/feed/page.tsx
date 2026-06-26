@@ -6,6 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 import { DmStripCard } from "@/components/DmStripCard";
 import { PostCard } from "@/components/PostCard";
 import { FavoriteStar } from "@/components/FavoriteStar";
+import { useDmDisplayNames } from "@/hooks/useDmDisplayNames";
+import { chatRoomDisplayTitle } from "@/lib/chatDisplay";
 import { ALL_CATEGORY_LABEL, FEED_DM_STRIP_LIMIT, MAX_FAVORITE_CATEGORIES } from "@/lib/constants";
 import { partitionFeedPosts } from "@/lib/feedRank";
 import { mapFirestoreError, normalizeCategoryName } from "@/lib/utils";
@@ -32,10 +34,11 @@ function matchesSearch(post: Post, query: string): boolean {
 
 export default function FeedPage() {
   const searchParams = useSearchParams();
-  const { isModerator } = useAuthStore();
+  const { user, isModerator } = useAuthStore();
   const [favoritePosts, setFavoritePosts] = useState<Post[]>([]);
   const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [dmRooms, setDmRooms] = useState<ChatRoom[]>([]);
+  const dmDisplayNames = useDmDisplayNames(dmRooms, user?.uid);
   const [categories, setCategories] = useState<string[]>(["All"]);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
@@ -264,7 +267,15 @@ export default function FeedPage() {
               </div>
               <div className="flex gap-3 overflow-x-auto pb-1">
                 {dmRooms.map((room) => (
-                  <DmStripCard key={room.id} room={room} />
+                  <DmStripCard
+                    key={room.id}
+                    room={room}
+                    displayTitle={
+                      user?.uid
+                        ? chatRoomDisplayTitle(room, user.uid, dmDisplayNames)
+                        : room.title
+                    }
+                  />
                 ))}
               </div>
             </section>

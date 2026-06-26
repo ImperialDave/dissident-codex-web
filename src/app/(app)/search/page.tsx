@@ -5,19 +5,23 @@ import { useState } from "react";
 import { PostCard } from "@/components/PostCard";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
+import { chatRoomDisplayTitle, resolveDmDisplayNames } from "@/lib/chatDisplay";
 import { mapFirestoreError } from "@/lib/utils";
 import { searchTopics } from "@/services/categoryService";
 import { searchPosts } from "@/services/postService";
 import { getChatRoomsForInbox, searchChatRooms } from "@/services/chatService";
 import { searchUsers } from "@/services/userService";
+import { useAuthStore } from "@/stores/authStore";
 import type { ChatRoom, Post, PostCategory, User } from "@/models";
 
 export default function SearchPage() {
+  const { user } = useAuthStore();
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"posts" | "topics" | "chats" | "users">("posts");
   const [posts, setPosts] = useState<Post[]>([]);
   const [topics, setTopics] = useState<PostCategory[]>([]);
   const [chats, setChats] = useState<ChatRoom[]>([]);
+  const [chatDisplayNames, setChatDisplayNames] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,12 +35,21 @@ export default function SearchPage() {
     setPosts([]);
     setTopics([]);
     setChats([]);
+    setChatDisplayNames({});
     setUsers([]);
+
+    const myUid = user?.uid;
 
     const [postsResult, topicsResult, chatsResult, usersResult] = await Promise.allSettled([
       searchPosts(q),
       searchTopics(q),
-      getChatRoomsForInbox().then((rooms) => searchChatRooms(q, rooms)),
+      getChatRoomsForInbox().then(async (rooms) => {
+        const displayNamesByUid = myUid ? await resolveDmDisplayNames(rooms, myUid) : {};
+        return {
+          matches: searchChatRooms(q, rooms, 20, { myUid, displayNamesByUid }),
+          displayNamesByUid,
+        };
+      }),
       searchUsers(q),
     ]);
 
@@ -58,7 +71,8 @@ export default function SearchPage() {
     }
 
     if (chatsResult.status === "fulfilled") {
-      setChats(chatsResult.value);
+      setChats(chatsResult.value.matches);
+      setChatDisplayNames(chatsResult.value.displayNamesByUid);
     } else {
       errors.push(`Chats: ${formatError(chatsResult.reason)}`);
     }
@@ -160,7 +174,9 @@ export default function SearchPage() {
                 href={`/chat/${c.id}`}
                 className="codex-surface codex-surface-hover block rounded-lg p-3"
               >
-                {c.title}
+                {user?.uid
+                  ? chatRoomDisplayTitle(c, user.uid, chatDisplayNames)
+                  : c.title}
               </Link>
             ))
           )}
