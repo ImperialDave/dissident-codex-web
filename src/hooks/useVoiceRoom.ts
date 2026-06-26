@@ -21,6 +21,8 @@ import {
   endVoiceSessionLocal,
   endVoiceSessionRemote,
   fetchVoiceToken,
+  isDmVoiceSession,
+  leaveVoiceSession,
 } from "@/services/voiceService";
 import type { VoiceSession } from "@/models";
 
@@ -337,11 +339,15 @@ export function useVoiceRoom({ session, displayName, shouldConnect }: UseVoiceRo
     await disconnect();
 
     try {
-      await endVoiceSessionLocal(activeSession);
-      try {
-        await endVoiceSessionRemote(activeSession.id);
-      } catch {
-        // LiveKit cleanup is best-effort.
+      if (isDmVoiceSession(activeSession)) {
+        await endVoiceSessionLocal(activeSession);
+        try {
+          await endVoiceSessionRemote(activeSession.id);
+        } catch {
+          // LiveKit cleanup is best-effort.
+        }
+      } else {
+        await leaveVoiceSession(activeSession);
       }
     } catch (err) {
       setError(mapCallableError(err));

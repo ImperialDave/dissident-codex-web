@@ -48,6 +48,8 @@ export interface VoiceCallBarProps {
   speakerVolumePercent?: number;
   onMicVolumeChange?: (percent: number) => void;
   onSpeakerVolumeChange?: (percent: number) => void;
+  /** DM calls end for everyone; topic/group only remove this user. */
+  leaveButtonLabel?: "End call" | "Leave call";
 }
 
 export function VoiceCallBar({
@@ -83,6 +85,7 @@ export function VoiceCallBar({
   speakerVolumePercent = 100,
   onMicVolumeChange,
   onSpeakerVolumeChange,
+  leaveButtonLabel = "End call",
 }: VoiceCallBarProps) {
   const showPanel =
     phase !== "idle" ||
@@ -99,7 +102,7 @@ export function VoiceCallBar({
   if (!showPanel) return null;
 
   const headerText = (() => {
-    if (leaving) return "Ending call...";
+    if (leaving) return leaveButtonLabel === "Leave call" ? "Leaving call..." : "Ending call...";
     if (phase === "ringing-caller") return `${label} — waiting for answer`;
     if (phase === "ringing-callee") return `${label} — incoming call`;
     if (connecting) return "Connecting to voice...";
@@ -237,7 +240,11 @@ export function VoiceCallBar({
                 disabled={leaving}
                 className="rounded-lg bg-red-500/80 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
               >
-              {leaving ? "Ending..." : "End call"}
+                {leaving
+                  ? leaveButtonLabel === "Leave call"
+                    ? "Leaving..."
+                    : "Ending..."
+                  : leaveButtonLabel}
               </button>
             </>
           )}

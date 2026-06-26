@@ -19,6 +19,7 @@ import {
   CHAT_TYPE_DM,
   CHAT_TYPE_GROUP,
   CHAT_TYPE_TOPIC,
+  VOICE_TYPE_DM,
   type ChatRoom,
   type VoiceSession,
 } from "@/models";
@@ -259,6 +260,8 @@ export function GlobalVoiceController() {
 
   if (!showBar) return null;
 
+  const leaveButtonLabel = session.voiceType === VOICE_TYPE_DM ? "End call" : "Leave call";
+
   return (
     <FloatingVoiceCallBar
       phase={phase}
@@ -287,6 +290,7 @@ export function GlobalVoiceController() {
       speakerVolumePercent={voice.speakerVolumePercent}
       onMicVolumeChange={voice.setMicVolumePercent}
       onSpeakerVolumeChange={voice.setSpeakerVolumePercent}
+      leaveButtonLabel={leaveButtonLabel}
     />
   );
 }
