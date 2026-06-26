@@ -12,7 +12,12 @@ import { partitionFeedPosts } from "@/lib/feedRank";
 import { mapFirestoreError } from "@/lib/utils";
 import { getFavoriteCategories } from "@/services/categoryService";
 import { getRecentDmRooms } from "@/services/chatService";
-import { getPosts, togglePostFeedVisibility } from "@/services/postService";
+import {
+  getPosts,
+  refreshSavedPostIds,
+  togglePostFeedVisibility,
+  toggleSavePost,
+} from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
 import type { ChatRoom, FavoriteCategory, Post } from "@/models";
 
@@ -38,6 +43,8 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [togglingPostId, setTogglingPostId] = useState<string | null>(null);
+  const [togglingSavePostId, setTogglingSavePostId] = useState<string | null>(null);
+  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
   const [favoriteCategories, setFavoriteCategories] = useState<FavoriteCategory[]>([]);
   const modView = isModerator();
   const showPriority = category === ALL_CATEGORY_LABEL;
@@ -78,6 +85,24 @@ export default function FeedPage() {
     }
   }, [category, search, modView, showPriority]);
 
+  async function handleToggleSave(postId: string) {
+    setTogglingSavePostId(postId);
+    setError("");
+    try {
+      const nowSaved = await toggleSavePost(postId);
+      setSavedPostIds((prev) => {
+        const next = new Set(prev);
+        if (nowSaved) next.add(postId);
+        else next.delete(postId);
+        return next;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? mapFirestoreError(err.message) : "Failed to update save");
+    } finally {
+      setTogglingSavePostId(null);
+    }
+  }
+
   async function handleToggleFeedVisibility(postId: string) {
     setTogglingPostId(postId);
     setError("");
@@ -102,6 +127,11 @@ export default function FeedPage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (!user) return;
+    refreshSavedPostIds().then(setSavedPostIds);
+  }, [user]);
+
   const hasPosts = favoritePosts.length > 0 || allPosts.length > 0;
 
   function renderPostList(posts: Post[], priorityLabel?: string) {
@@ -112,6 +142,9 @@ export default function FeedPage() {
         canModerate={modView}
         togglingVisibility={togglingPostId === post.id}
         onToggleFeedVisibility={modView ? handleToggleFeedVisibility : undefined}
+        saved={savedPostIds.has(post.id)}
+        togglingSave={togglingSavePostId === post.id}
+        onToggleSave={handleToggleSave}
         priorityLabel={priorityLabel}
       />
     ));
@@ -161,7 +194,7 @@ export default function FeedPage() {
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              ★ {fav.name}
+            ★ {fav.name}
             </button>
           ))}
         </div>
