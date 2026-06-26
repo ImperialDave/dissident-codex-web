@@ -7,6 +7,7 @@ import { GifPicker } from "@/components/GifPicker";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { timeAgo } from "@/lib/utils";
+import { ChatRoomTitle } from "@/components/ChatRoomTitle";
 import { FavoriteStar } from "@/components/FavoriteStar";
 import { VoiceChatControls } from "@/components/VoiceChatControls";
 import {
@@ -145,7 +146,9 @@ export default function ChatRoomPage() {
     <div className="flex h-[calc(100vh-8rem)] flex-col rounded-xl border border-white/10 bg-[var(--color-surface)]">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div>
-          <h1 className="font-semibold">{room?.title || "Chat"}</h1>
+          <h1 className="font-semibold">
+            <ChatRoomTitle room={room} myUid={user?.uid} />
+          </h1>
           {room?.locked && <p className="text-xs text-orange-300">This room is locked</p>}
         </div>
         <FavoriteStar
