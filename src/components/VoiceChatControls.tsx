@@ -20,6 +20,18 @@ function toUiVoiceSession(session: VoiceSession | null): VoiceSession | null {
   return session;
 }
 
+function isCallParty(
+  session: VoiceSession,
+  myUid: string,
+  joinIntentSessionId: string | null
+): boolean {
+  if (joinIntentSessionId === session.id) return true;
+  if (session.createdBy === myUid) return true;
+  if (session.calleeUid === myUid) return true;
+  const participant = session.participants[myUid];
+  return Boolean(participant && !participant.leftAt);
+}
+
 interface VoiceChatControlsProps {
   room: ChatRoom | null;
   roomId: string;
@@ -34,52 +46,55 @@ export function VoiceChatControls({ room, roomId, displayName, myUid, panelRef }
   const [manualJoinBusy, setManualJoinBusy] = useState(false);
   const [voiceError, setVoiceError] = useState("");
   const resetMicPreflight = useVoiceUiStore((s) => s.resetMicPreflight);
+  const setJoinIntent = useVoiceUiStore((s) => s.setJoinIntent);
+  const clearJoinIntent = useVoiceUiStore((s) => s.clearJoinIntent);
+  const joinIntentSessionId = useVoiceUiStore((s) => s.joinIntentSessionId);
   const prevStatusRef = useRef<string | null>(null);
 
-  const inActiveCall =
-    session?.status === "active" &&
-    Boolean(
-      myUid &&
-        (session.createdBy === myUid ||
-          session.calleeUid === myUid ||
-          session.participants[myUid]) &&
-        !session.participants[myUid]?.leftAt
-    );
+  const listenSessionId = session?.id ?? room?.activeVoiceSessionId ?? null;
+
+  const callParty =
+    Boolean(session && myUid && isCallParty(session, myUid, joinIntentSessionId));
+
+  const shouldConnect = Boolean(session?.status === "active" && callParty);
 
   const voice = useVoiceRoom({
     session,
     displayName,
-    enabled: inActiveCall,
+    shouldConnect,
   });
 
-  const applySession = useCallback((next: VoiceSession | null) => {
-    setSession(toUiVoiceSession(next));
-  }, []);
+  const applySession = useCallback(
+    (next: VoiceSession | null) => {
+      const uiSession = toUiVoiceSession(next);
+      setSession(uiSession);
+      if (!uiSession || uiSession.status === "ended") {
+        clearJoinIntent();
+      }
+    },
+    [clearJoinIntent]
+  );
 
   useEffect(() => {
     if (!roomId) return;
     getActiveVoiceSessionForRoom(roomId).then(applySession);
-    if (room?.activeVoiceSessionId) {
-      return listenVoiceSession(room.activeVoiceSessionId, applySession);
-    }
-    return undefined;
-  }, [roomId, room?.activeVoiceSessionId, applySession]);
+  }, [roomId, applySession]);
 
   useEffect(() => {
-    if (!session?.id) return;
-    return listenVoiceSession(session.id, applySession);
-  }, [session?.id, applySession]);
+    if (!listenSessionId) return;
+    return listenVoiceSession(listenSessionId, applySession);
+  }, [listenSessionId, applySession]);
 
   useEffect(() => {
     const becameActive =
       session?.status === "active" &&
       prevStatusRef.current !== "active" &&
-      inActiveCall;
+      callParty;
     if (becameActive) {
       panelRef?.current?.scrollIntoView({ block: "start", behavior: "smooth" });
     }
     prevStatusRef.current = session?.status ?? null;
-  }, [session?.status, inActiveCall, panelRef]);
+  }, [session?.status, callParty, panelRef]);
 
   async function handleStartDmCall() {
     if (!room) return;
@@ -93,6 +108,7 @@ export function VoiceChatControls({ room, roomId, displayName, myUid, panelRef }
     setVoiceBusy(true);
     try {
       const created = await startDmVoiceCall(room);
+      setJoinIntent(created.id);
       setSession(created);
       panelRef?.current?.scrollIntoView({ block: "start", behavior: "smooth" });
     } catch (err) {
@@ -114,7 +130,8 @@ export function VoiceChatControls({ room, roomId, displayName, myUid, panelRef }
     setVoiceBusy(true);
     voice.resetConnect();
     try {
-      await joinTopicOrGroupVoice(room);
+      const joined = await joinTopicOrGroupVoice(room);
+      setJoinIntent(joined.id);
     } catch (err) {
       setVoiceError(err instanceof Error ? err.message : "Could not join voice");
     } finally {
@@ -131,6 +148,7 @@ export function VoiceChatControls({ room, roomId, displayName, myUid, panelRef }
         if (mic.message && mic.status !== "denied") setVoiceError(mic.message);
         return;
       }
+      if (session?.id) setJoinIntent(session.id);
       voice.resetConnect();
       await voice.connect();
     } catch (err) {
@@ -138,12 +156,13 @@ export function VoiceChatControls({ room, roomId, displayName, myUid, panelRef }
     } finally {
       setManualJoinBusy(false);
     }
-  }, [voice]);
+  }, [voice, session?.id, setJoinIntent]);
 
   const handleRetryConnect = useCallback(async () => {
     setVoiceError("");
     setManualJoinBusy(true);
     try {
+      if (session?.id) setJoinIntent(session.id);
       voice.resetConnect();
       await voice.connect();
     } catch (err) {
@@ -151,7 +170,7 @@ export function VoiceChatControls({ room, roomId, displayName, myUid, panelRef }
     } finally {
       setManualJoinBusy(false);
     }
-  }, [voice]);
+  }, [voice, session?.id, setJoinIntent]);
 
   async function handleCancelRinging() {
     if (!session) return;
@@ -159,6 +178,7 @@ export function VoiceChatControls({ room, roomId, displayName, myUid, panelRef }
     setVoiceError("");
     try {
       await declineDmVoiceCall(session);
+      clearJoinIntent();
       setSession(null);
     } catch (err) {
       setVoiceError(err instanceof Error ? err.message : "Could not cancel call");
@@ -172,6 +192,7 @@ export function VoiceChatControls({ room, roomId, displayName, myUid, panelRef }
     try {
       await voice.leave();
       resetMicPreflight();
+      clearJoinIntent();
       setSession(null);
     } catch (err) {
       setVoiceError(err instanceof Error ? err.message : "Could not end call");
@@ -185,6 +206,7 @@ export function VoiceChatControls({ room, roomId, displayName, myUid, panelRef }
   const isCallee = isDm && session?.status === "ringing" && session.calleeUid === myUid;
   const isCallerRinging = isDm && session?.status === "ringing" && session.createdBy === myUid;
   const voiceLocked = room.voiceLocked;
+  const inActiveCall = session?.status === "active" && callParty;
 
   const phase: VoiceCallPhase = (() => {
     if (!session) return "idle";
@@ -192,7 +214,7 @@ export function VoiceChatControls({ room, roomId, displayName, myUid, panelRef }
     if (isCallee) return "ringing-callee";
     if (voice.connected) return "connected";
     if (voice.connecting) return "connecting";
-    if (inActiveCall) return "join-ready";
+    if (inActiveCall || (session.status === "active" && callParty)) return "join-ready";
     return "idle";
   })();
 
@@ -212,12 +234,13 @@ export function VoiceChatControls({ room, roomId, displayName, myUid, panelRef }
         needsAudioUnlock={voice.needsAudioUnlock}
         needsJoin={voice.needsJoin}
         needsManualJoin={voice.needsManualJoin}
+        connectFailed={voice.connectFailed}
         manualJoinBusy={manualJoinBusy}
         voiceBusy={voiceBusy}
         voiceLocked={voiceLocked}
         showIdleDmButton={isDm && !session}
         showIdleChannelButton={isChannel && !inActiveCall && !session}
-        showChannelRejoin={session?.status === "active" && !inActiveCall && isChannel}
+        showChannelRejoin={session?.status === "active" && !callParty && isChannel}
         onStartDmCall={() => void handleStartDmCall()}
         onJoinChannel={() => void handleJoinChannel()}
         onCancelRinging={() => void handleCancelRinging()}

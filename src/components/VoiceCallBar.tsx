@@ -22,6 +22,7 @@ interface VoiceCallBarProps {
   needsAudioUnlock?: boolean;
   needsJoin?: boolean;
   needsManualJoin?: boolean;
+  connectFailed?: boolean;
   manualJoinBusy?: boolean;
   voiceBusy?: boolean;
   voiceLocked?: boolean;
@@ -51,6 +52,7 @@ export function VoiceCallBar({
   needsAudioUnlock,
   needsJoin,
   needsManualJoin,
+  connectFailed = false,
   manualJoinBusy = false,
   voiceBusy = false,
   voiceLocked = false,
@@ -91,6 +93,8 @@ export function VoiceCallBar({
     if (connected) return `${label} — ${participants.length} in call`;
     return label;
   })();
+
+  const showEndCall = connected || phase === "join-ready" || phase === "connecting";
 
   return (
     <div
@@ -149,14 +153,14 @@ export function VoiceCallBar({
             </button>
           )}
 
-          {needsJoin && !needsManualJoin && error && onRetryConnect && (
+          {needsJoin && !needsManualJoin && onRetryConnect && (
             <button
               type="button"
               onClick={onRetryConnect}
               disabled={manualJoinBusy || connecting}
               className="mt-2 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
             >
-              {manualJoinBusy ? "Joining..." : "Try again"}
+              {manualJoinBusy ? "Joining..." : connectFailed || error ? "Try again" : "Join call"}
             </button>
           )}
 
@@ -194,16 +198,18 @@ export function VoiceCallBar({
               Cancel call
             </button>
           )}
-          {(connected || (needsJoin && !needsManualJoin && !error)) && (
+          {showEndCall && (
             <>
-              <button
-                type="button"
-                onClick={onToggleMute}
-                disabled={!connected || leaving}
-                className="rounded-lg border border-white/10 px-3 py-1.5 text-sm hover:bg-white/5 disabled:opacity-50"
-              >
-                {muted ? "Unmute" : "Mute"}
-              </button>
+              {connected && (
+                <button
+                  type="button"
+                  onClick={onToggleMute}
+                  disabled={leaving}
+                  className="rounded-lg border border-white/10 px-3 py-1.5 text-sm hover:bg-white/5 disabled:opacity-50"
+                >
+                  {muted ? "Unmute" : "Mute"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => void onLeave()}
