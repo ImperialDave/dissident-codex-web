@@ -18,6 +18,7 @@ import {
   getUsersForModeration,
   updateUserRole,
 } from "@/services/moderationService";
+import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { PostFeedVisibilityToggle } from "@/components/PostFeedVisibilityToggle";
 import { deletePost, getPosts, togglePostFeedVisibility } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
@@ -123,25 +124,35 @@ export default function ModToolsPage() {
                   </div>
                   <RoleBadge role={u.role} />
                 </div>
-                <select
-                  value={roleFromString(u.role)}
-                  onChange={async (e) => {
-                    try {
-                      setError("");
-                      await updateUserRole(u.uid, e.target.value as RoleName);
-                      await refresh();
-                    } catch (err) {
-                      setError(err instanceof Error ? err.message : "Role update failed");
-                    }
-                  }}
-                  className="codex-input rounded-lg px-2 py-1 text-sm"
-                >
-                  {roles.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <select
+                    value={roleFromString(u.role)}
+                    onChange={async (e) => {
+                      try {
+                        setError("");
+                        await updateUserRole(u.uid, e.target.value as RoleName);
+                        await refresh();
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Role update failed");
+                      }
+                    }}
+                    className="codex-input rounded-lg px-2 py-1 text-sm"
+                  >
+                    {roles.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                  {isFounder() && (
+                    <DeleteAccountButton
+                      target={u}
+                      compact
+                      onDeleted={refresh}
+                      onError={setError}
+                    />
+                  )}
+                </div>
               </ModRow>
             ))
           )}

@@ -1,22 +1,52 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { ModerationMenu } from "@/components/ModerationMenu";
-import { ModPageShell, ModSection, ModStatGrid } from "@/components/ModPageShell";
+import { ModEmpty, ModPageShell, ModRow, ModSection, ModStatGrid } from "@/components/ModPageShell";
+import { RoleBadge } from "@/components/RoleBadge";
+import { UserAvatar } from "@/components/UserAvatar";
+import { isFounderEmail } from "@/lib/utils";
 import { syncFounderRole } from "@/services/authService";
 import { computeModerationStats, getUsersForModeration } from "@/services/moderationService";
 import { useAuthStore } from "@/stores/authStore";
+import type { User } from "@/models";
 
 export default function FounderToolsPage() {
   const { isFounder, refreshUser } = useAuthStore();
   const [stats, setStats] = useState<ReturnType<typeof computeModerationStats> | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [userQuery, setUserQuery] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+
+  async function loadUsers() {
+    const data = await getUsersForModeration(500);
+    setUsers(data);
+    setStats(computeModerationStats(data));
+  }
 
   useEffect(() => {
     if (!isFounder()) return;
-    getUsersForModeration(500).then((users) => setStats(computeModerationStats(users)));
+    loadUsers().catch((err) =>
+      setDeleteError(err instanceof Error ? err.message : "Failed to load users")
+    );
   }, [isFounder]);
+
+  const deletableUsers = useMemo(() => {
+    const q = userQuery.trim().toLowerCase();
+    return users
+      .filter((u) => !isFounderEmail(u.email))
+      .filter(
+        (u) =>
+          !q ||
+          u.displayName.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q) ||
+          (u.flair?.toLowerCase().includes(q) ?? false)
+      );
+  }, [users, userQuery]);
 
   if (!isFounder()) {
     return <p className="codex-mod-alert">Founder access only.</p>;
@@ -55,6 +85,47 @@ export default function FounderToolsPage() {
 
       <ModSection title="Quick links" hint="Jump to moderation areas across the site.">
         <ModerationMenu variant="cards" />
+      </ModSection>
+
+      <ModSection
+        title="Delete Account"
+        hint={'Permanently remove a user from Auth and Codex. Their posts and comments become "Deleted user".'}
+        badge={
+          <input
+            value={userQuery}
+            onChange={(e) => setUserQuery(e.target.value)}
+            placeholder="Search users…"
+            className="codex-input w-full min-w-[12rem] rounded-lg px-3 py-2 text-sm sm:w-52"
+          />
+        }
+      >
+        {deleteError && <p className="mb-3 text-sm text-red-300">{deleteError}</p>}
+        <div className="max-h-96 overflow-y-auto">
+          {deletableUsers.length === 0 ? (
+            <ModEmpty>No deletable users match your search.</ModEmpty>
+          ) : (
+            deletableUsers.map((u) => (
+              <ModRow key={u.uid}>
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                  <UserAvatar name={u.displayName} photoUrl={u.photoUrl} size="sm" userId={u.uid} />
+                  <div className="min-w-0">
+                    <Link href={`/user/${u.uid}`} className="font-medium hover:text-[var(--color-accent)]">
+                      {u.displayName}
+                    </Link>
+                    <p className="truncate text-xs text-slate-400">{u.email}</p>
+                  </div>
+                  <RoleBadge role={u.role} />
+                </div>
+                <DeleteAccountButton
+                  target={u}
+                  compact
+                  onDeleted={loadUsers}
+                  onError={setDeleteError}
+                />
+              </ModRow>
+            ))
+          )}
+        </div>
       </ModSection>
 
       <div className="codex-mod-founder-panel space-y-3">
