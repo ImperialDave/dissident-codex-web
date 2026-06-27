@@ -2,11 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { ProfilePostsList } from "@/components/ProfilePostsList";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { fetchUser } from "@/services/authService";
 import { getOrCreateDmRoom } from "@/services/chatService";
-import { getPostsByUser } from "@/services/postService";
+import {
+  getPostsByUser,
+  refreshSavedPostIds,
+  togglePostFeedVisibility,
+  toggleSavePost,
+} from "@/services/postService";
 import {
   getFriendshipStatus,
   getIncomingRequestFrom,
@@ -15,6 +22,7 @@ import {
 } from "@/services/friendService";
 import { startChessGame } from "@/services/chessService";
 import { ensureMicrophoneForVoice } from "@/lib/microphonePermission";
+import { mapFirestoreError } from "@/lib/utils";
 import { startDmVoiceCall } from "@/services/voiceService";
 import { useAuthStore } from "@/stores/authStore";
 import type { Post, User } from "@/models";
@@ -22,14 +30,19 @@ import type { Post, User } from "@/models";
 export default function UserProfilePage() {
   const { uid } = useParams<{ uid: string }>();
   const router = useRouter();
-  const { user: me } = useAuthStore();
+  const { user: me, isModerator } = useAuthStore();
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
   const [friendStatus, setFriendStatus] = useState<string>("none");
   const [busy, setBusy] = useState<"message" | "chess" | "friend" | "call" | null>(null);
   const [error, setError] = useState("");
+  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
+  const [togglingSavePostId, setTogglingSavePostId] = useState<string | null>(null);
+  const [togglingVisibilityPostId, setTogglingVisibilityPostId] = useState<string | null>(null);
 
   const isSelf = me?.uid === uid;
+  const modView = isModerator();
 
   useEffect(() => {
     if (me?.uid && me.uid === uid) {
@@ -38,12 +51,60 @@ export default function UserProfilePage() {
   }, [me?.uid, uid, router]);
 
   useEffect(() => {
+    setPostsLoading(true);
     fetchUser(uid).then(setUser);
-    getPostsByUser(uid).then(setPosts);
+    getPostsByUser(uid)
+      .then(setPosts)
+      .finally(() => setPostsLoading(false));
     if (!isSelf) getFriendshipStatus(uid).then(setFriendStatus);
   }, [uid, isSelf]);
 
-  if (!user) return <p className="text-slate-400">Loading profile...</p>;
+  useEffect(() => {
+    if (!me) return;
+    refreshSavedPostIds().then(setSavedPostIds);
+  }, [me]);
+
+  if (!user) {
+    return (
+      <div>
+        <PageHeader title="Profile" backHref="/feed" />
+        <p className="px-4 py-12 text-center codex-text-muted">Loading profile...</p>
+      </div>
+    );
+  }
+
+  async function handleToggleSave(postId: string) {
+    setTogglingSavePostId(postId);
+    setError("");
+    try {
+      const nowSaved = await toggleSavePost(postId);
+      setSavedPostIds((prev) => {
+        const next = new Set(prev);
+        if (nowSaved) next.add(postId);
+        else next.delete(postId);
+        return next;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? mapFirestoreError(err.message) : "Failed to update save");
+    } finally {
+      setTogglingSavePostId(null);
+    }
+  }
+
+  async function handleToggleFeedVisibility(postId: string) {
+    setTogglingVisibilityPostId(postId);
+    setError("");
+    try {
+      const hidden = await togglePostFeedVisibility(postId);
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, hiddenFromFeed: hidden } : p))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? mapFirestoreError(err.message) : "Failed to update post");
+    } finally {
+      setTogglingVisibilityPostId(null);
+    }
+  }
 
   async function openChat() {
     setError("");
@@ -120,37 +181,55 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center gap-4">
-        <UserAvatar name={user.displayName} photoUrl={user.photoUrl} size="lg" />
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{user.displayName}</h1>
-            <RoleBadge role={user.role} />
+    <div>
+      <PageHeader title={user.displayName} backHref="/feed" />
+
+      <div
+        className="relative h-32 overflow-hidden border-b border-[var(--color-border)]"
+        style={
+          user.backgroundUrl
+            ? { backgroundImage: `url(${user.backgroundUrl})`, backgroundSize: "cover" }
+            : undefined
+        }
+      >
+        <div className="absolute bottom-4 left-4 flex items-end gap-4">
+          <UserAvatar name={user.displayName} photoUrl={user.photoUrl} size="lg" />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold">{user.displayName}</h1>
+              <RoleBadge role={user.role} />
+            </div>
+            {user.flair && (
+              <p className="text-sm text-[var(--color-accent)]">{user.flair}</p>
+            )}
           </div>
-          {user.flair && <p className="text-[var(--color-accent)]">{user.flair}</p>}
-          <p className="text-sm text-slate-400">{user.bio}</p>
         </div>
       </div>
 
+      {user.bio && (
+        <p className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
+          {user.bio}
+        </p>
+      )}
+
       {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+        <p className="border-b border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 border-b border-[var(--color-border)] px-4 py-3">
         {friendStatus === "none" && (
           <button
             onClick={addFriend}
             disabled={busy !== null}
-            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            className="codex-btn-accent rounded-full px-4 py-2 text-sm disabled:opacity-50"
           >
             {busy === "friend" ? "Sending..." : "Add friend"}
           </button>
         )}
         {friendStatus === "pending_out" && (
-          <span className="rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-400">
+          <span className="codex-btn-ghost rounded-full px-4 py-2 text-sm codex-text-muted">
             Request sent
           </span>
         )}
@@ -158,57 +237,56 @@ export default function UserProfilePage() {
           <button
             onClick={acceptFriend}
             disabled={busy !== null}
-            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            className="codex-btn-accent rounded-full px-4 py-2 text-sm disabled:opacity-50"
           >
-            {busy === "friend" ? "Accepting..." : "Accept friend request"}
+            {busy === "friend" ? "Accepting..." : "Accept request"}
           </button>
         )}
         {friendStatus === "friends" && (
-          <span className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm text-green-400">
+          <span className="rounded-full border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm text-green-400">
             Friends
           </span>
         )}
         <button
           onClick={openChat}
           disabled={busy !== null}
-          className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+          className="codex-btn-ghost rounded-full px-4 py-2 text-sm disabled:opacity-50"
         >
           {busy === "message" ? "Opening..." : "Message"}
         </button>
         <button
           onClick={startVoiceCall}
           disabled={busy !== null}
-          className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
+          className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
         >
           {busy === "call" ? "Calling..." : "Voice call"}
         </button>
         <button
           onClick={playChess}
           disabled={busy !== null}
-          className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+          className="codex-btn-ghost rounded-full px-4 py-2 text-sm disabled:opacity-50"
         >
           {busy === "chess" ? "Starting..." : "Play chess"}
         </button>
       </div>
 
-      <div className="rounded-xl border border-white/10 p-4 text-sm">
-        Chess ELO: {user.chessElo ?? 1200} · Games: {user.chessGamesPlayed ?? 0}
+      <div className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
+        Chess ELO: {user.chessElo ?? 1200} · Games: {user.chessGamesPlayed ?? 0} · W/L/D:{" "}
+        {user.chessWins ?? 0}/{user.chessLosses ?? 0}/{user.chessDraws ?? 0}
       </div>
 
-      <div>
-        <h2 className="mb-2 font-semibold">Posts ({posts.length})</h2>
-        <div className="space-y-2">
-          {posts.length === 0 ? (
-            <p className="text-slate-400">No posts yet.</p>
-          ) : (
-            posts.map((p) => (
-              <a key={p.id} href={`/post/${p.id}`} className="block rounded-lg border border-white/10 p-3 hover:border-[var(--color-accent)]/40">
-                {p.title}
-              </a>
-            ))
-          )}
-        </div>
-      </div>
+      <ProfilePostsList
+        posts={posts}
+        loading={postsLoading}
+        title={`${user.displayName}'s posts`}
+        emptyMessage={`${user.displayName} hasn't posted yet.`}
+        canModerate={modView}
+        savedPostIds={savedPostIds}
+        togglingSavePostId={togglingSavePostId}
+        onToggleSave={handleToggleSave}
+        togglingVisibilityPostId={togglingVisibilityPostId}
+        onToggleFeedVisibility={modView ? handleToggleFeedVisibility : undefined}
+      />
     </div>
   );
 }

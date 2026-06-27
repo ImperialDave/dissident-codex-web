@@ -13,7 +13,14 @@ import {
   getFavoriteCategories,
   toggleFavoriteCategory,
 } from "@/services/categoryService";
-import { getPostsByUser } from "@/services/postService";
+import { ProfilePostsList } from "@/components/ProfilePostsList";
+import {
+  getPostsByUser,
+  refreshSavedPostIds,
+  togglePostFeedVisibility,
+  toggleSavePost,
+} from "@/services/postService";
+import { mapFirestoreError } from "@/lib/utils";
 import { uploadImage } from "@/services/mediaService";
 import { updateProfile } from "@/services/userService";
 import { ModerationMenu } from "@/components/ModerationMenu";
@@ -32,13 +39,22 @@ export default function ProfilePage() {
   const [feedCategories, setFeedCategories] = useState<string[]>([]);
   const [favoriteCategoryIds, setFavoriteCategoryIds] = useState<Set<string>>(new Set());
   const [favoriteError, setFavoriteError] = useState("");
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
+  const [togglingSavePostId, setTogglingSavePostId] = useState<string | null>(null);
+  const [togglingVisibilityPostId, setTogglingVisibilityPostId] = useState<string | null>(null);
+  const [postsError, setPostsError] = useState("");
 
   useEffect(() => {
     if (!user) return;
     setBio(user.bio || "");
     setFlair(user.flair || "");
     setDisplayName(user.displayName || "");
-    getPostsByUser(user.uid).then(setPosts);
+    setPostsLoading(true);
+    getPostsByUser(user.uid)
+      .then(setPosts)
+      .finally(() => setPostsLoading(false));
+    refreshSavedPostIds().then(setSavedPostIds);
     getFeedCategoryNames().then((cats) =>
       setFeedCategories(cats.filter((c) => c !== "All"))
     );
@@ -71,6 +87,39 @@ export default function ProfilePage() {
     await refreshUser();
   }
 
+  async function handleToggleSave(postId: string) {
+    setTogglingSavePostId(postId);
+    setPostsError("");
+    try {
+      const nowSaved = await toggleSavePost(postId);
+      setSavedPostIds((prev) => {
+        const next = new Set(prev);
+        if (nowSaved) next.add(postId);
+        else next.delete(postId);
+        return next;
+      });
+    } catch (err) {
+      setPostsError(err instanceof Error ? mapFirestoreError(err.message) : "Failed to update save");
+    } finally {
+      setTogglingSavePostId(null);
+    }
+  }
+
+  async function handleToggleFeedVisibility(postId: string) {
+    setTogglingVisibilityPostId(postId);
+    setPostsError("");
+    try {
+      const hidden = await togglePostFeedVisibility(postId);
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, hiddenFromFeed: hidden } : p))
+      );
+    } catch (err) {
+      setPostsError(err instanceof Error ? mapFirestoreError(err.message) : "Failed to update post");
+    } finally {
+      setTogglingVisibilityPostId(null);
+    }
+  }
+
   return (
     <div>
       <PageHeader title="Profile" />
@@ -89,6 +138,31 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {user.bio && (
+        <p className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
+          {user.bio}
+        </p>
+      )}
+
+      {postsError && (
+        <p className="border-b border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {postsError}
+        </p>
+      )}
+
+      <ProfilePostsList
+        posts={posts}
+        loading={postsLoading}
+        title="Your posts"
+        emptyMessage="No posts yet."
+        canModerate={isModerator()}
+        savedPostIds={savedPostIds}
+        togglingSavePostId={togglingSavePostId}
+        onToggleSave={handleToggleSave}
+        togglingVisibilityPostId={togglingVisibilityPostId}
+        onToggleFeedVisibility={isModerator() ? handleToggleFeedVisibility : undefined}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] px-4 py-4">
         <div>
@@ -215,24 +289,6 @@ export default function ProfilePage() {
             View saved
           </Link>
         </div>
-      </div>
-
-      <div>
-        <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
-          Your posts ({posts.length})
-        </p>
-        {posts.length === 0 ? (
-          <p className="px-4 py-8 text-center codex-text-muted">No posts yet.</p>
-        ) : (
-          <div>
-            {posts.map((p) => (
-              <Link key={p.id} href={`/post/${p.id}`} className="codex-list-row block">
-                <p className="font-medium">{p.title}</p>
-                <p className="text-xs text-slate-400">{p.category}</p>
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="border-b border-[var(--color-border)] px-4 py-4 text-sm codex-text-muted">
