@@ -28,6 +28,7 @@ const MOBILE_HEADER_NAV = [
   { href: "/notifications", label: "Alerts" },
   { href: "/chess", label: "Chess" },
   { href: "/search", label: "Search" },
+  { href: "/leaderboard", label: "Leaderboard" },
   { href: "/chats", label: "Chats" },
 ];
 

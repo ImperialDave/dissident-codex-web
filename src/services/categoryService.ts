@@ -346,22 +346,7 @@ export async function getLeaderboardData(limit = 20): Promise<LeaderboardData> {
     return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
   });
 
-  const chatEntries = rooms.map((room) => ({
-    title: room.title?.trim() || room.topicName?.trim() || room.id,
-    roomId: room.id,
-    messageCount: room.messageCount || 0,
-    postCount: 0,
-    score: room.messageCount || 0,
-    lastMessageAt: room.lastMessageAt,
-    isTopic: room.type === CHAT_TYPE_TOPIC,
-  }));
-
-  const topChats = sortLeaderboardEntries(chatEntries, limit, (a, b) => {
-    if (b.messageCount !== a.messageCount) return b.messageCount - a.messageCount;
-    return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
-  });
-
-  return { topTopics, topChats };
+  return { topTopics };
 }
 
 function favoriteCategoriesRef(uid: string) {

@@ -230,7 +230,6 @@ export interface LeaderboardEntry {
 
 export interface LeaderboardData {
   topTopics: LeaderboardEntry[];
-  topChats: LeaderboardEntry[];
 }
 
 export interface ChessGame {

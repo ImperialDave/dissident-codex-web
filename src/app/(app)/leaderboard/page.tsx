@@ -8,13 +8,10 @@ import { getChessLeaderboard } from "@/services/chessService";
 import { mapFirestoreError } from "@/lib/utils";
 import type { ChessLeaderboardEntry, LeaderboardData, LeaderboardEntry } from "@/models";
 
-type Tab = "topics" | "chats" | "chess";
+type Tab = "topics" | "chess";
 
 function entryMeta(entry: LeaderboardEntry): string {
-  if (entry.isTopic) {
-    return `${entry.messageCount} messages · ${entry.postCount} posts`;
-  }
-  return `${entry.messageCount} messages`;
+  return `${entry.messageCount} messages · ${entry.postCount} posts`;
 }
 
 export default function LeaderboardPage() {
@@ -38,15 +35,14 @@ export default function LeaderboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const activeEntries =
-    tab === "topics" ? data?.topTopics ?? [] : tab === "chats" ? data?.topChats ?? [] : [];
+  const activeEntries = tab === "topics" ? data?.topTopics ?? [] : [];
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Leaderboard</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Top topics and chats ranked by activity. Tap an entry to open the room.
+          Top topics ranked by activity. Tap an entry to open the room.
         </p>
       </div>
 
@@ -54,7 +50,6 @@ export default function LeaderboardPage() {
         {(
           [
             { id: "topics" as const, label: "Top Topics" },
-            { id: "chats" as const, label: "Top Chats" },
             { id: "chess" as const, label: "Chess ELO" },
           ] as const
         ).map((item) => (
