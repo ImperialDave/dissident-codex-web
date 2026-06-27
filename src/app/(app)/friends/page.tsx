@@ -1,30 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FriendListRow } from "@/components/FriendListRow";
 import { UserAvatar } from "@/components/UserAvatar";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { buildFriendGameMap } from "@/lib/chessFriends";
 import { getOrCreateDmRoom } from "@/services/chatService";
-import { startChessGame } from "@/services/chessService";
+import { getMyActiveGames, startChessGame } from "@/services/chessService";
 import { getFriends, getIncomingFriendRequests, respondToFriendRequest } from "@/services/friendService";
-import type { Friend, FriendRequest } from "@/models";
+import { useAuthStore } from "@/stores/authStore";
+import type { ChessGame, Friend, FriendRequest } from "@/models";
 
 export default function FriendsPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [gameMap, setGameMap] = useState<Map<string, ChessGame>>(new Map());
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [busyUid, setBusyUid] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  async function load() {
-    setFriends(await getFriends());
+  const load = useCallback(async () => {
+    const [friendsList, games] = await Promise.all([getFriends(), getMyActiveGames()]);
+    setFriends(friendsList);
+    if (user?.uid) setGameMap(buildFriendGameMap(games, user.uid));
     setRequests(await getIncomingFriendRequests());
-  }
+  }, [user?.uid]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   async function messageFriend(uid: string) {
     setError("");
@@ -106,31 +113,15 @@ export default function FriendsPage() {
         ) : (
           <div>
             {friends.map((f) => (
-              <div
+              <FriendListRow
                 key={f.uid}
-                className="codex-list-row flex flex-wrap items-center justify-between gap-3"
-              >
-                <Link href={`/user/${f.uid}`} className="flex min-w-0 flex-1 items-center gap-3">
-                  <UserAvatar name={f.displayName} photoUrl={f.photoUrl} />
-                  <span>{f.displayName}</span>
-                </Link>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => messageFriend(f.uid)}
-                    disabled={busyUid === f.uid}
-                    className="codex-btn-secondary rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
-                  >
-                    Message
-                  </button>
-                  <button
-                    onClick={() => playChess(f.uid)}
-                    disabled={busyUid === f.uid}
-                    className="codex-btn-ghost rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
-                  >
-                    Chess
-                  </button>
-                </div>
-              </div>
+                friend={f}
+                busy={busyUid === f.uid}
+                activeGame={gameMap.get(f.uid)}
+                showMessageButton
+                onMessage={() => messageFriend(f.uid)}
+                onChess={() => playChess(f.uid)}
+              />
             ))}
           </div>
         )}
