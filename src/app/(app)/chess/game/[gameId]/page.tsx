@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/Button";
 import { applyMove, getGameById, listenGame, resignGame } from "@/services/chessService";
 import { useAuthStore } from "@/stores/authStore";
 import type { ChessGame } from "@/models";
@@ -50,20 +52,29 @@ export default function ChessGamePage() {
     [game, gameId, isMyTurn]
   );
 
-  if (!game) return <p className="text-slate-400">Loading game...</p>;
+  if (!game) {
+    return (
+      <div className="px-4 py-8 codex-text-muted">
+        Loading game...
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-xl font-bold">
-        {game.whiteName} vs {game.blackName}
-      </h1>
-      <p className="text-sm text-slate-400">
+    <div>
+      <PageHeader title={`${game.whiteName} vs ${game.blackName}`} />
+      <p className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
         Status: {game.status} · Turn: {game.turn === "w" ? "White" : "Black"}
         {myColor && ` · You are ${myColor}`}
       </p>
-      {error && <p className="text-red-400">{error}</p>}
 
-      <div className="codex-surface overflow-hidden rounded-xl">
+      {error && (
+        <p className="border-b border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+
+      <div className="border-b border-[var(--color-border)]">
         <Chessboard
           position={game.fen}
           onPieceDrop={onDrop}
@@ -73,16 +84,15 @@ export default function ChessGamePage() {
       </div>
 
       {game.status === "active" && myColor && (
-        <button
-          onClick={() => resignGame(gameId)}
-          className="rounded-lg border border-red-500/40 px-4 py-2 text-sm text-red-300"
-        >
-          Resign
-        </button>
+        <div className="border-b border-[var(--color-border)] px-4 py-4">
+          <Button variant="danger" size="sm" onClick={() => resignGame(gameId)}>
+            Resign
+          </Button>
+        </div>
       )}
 
       {game.status === "finished" && (
-        <p className="text-[var(--color-accent)]">
+        <p className="px-4 py-4 text-[var(--color-accent)]">
           Game over: {game.result}
           {game.winnerUid &&
             ` — Winner: ${game.winnerUid === game.whiteUid ? game.whiteName : game.blackName}`}

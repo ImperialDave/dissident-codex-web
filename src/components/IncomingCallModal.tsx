@@ -25,14 +25,14 @@ export function IncomingCallModal({
   if (!session) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+    <div className="codex-modal-overlay z-[100] backdrop-blur-sm">
       <div
         role="dialog"
         aria-labelledby="incoming-call-title"
         aria-describedby="incoming-call-desc"
-        className="w-full max-w-sm rounded-2xl border border-emerald-500/40 bg-[var(--color-surface)] p-6 shadow-2xl shadow-emerald-500/10"
+        className="codex-modal w-full max-w-sm border-emerald-500/40"
       >
-        <div className="flex flex-col items-center text-center">
+        <div className="codex-modal-body flex flex-col items-center text-center">
           <div className="relative mb-4">
             <span className="absolute inset-0 animate-ping rounded-full bg-emerald-500/20" />
             <UserAvatar name={callerName} photoUrl={callerPhotoUrl} size="lg" />
@@ -61,7 +61,7 @@ export function IncomingCallModal({
             type="button"
             onClick={onIgnore}
             disabled={busy}
-            className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 px-3 py-3 text-sm font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+            className="codex-btn-secondary flex flex-col items-center gap-1.5 rounded-full px-3 py-3 text-sm font-medium disabled:opacity-50"
           >
             <span className="text-lg" aria-hidden>
               −

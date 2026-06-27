@@ -47,19 +47,15 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
-      onClick={onClose}
-      role="presentation"
-    >
+    <div className="codex-modal-overlay" onClick={onClose} role="presentation">
       <div
-        className="codex-surface max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-xl shadow-2xl"
+        className="codex-modal max-w-2xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="gif-picker-title"
       >
-        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
+        <div className="codex-modal-header">
           <h2 id="gif-picker-title" className="font-semibold text-[var(--color-on-surface)]">
             Choose a GIF
           </h2>

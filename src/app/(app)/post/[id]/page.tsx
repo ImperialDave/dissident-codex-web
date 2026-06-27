@@ -314,7 +314,7 @@ export default function PostDetailPage() {
             </p>
           )}
           {pendingMedia && (
-            <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/20 p-3">
+            <div className="flex items-center gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
               {pendingMedia.kind === "file" && pendingMedia.mediaType === "video" ? (
                 <video
                   src={pendingMedia.previewUrl}
@@ -364,7 +364,7 @@ export default function PostDetailPage() {
               type="button"
               onClick={() => imageInputRef.current?.click()}
               disabled={submitting}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+              className="codex-btn-secondary rounded-full px-3 py-1.5 text-sm disabled:opacity-50"
             >
               Image
             </button>
@@ -372,7 +372,7 @@ export default function PostDetailPage() {
               type="button"
               onClick={() => setGifOpen(true)}
               disabled={submitting}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+              className="codex-btn-secondary rounded-full px-3 py-1.5 text-sm disabled:opacity-50"
             >
               GIF
             </button>
@@ -380,7 +380,7 @@ export default function PostDetailPage() {
               type="button"
               onClick={() => videoInputRef.current?.click()}
               disabled={submitting}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
+              className="codex-btn-secondary rounded-full px-3 py-1.5 text-sm disabled:opacity-50"
             >
               Video
             </button>
@@ -390,7 +390,7 @@ export default function PostDetailPage() {
             onChange={(e) => setText(e.target.value)}
             placeholder="Write a comment..."
             rows={3}
-            className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+            className="codex-input w-full px-4 py-3"
           />
           {error && <p className="text-red-400">{error}</p>}
           <button

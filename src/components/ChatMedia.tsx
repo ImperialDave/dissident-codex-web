@@ -30,7 +30,7 @@ export function ChatMedia({
   if (isVideo) {
     return (
       <div
-        className={`overflow-hidden rounded-lg border border-white/10 bg-black/30 ${className}`}
+        className={`overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] ${className}`}
       >
         <video
           src={url}
@@ -57,7 +57,7 @@ export function ChatMedia({
   return (
     <>
       <div
-        className={`overflow-hidden rounded-lg border border-white/10 bg-black/30 ${className}`}
+        className={`overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] ${className}`}
       >
         {enlargeable ? (
           <button

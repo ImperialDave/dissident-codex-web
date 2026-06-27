@@ -52,19 +52,15 @@ export function EmojiPickerModal({ open, onClose, onSelect }: EmojiPickerModalPr
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 p-4 sm:items-center"
-      onClick={onClose}
-      role="presentation"
-    >
+    <div className="codex-modal-overlay z-[70]" onClick={onClose} role="presentation">
       <div
-        className="codex-surface max-h-[85vh] w-full max-w-md overflow-hidden rounded-xl shadow-2xl"
+        className="codex-modal max-w-md"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="emoji-picker-title"
       >
-        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
+        <div className="codex-modal-header">
           <h2 id="emoji-picker-title" className="font-semibold text-[var(--color-on-surface)]">
             Choose a reaction
           </h2>

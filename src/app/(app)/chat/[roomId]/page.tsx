@@ -7,6 +7,8 @@ import { MessageReactions } from "@/components/MessageReactions";
 import { GifPicker } from "@/components/GifPicker";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { scrollToBottomIfPinned } from "@/lib/chatScroll";
 import { timeAgo } from "@/lib/utils";
 import { ChatRoomTitle } from "@/components/ChatRoomTitle";
@@ -164,9 +166,9 @@ export default function ChatRoomPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col rounded-xl border border-white/10 bg-[var(--color-surface)]">
-      <div className="sticky top-0 z-10 shrink-0 bg-[var(--color-surface)]">
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+    <div className="codex-page-fill">
+      <div className="codex-sticky-header shrink-0">
+        <div className="flex items-center justify-between px-4 py-3">
           <div>
             <h1 className="font-semibold">
               <ChatRoomTitle room={room} myUid={user?.uid} />
@@ -203,7 +205,13 @@ export default function ChatRoomPage() {
                 size="sm"
                 userId={msg.authorId}
               />
-              <div className={`max-w-[75%] rounded-xl px-3 py-2 ${mine ? "bg-[var(--color-accent)]/20" : "bg-black/30"}`}>
+              <div
+                className={`max-w-[75%] px-3 py-2 ${
+                  mine
+                    ? "bg-[var(--color-accent)]/15"
+                    : "border border-[var(--color-border)] bg-[var(--color-surface)]"
+                }`}
+              >
                 <div className={`mb-1 flex items-center gap-2 ${mine ? "justify-end" : ""}`}>
                   <a
                     href={`/user/${msg.authorId}`}
@@ -231,7 +239,9 @@ export default function ChatRoomPage() {
                   onSummaryChange={handleMessageSummaryChange}
                   alignEnd={mine}
                 />
-                <p className={`mt-1 text-[10px] text-slate-500 ${mine ? "text-right" : ""}`}>{timeAgo(msg.createdAt)}</p>
+                <p className={`mt-1 text-[10px] codex-text-muted ${mine ? "text-right" : ""}`}>
+                  {timeAgo(msg.createdAt)}
+                </p>
               </div>
             </div>
           );
@@ -240,11 +250,11 @@ export default function ChatRoomPage() {
       </div>
 
       {pendingMedia && (
-        <div className="flex items-center gap-3 border-t border-white/10 px-4 py-2">
+        <div className="flex items-center gap-3 border-t border-[var(--color-border)] px-4 py-2">
           {pendingMedia.kind === "file" && pendingMedia.mediaType === "video" ? (
             <video
               src={pendingMedia.previewUrl}
-              className="h-14 w-20 rounded-lg object-cover"
+              className="h-14 w-20 object-cover"
               muted
               playsInline
             />
@@ -252,10 +262,10 @@ export default function ChatRoomPage() {
             <img
               src={pendingMedia.kind === "file" ? pendingMedia.previewUrl : pendingMedia.url}
               alt="Pending attachment"
-              className="h-14 w-20 rounded-lg object-cover"
+              className="h-14 w-20 object-cover"
             />
           )}
-          <span className="flex-1 text-sm text-slate-400">
+          <span className="flex-1 text-sm codex-text-muted">
             {pendingMedia.kind === "remote" || pendingMedia.mediaType === "gif"
               ? "GIF ready to send"
               : pendingMedia.mediaType === "video"
@@ -265,14 +275,14 @@ export default function ChatRoomPage() {
           <button
             type="button"
             onClick={clearPendingMedia}
-            className="text-sm text-slate-400 hover:text-white"
+            className="text-sm codex-text-muted hover:text-[var(--color-on-surface)]"
           >
             Remove
           </button>
         </div>
       )}
 
-      <form onSubmit={handleSend} className="border-t border-white/10 p-4">
+      <form onSubmit={handleSend} className="shrink-0 border-t border-[var(--color-border)] p-4">
         {error && <p className="mb-2 text-sm text-red-400">{error}</p>}
         <div className="mb-2 flex gap-2">
           <input
@@ -289,46 +299,49 @@ export default function ChatRoomPage() {
             className="hidden"
             onChange={(e) => handleVideoPick(e.target.files?.[0])}
           />
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => imageInputRef.current?.click()}
             disabled={sending || Boolean(room?.locked)}
-            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
           >
             Image
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => setGifOpen(true)}
             disabled={sending || Boolean(room?.locked)}
-            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
           >
             GIF
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => videoInputRef.current?.click()}
             disabled={sending || Boolean(room?.locked)}
-            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50"
           >
             Video
-          </button>
+          </Button>
         </div>
         <div className="flex gap-2">
-          <input
+          <Input
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Type a message..."
             disabled={sending}
-            className="flex-1 rounded-lg border border-white/10 bg-black/20 px-4 py-2 outline-none focus:border-[var(--color-accent)] disabled:opacity-50"
+            className="flex-1"
           />
-          <button
+          <Button
             type="submit"
+            variant="accent"
             disabled={sending || !canSend || Boolean(room?.locked)}
-            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 font-semibold text-black disabled:opacity-50"
           >
             Send
-          </button>
+          </Button>
         </div>
       </form>
 

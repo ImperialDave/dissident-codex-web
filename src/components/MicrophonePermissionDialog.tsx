@@ -29,12 +29,13 @@ export function MicrophonePermissionDialog() {
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
+    <div className="codex-modal-overlay z-[100]">
       <div
         role="dialog"
         aria-labelledby="mic-permission-title"
-        className="w-full max-w-md rounded-xl border border-white/15 bg-slate-900 p-6 shadow-xl"
+        className="codex-modal max-w-md"
       >
+        <div className="codex-modal-body">
         <h2 id="mic-permission-title" className="text-lg font-semibold text-white">
           Microphone access needed
         </h2>
@@ -51,7 +52,7 @@ export function MicrophonePermissionDialog() {
           <button
             type="button"
             onClick={handleDismiss}
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
+            className="codex-btn-secondary rounded-full px-4 py-2 text-sm"
           >
             Not now
           </button>
@@ -59,10 +60,11 @@ export function MicrophonePermissionDialog() {
             type="button"
             onClick={() => void handleTryAgain()}
             disabled={retrying}
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
+            className="codex-btn-accent rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-50"
           >
             {retrying ? "Checking..." : "Try again"}
           </button>
+        </div>
         </div>
       </div>
     </div>,

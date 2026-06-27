@@ -57,26 +57,23 @@ export function ChangePasswordDialog({ open, onClose }: ChangePasswordDialogProp
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
-      onClick={onClose}
-    >
+    <div className="codex-modal-overlay" onClick={onClose}>
       <div
-        className="codex-surface w-full max-w-md rounded-xl shadow-2xl"
+        className="codex-modal max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-          <h2 className="font-semibold text-white">Change password</h2>
+        <div className="codex-modal-header">
+          <h2 className="font-semibold">Change password</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
+            className="codex-btn-ghost rounded-full px-2 py-1 text-sm"
           >
             Close
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3 p-4">
+        <form onSubmit={handleSubmit} className="codex-modal-body space-y-3">
           <p className="text-xs text-slate-400">
             Enter your current password, then choose a new one (at least 6 characters).
           </p>

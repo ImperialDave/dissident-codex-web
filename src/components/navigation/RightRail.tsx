@@ -7,7 +7,7 @@ import { SECONDARY_NAV } from "@/lib/navigation";
 
 export function RightRail() {
   return (
-    <aside className="hidden w-[350px] shrink-0 flex-col gap-4 px-6 py-3 2xl:flex">
+    <aside className="codex-right-rail hidden w-[350px] shrink-0 flex-col gap-4 px-6 py-3 2xl:flex">
       <div className="relative">
         <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
         <Input

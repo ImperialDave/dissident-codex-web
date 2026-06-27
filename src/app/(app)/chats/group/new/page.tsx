@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { UserAvatar } from "@/components/UserAvatar";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { createGroupRoom } from "@/services/chatService";
 import { getFriends } from "@/services/friendService";
 import { mapFirestoreError } from "@/lib/utils";
@@ -46,35 +48,34 @@ export default function NewGroupPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">New group</h1>
-        <Link href="/chats" className="text-sm text-[var(--color-accent)]">
-          Back
-        </Link>
-      </div>
-      <p className="text-sm text-slate-400">
+    <div>
+      <PageHeader title="New group" backHref="/chats" />
+      <p className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
         Create a private group for text and voice. Invite friends (up to 25 members).
       </p>
+
       {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+        <p className="border-b border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
         </p>
       )}
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Group name"
-        className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-2"
-      />
-      <div className="space-y-2">
+
+      <div className="border-b border-[var(--color-border)] px-4 py-4">
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Group name"
+        />
+      </div>
+
+      <div className="divide-y divide-[var(--color-border)]">
         {friends.length === 0 ? (
-          <p className="text-slate-400">Add friends first to invite them to a group.</p>
+          <p className="px-4 py-6 codex-text-muted">Add friends first to invite them to a group.</p>
         ) : (
           friends.map((f) => (
             <label
               key={f.uid}
-              className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 p-3 hover:border-[var(--color-accent)]/40"
+              className="codex-list-row codex-list-row-interactive flex cursor-pointer items-center gap-3"
             >
               <input
                 type="checkbox"
@@ -88,14 +89,18 @@ export default function NewGroupPage() {
           ))
         )}
       </div>
-      <button
-        type="button"
-        onClick={handleCreate}
-        disabled={busy || !title.trim() || selected.size === 0}
-        className="w-full rounded-lg bg-[var(--color-accent)] px-4 py-2 font-semibold text-black disabled:opacity-50"
-      >
-        {busy ? "Creating..." : "Create group"}
-      </button>
+
+      <div className="border-b border-[var(--color-border)] px-4 py-4">
+        <Button
+          type="button"
+          variant="accent"
+          className="w-full"
+          onClick={handleCreate}
+          disabled={busy || !title.trim() || selected.size === 0}
+        >
+          {busy ? "Creating..." : "Create group"}
+        </Button>
+      </div>
     </div>
   );
 }

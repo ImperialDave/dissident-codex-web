@@ -46,15 +46,15 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="codex-bg flex min-h-screen items-center justify-center codex-text-muted">
+      <div className="codex-bg flex min-h-dvh items-center justify-center codex-text-muted">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="codex-bg flex min-h-screen">
-      <div className="mx-auto flex w-full max-w-[600px] flex-col border-x border-[var(--color-border)]">
+    <div className="codex-bg flex min-h-dvh">
+      <div className="codex-main-column mx-auto flex w-full flex-col">
         <header className="flex items-center justify-between px-4 py-3">
           <span className="codex-logo text-2xl">Codex</span>
           <div className="flex items-center gap-1">

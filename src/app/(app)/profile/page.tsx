@@ -164,7 +164,7 @@ export default function ProfilePage() {
         onToggleFeedVisibility={isModerator() ? handleToggleFeedVisibility : undefined}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] px-4 py-4">
+      <div className="codex-settings-section flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold text-white">Account settings</h2>
           <p className="text-sm text-slate-300">{user.email}</p>
@@ -182,15 +182,15 @@ export default function ProfilePage() {
       </div>
 
       {(isModerator() || isFounder()) && (
-        <div className="space-y-3 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-          <h2 className="font-semibold text-blue-200">
+        <div className="codex-settings-section border-b border-blue-500/20 bg-blue-500/5">
+          <h2 className="mb-3 font-semibold text-blue-200">
             {isFounder() ? "Founder & Moderation" : "Moderator Menu"}
           </h2>
           <ModerationMenu variant="cards" />
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="codex-settings-section grid gap-4 sm:grid-cols-2">
         <label className="text-sm">
           Avatar
           <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleAvatar(e.target.files[0])} className="mt-1 block w-full text-xs" />
@@ -201,7 +201,7 @@ export default function ProfilePage() {
         </label>
       </div>
 
-      <div className="space-y-3 border-b border-[var(--color-border)] px-4 py-4">
+      <div className="codex-settings-section space-y-3">
         <input
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
@@ -230,7 +230,7 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      <div className="border-b border-[var(--color-border)] px-4 py-4">
+      <div className="codex-settings-section">
         <h2 className="mb-1 font-semibold">Favorite communities</h2>
         <p className="mb-3 text-xs text-slate-400">
           Pin up to {MAX_FAVORITE_CATEGORIES} topics — their posts appear first on your feed.
@@ -257,7 +257,7 @@ export default function ProfilePage() {
                   }
                 }}
                 className={`rounded-full px-3 py-1 text-sm ${
-                  checked ? "codex-chip-active" : "border border-white/15 text-slate-300 hover:text-white"
+                  checked ? "codex-chip-active" : "border border-[var(--color-border)] codex-text-muted hover:text-[var(--color-on-surface)]"
                 }`}
               >
                 {checked ? "★ " : ""}
@@ -268,7 +268,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="border-b border-[var(--color-border)] px-4 py-4">
+      <div className="codex-settings-section">
         <h2 className="mb-1 font-semibold">Appearance</h2>
         <p className="mb-4 text-xs text-slate-400">
           Light or dark mode, neon or relaxed palettes.
@@ -276,22 +276,19 @@ export default function ProfilePage() {
         <AppearancePicker compact />
       </div>
 
-      <div className="border-b border-[var(--color-border)] px-4 py-4">
+      <div className="codex-settings-section">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold">Saved posts</h2>
-            <p className="text-xs text-slate-400">Posts you bookmarked for later.</p>
+            <p className="text-xs codex-text-muted">Posts you bookmarked for later.</p>
           </div>
-          <Link
-            href="/saved"
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-200 hover:bg-white/5"
-          >
+          <Link href="/saved" className="codex-btn-secondary rounded-full px-4 py-2 text-sm">
             View saved
           </Link>
         </div>
       </div>
 
-      <div className="border-b border-[var(--color-border)] px-4 py-4 text-sm codex-text-muted">
+      <div className="codex-settings-section text-sm codex-text-muted">
         <p>Chess ELO: {user.chessElo ?? 1200}</p>
         <p>Games: {user.chessGamesPlayed ?? 0} · W/L/D: {user.chessWins ?? 0}/{user.chessLosses ?? 0}/{user.chessDraws ?? 0}</p>
       </div>

@@ -62,13 +62,14 @@ export function DeleteAccountButton({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="codex-modal-overlay">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-account-title"
-            className="codex-surface w-full max-w-md rounded-xl p-6 shadow-xl"
+            className="codex-modal max-w-md"
           >
+            <div className="codex-modal-body">
             <h2 id="delete-account-title" className="text-lg font-semibold text-white">
               Delete account permanently?
             </h2>
@@ -97,7 +98,7 @@ export function DeleteAccountButton({
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={loading}
-                className="rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-200 hover:bg-white/5 disabled:opacity-50"
+                className="codex-btn-secondary rounded-full px-4 py-2 text-sm disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -105,10 +106,11 @@ export function DeleteAccountButton({
                 type="button"
                 onClick={handleDelete}
                 disabled={loading || !canConfirm}
-                className="codex-btn-danger rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                className="codex-btn-danger rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-50"
               >
                 {loading ? "Deleting…" : "Delete account"}
               </button>
+            </div>
             </div>
           </div>
         </div>

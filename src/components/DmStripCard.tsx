@@ -11,7 +11,7 @@ export function DmStripCard({ room, displayTitle }: DmStripCardProps) {
   return (
     <Link
       href={`/chat/${room.id}`}
-      className="codex-surface block w-56 shrink-0 rounded-xl border border-white/10 p-3 transition hover:border-[var(--color-accent)]/40"
+      className="block w-56 shrink-0 border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:bg-[color-mix(in_srgb,var(--color-accent)_4%,var(--color-surface))]"
     >
       <p className="truncate font-medium text-white">{displayTitle ?? room.title}</p>
       <p className="mt-1 line-clamp-2 text-xs text-slate-400">

@@ -18,8 +18,8 @@ export function ModPageShell({
   children,
 }: ModPageShellProps) {
   return (
-    <div className="codex-mod-page mx-auto max-w-4xl space-y-6 pb-8">
-      <header className={`codex-mod-header codex-mod-header-${tone}`}>
+    <div className="codex-mod-page">
+      <header className={`codex-mod-header codex-mod-header-${tone} border-b border-[var(--color-border)] px-4 py-4`}>
         <p className="codex-mod-eyebrow">
           {tone === "founder" ? "Founder" : "Moderation"}
         </p>

@@ -48,7 +48,7 @@ export function PostMedia({
   return (
     <>
       <div
-        className={`overflow-hidden rounded-lg border border-white/10 bg-black/30 ${
+        className={`overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] ${
           preview ? "mt-3" : "mt-4"
         } ${className}`}
       >

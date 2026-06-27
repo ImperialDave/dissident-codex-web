@@ -96,7 +96,7 @@ export function VoiceChatControls({ room, roomId, myUid }: VoiceChatControlsProp
   }
 
   return (
-    <div className="border-b border-white/10 px-4 py-3">
+    <div className="border-b border-[var(--color-border)] px-4 py-3">
       <div className="flex flex-wrap items-center gap-3">
         {showIdleDmButton && (
           <button

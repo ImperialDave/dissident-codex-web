@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="codex-bg flex min-h-screen items-center justify-center codex-text-muted">
+      <div className="codex-bg flex min-h-dvh items-center justify-center codex-text-muted">
         <span className="codex-logo text-lg">Loading Codex...</span>
       </div>
     );
@@ -43,10 +43,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="codex-bg flex min-h-screen">
+    <div className="codex-bg flex min-h-dvh">
       <SidebarNav unread={unread} />
 
-      <div className="flex min-w-0 flex-1 justify-center">
+      <div className="codex-center-pane">
         <main className="codex-main-column pb-16 xl:pb-0">
           {incomingSession && (
             <button
