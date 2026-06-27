@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import { Moon, Sun } from "lucide-react";
 import { useThemeStore } from "@/stores/themeStore";
 
 type Variant = "compact" | "segmented";
@@ -13,21 +14,25 @@ export function ColorModeToggle({ variant = "segmented" }: { variant?: Variant }
       <button
         type="button"
         onClick={() => setColorMode(colorMode === "dark" ? "light" : "dark")}
-        className="codex-btn-ghost rounded-lg px-2.5 py-1.5 text-base"
+        className="codex-btn-icon"
         aria-label={colorMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
         title={colorMode === "dark" ? "Light mode" : "Dark mode"}
       >
-        {colorMode === "dark" ? "☀️" : "🌙"}
+        {colorMode === "dark" ? (
+          <Sun className="h-5 w-5" />
+        ) : (
+          <Moon className="h-5 w-5" />
+        )}
       </button>
     );
   }
 
   return (
-    <div className="codex-segmented flex rounded-lg p-1">
+    <div className="codex-segmented flex rounded-full p-1">
       {(
         [
-          { id: "dark" as const, label: "Dark", icon: "🌙" },
-          { id: "light" as const, label: "Light", icon: "☀️" },
+          { id: "dark" as const, label: "Dark", Icon: Moon },
+          { id: "light" as const, label: "Light", Icon: Sun },
         ] as const
       ).map((item) => (
         <button
@@ -35,11 +40,13 @@ export function ColorModeToggle({ variant = "segmented" }: { variant?: Variant }
           type="button"
           onClick={() => setColorMode(item.id)}
           className={clsx(
-            "flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition",
-            colorMode === item.id ? "codex-chip-active" : "codex-text-muted hover:text-[var(--color-on-surface)]"
+            "flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition",
+            colorMode === item.id
+              ? "codex-chip-active"
+              : "codex-text-muted hover:text-[var(--color-on-surface)]"
           )}
         >
-          <span>{item.icon}</span>
+          <item.Icon className="h-4 w-4" />
           {item.label}
         </button>
       ))}

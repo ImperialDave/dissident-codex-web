@@ -13,6 +13,7 @@ import { flattenComments } from "@/lib/commentThread";
 import { timeAgo } from "@/lib/utils";
 import { addComment, deleteComment, getComments } from "@/services/commentService";
 import { ReactionsBlock } from "@/components/ReactionsBlock";
+import { PageHeader } from "@/components/ui/PageHeader";
 import {
   deletePost,
   getPost,
@@ -161,8 +162,9 @@ export default function PostDetailPage() {
   const canSubmit = Boolean(text.trim() || pendingMedia);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <article className="rounded-xl border border-white/10 bg-[var(--color-surface)] p-6">
+    <div>
+      <PageHeader title="Post" backHref="/feed" />
+      <article className="codex-timeline-row">
         <div className="mb-4 flex items-center gap-3">
           <UserAvatar
             name={post.authorName}
@@ -237,13 +239,15 @@ export default function PostDetailPage() {
         </div>
       </article>
 
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Comments ({comments.length})</h2>
+      <section>
+        <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
+          Comments ({comments.length})
+        </p>
         {flattenComments(comments).map(({ comment, depth }) => (
           <div
             key={comment.id}
-            style={{ marginLeft: depth * 20 }}
-            className="rounded-lg border border-white/10 bg-black/20 p-4"
+            style={{ marginLeft: depth * 16 }}
+            className="codex-list-row"
           >
             <div className="mb-2 flex items-center gap-2">
               <UserAvatar
@@ -300,7 +304,7 @@ export default function PostDetailPage() {
           </div>
         ))}
 
-        <form onSubmit={handleComment} className="space-y-2">
+        <form onSubmit={handleComment} className="space-y-2 border-t border-[var(--color-border)] px-4 py-4">
           {replyTo && (
             <p className="text-sm text-slate-400">
               Replying to {replyTo.authorName}{" "}

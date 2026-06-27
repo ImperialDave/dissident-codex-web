@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import clsx from "clsx";
+import { Palette, X } from "lucide-react";
 import { AppearancePicker } from "@/components/AppearancePicker";
 
 export function AppearanceMenu() {
@@ -27,13 +28,13 @@ export function AppearanceMenu() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="codex-btn-ghost rounded-lg px-2.5 py-1.5 text-base"
+        className="codex-btn-icon"
         aria-label="Appearance settings"
         aria-expanded={open}
         aria-controls={panelId}
         title="Appearance"
       >
-        🎨
+        <Palette className="h-5 w-5" />
       </button>
 
       <div
@@ -58,10 +59,10 @@ export function AppearanceMenu() {
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="codex-btn-ghost rounded-lg px-2.5 py-1.5 text-lg"
+            className="codex-btn-icon"
             aria-label="Close appearance menu"
           >
-            ✕
+            <X className="h-5 w-5" />
           </button>
         </div>
         <div className="codex-appearance-panel-body">

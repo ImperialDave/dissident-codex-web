@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { PostCard } from "@/components/PostCard";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { mapFirestoreError } from "@/lib/utils";
 import {
   getSavedPosts,
@@ -61,33 +62,32 @@ export default function SavedPostsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Saved posts</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Posts you bookmarked for later.
-        </p>
-      </div>
+    <div>
+      <PageHeader title="Saved posts" />
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && (
+        <p className="border-b border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {error}
+        </p>
+      )}
 
       {loading ? (
-        <p className="text-slate-400">Loading saved posts...</p>
+        <p className="px-4 py-12 text-center codex-text-muted">Loading saved posts...</p>
       ) : posts.length === 0 ? (
-        <div className="codex-surface rounded-xl p-6 text-center">
-          <p className="text-slate-300">No saved posts yet.</p>
-          <p className="mt-2 text-sm text-slate-400">
-            Tap the bookmark icon on any post to save it here.
+        <div className="px-4 py-12 text-center">
+          <p className="codex-text-muted">No saved posts yet.</p>
+          <p className="mt-2 text-sm codex-text-muted">
+            Bookmark any post to save it here.
           </p>
           <Link
             href="/feed"
-            className="mt-4 inline-block rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black"
+            className="codex-btn-accent mt-4 inline-block rounded-full px-5 py-2"
           >
             Browse feed
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div>
           {posts.map((post) => (
             <PostCard
               key={post.id}

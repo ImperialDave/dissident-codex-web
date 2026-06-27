@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { FavoriteStar } from "@/components/FavoriteStar";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Input } from "@/components/ui/Input";
 import { MAX_FAVORITE_CATEGORIES } from "@/lib/constants";
 import { mapFirestoreError, normalizeCategoryName } from "@/lib/utils";
 import {
@@ -74,46 +76,41 @@ export default function TopicsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="codex-page-header">
-        <h1 className="codex-page-title">Browse Topics</h1>
-        <p className="codex-text-muted text-sm">
-          Pin up to {MAX_FAVORITE_CATEGORIES} favorites — they show first on your feed.
-        </p>
-      </div>
+    <div>
+      <PageHeader title="Topics" />
+      <p className="border-b border-[var(--color-border)] px-4 py-2 text-sm codex-text-muted">
+        Pin up to {MAX_FAVORITE_CATEGORIES} favorites — they show first on your feed.
+      </p>
 
-      <div className="flex gap-2">
-        <input
+      <div className="flex gap-2 border-b border-[var(--color-border)] px-4 py-3">
+        <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          placeholder="Search topics..."
-          className="codex-input flex-1 rounded-lg px-4 py-2"
+          placeholder="Search topics"
+          className="flex-1"
         />
         <button
           onClick={handleSearch}
           disabled={loading}
-          className="codex-btn-accent rounded-lg px-4 py-2 disabled:opacity-50"
+          className="codex-btn-accent shrink-0 rounded-full px-4 py-2 disabled:opacity-50"
         >
-          Search
+          Go
         </button>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+        <div className="border-b border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {error}
         </div>
       )}
 
       {loading ? (
-        <p className="text-slate-400">Loading topics...</p>
+        <p className="px-4 py-8 text-center codex-text-muted">Loading topics...</p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div>
           {filtered.map((name) => (
-            <div
-              key={name}
-              className="codex-surface codex-surface-hover rounded-xl p-4"
-            >
+            <div key={name} className="codex-list-row">
               <div className="flex items-start justify-between gap-2">
                 <p className="font-semibold">{name}</p>
                 <FavoriteStar
@@ -145,7 +142,6 @@ export default function TopicsPage() {
                       const favs = await getFavoriteCategories();
                       setFavoriteIds(new Set(favs.map((f) => f.categoryId)));
                       setFavoriteNames(new Set(favs.map((f) => f.name.toLowerCase())));
-        setFavoriteNames(new Set(favs.map((f) => f.name.toLowerCase())));
                     } catch (err) {
                       setError(
                         err instanceof Error ? err.message : "Failed to update favorite community"
@@ -192,7 +188,7 @@ export default function TopicsPage() {
       )}
 
       {!loading && filtered.length === 0 && !error && (
-        <p className="text-slate-400">No topics found.</p>
+        <p className="px-4 py-8 text-center codex-text-muted">No topics found.</p>
       )}
     </div>
   );

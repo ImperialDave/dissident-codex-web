@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { loginUser, registerUser } from "@/services/authService";
 import { AppearanceMenu } from "@/components/AppearanceMenu";
+import { ColorModeToggle } from "@/components/ColorModeToggle";
+import { Input } from "@/components/ui/Input";
 import { useAuthStore } from "@/stores/authStore";
+import clsx from "clsx";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,75 +46,79 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="codex-bg flex min-h-screen items-center justify-center text-slate-300">
+      <div className="codex-bg flex min-h-screen items-center justify-center codex-text-muted">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="codex-bg flex min-h-screen items-center justify-center px-4 py-8">
-      <div className="codex-surface relative w-full max-w-md rounded-2xl p-8 shadow-xl">
-        <div className="absolute right-4 top-4">
-          <AppearanceMenu />
-        </div>
-        <h1 className="codex-logo mb-2 text-center text-3xl font-bold">Codex</h1>
-        <p className="mb-6 text-center text-sm text-slate-400">
-          Coding discussion forum — web edition
-        </p>
+    <div className="codex-bg flex min-h-screen">
+      <div className="mx-auto flex w-full max-w-[600px] flex-col border-x border-[var(--color-border)]">
+        <header className="flex items-center justify-between px-4 py-3">
+          <span className="codex-logo text-2xl">Codex</span>
+          <div className="flex items-center gap-1">
+            <ColorModeToggle variant="compact" />
+            <AppearanceMenu />
+          </div>
+        </header>
 
-        <div className="codex-segmented mb-6 flex rounded-lg p-1">
-          {(["login", "register"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              className={`flex-1 rounded-md py-2 text-sm capitalize ${
-                mode === m ? "codex-chip-active" : "codex-text-muted"
-              }`}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
+        <div className="flex flex-1 flex-col justify-center px-8 py-12">
+          <h1 className="text-3xl font-bold">
+            {mode === "login" ? "Sign in" : "Join Codex"}
+          </h1>
+          <p className="mt-2 text-sm codex-text-muted">
+            Coding discussion forum — web edition
+          </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === "register" && (
-            <input
-              type="text"
-              placeholder="Display name"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="codex-input w-full rounded-lg px-4 py-3"
+          <div className="codex-tab-bar mt-8">
+            {(["login", "register"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={clsx("codex-tab capitalize", mode === m && "codex-tab-active")}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            {mode === "register" && (
+              <Input
+                type="text"
+                placeholder="Display name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                required
+              />
+            )}
+            <Input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
-          )}
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="codex-input w-full rounded-lg px-4 py-3"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="codex-input w-full rounded-lg px-4 py-3"
-            required
-            minLength={6}
-          />
-          {error && <p className="text-sm text-red-400">{error}</p>}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="codex-btn-accent w-full rounded-lg py-3 disabled:opacity-50"
-          >
-            {submitting ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
-          </button>
-        </form>
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+            {error && <p className="text-sm text-red-400">{error}</p>}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="codex-btn-accent w-full rounded-full py-3 disabled:opacity-50"
+            >
+              {submitting ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

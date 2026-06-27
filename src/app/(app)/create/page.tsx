@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GifPicker } from "@/components/GifPicker";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { MAX_BODY, MAX_TITLE } from "@/lib/constants";
 import { getCreateCategoryNames, resolveOrCreateCategory } from "@/services/categoryService";
 import { uploadImage } from "@/services/mediaService";
@@ -137,19 +138,10 @@ export default function CreatePostPage() {
   const previewMedia = imagePreview || remoteImageUrl;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <div className="codex-page-header">
-        <h1 className="codex-page-title">Create Post</h1>
-        <button
-          type="button"
-          onClick={() => router.push("/feed")}
-          className="codex-btn-ghost rounded-lg px-3 py-1.5 text-sm"
-        >
-          Back to feed
-        </button>
-      </div>
+    <div>
+      <PageHeader title="Create post" backHref="/feed" />
 
-      <form onSubmit={handleSubmit} className="codex-surface space-y-4 rounded-xl p-5">
+      <form onSubmit={handleSubmit} className="space-y-4 px-4 py-4">
         <div>
           <label className="mb-1 block text-sm text-slate-400">Title</label>
           <input
@@ -157,7 +149,7 @@ export default function CreatePostPage() {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Give your post a title"
             maxLength={MAX_TITLE}
-            className="codex-input w-full rounded-lg px-4 py-3"
+            className="codex-input w-full rounded-none border-x-0 border-t-0 px-0 py-3 text-lg"
             required
           />
           <p className="mt-1 text-right text-xs text-slate-500">
@@ -173,7 +165,7 @@ export default function CreatePostPage() {
             placeholder="What's on your mind?"
             rows={8}
             maxLength={MAX_BODY}
-            className="codex-input w-full rounded-lg px-4 py-3"
+            className="codex-input w-full rounded-none border-x-0 border-t-0 px-0 py-3 text-lg"
             required
           />
           <p className="mt-1 text-right text-xs text-slate-500">
@@ -189,7 +181,7 @@ export default function CreatePostPage() {
             list="create-category-suggestions"
             placeholder="e.g. General Discussion"
             maxLength={40}
-            className="codex-input w-full rounded-lg px-4 py-3"
+            className="codex-input w-full rounded-none border-x-0 border-t-0 px-0 py-3 text-lg"
             required
           />
           <datalist id="create-category-suggestions">
@@ -215,7 +207,7 @@ export default function CreatePostPage() {
           </div>
         </div>
 
-        <div className="codex-surface space-y-3 rounded-lg p-4">
+        <div className="space-y-3 border-t border-[var(--color-border)] pt-4">
           <p className="text-sm text-slate-300">Media (optional)</p>
           <div className="flex flex-wrap gap-2">
             <label className="codex-btn-ghost cursor-pointer rounded-lg px-4 py-2 text-sm">
@@ -270,7 +262,7 @@ export default function CreatePostPage() {
           <button
             type="submit"
             disabled={loading}
-            className="codex-btn-accent rounded-lg px-6 py-2.5 disabled:opacity-50"
+            className="codex-btn-accent rounded-full px-6 py-2.5 disabled:opacity-50"
           >
             {loading ? "Publishing..." : "Publish"}
           </button>

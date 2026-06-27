@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { FavoriteStar } from "@/components/FavoriteStar";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useDmDisplayNames } from "@/hooks/useDmDisplayNames";
 import {
   chatRoomDisplayTitle,
@@ -16,8 +17,8 @@ import type { ChatRoom } from "@/models";
 
 const CHAT_SECTIONS = [
   { key: "dms" as const, title: "DMs" },
-  { key: "privateGroups" as const, title: "Private group chats" },
-  { key: "publicGroups" as const, title: "Public group chats", browseTopics: true },
+  { key: "privateGroups" as const, title: "Private groups" },
+  { key: "publicGroups" as const, title: "Public groups", browseTopics: true },
 ];
 
 export default function ChatsPage() {
@@ -63,72 +64,80 @@ export default function ChatsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Chats</h1>
-        <div className="flex gap-2">
-          <Link href="/chats/group/new" className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5">
-            New group
-          </Link>
-          <Link href="/chats/new" className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black">
-            New message
-          </Link>
-        </div>
-      </div>
-      {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+    <div>
+      <PageHeader
+        title="Messages"
+        actions={
+          <div className="flex gap-2 text-sm">
+            <Link href="/chats/group/new" className="codex-btn-ghost rounded-full px-3 py-1.5">
+              New group
+            </Link>
+            <Link href="/chats/new" className="codex-btn-accent rounded-full px-3 py-1.5">
+              New DM
+            </Link>
+          </div>
+        }
+      />
+
+      {error && (
+        <p className="border-b border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+
       {!hasRooms ? (
-        <p className="text-slate-400">
-          No chats yet. Start a DM, create a private group, or{" "}
+        <p className="px-4 py-12 text-center codex-text-muted">
+          No chats yet. Start a DM or{" "}
           <Link href="/topics" className="text-[var(--color-accent)] hover:underline">
             browse topics
           </Link>
           .
         </p>
       ) : (
-        <div className="space-y-6">
+        <div>
           {sections.map((section) => (
-            <section key={section.key} className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+            <section key={section.key}>
+              <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-2">
+                <p className="text-xs font-semibold uppercase tracking-wide codex-text-muted">
                   {section.title}
-                </h2>
+                </p>
                 {section.browseTopics && (
                   <Link href="/topics" className="text-xs text-[var(--color-accent)] hover:underline">
                     Browse topics
                   </Link>
                 )}
               </div>
-              <div className="space-y-2">
-                {section.rooms.map((room) => (
-                  <Link
-                    key={room.id}
-                    href={`/chat/${room.id}`}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 hover:border-[var(--color-accent)]/40"
-                  >
-                    <FavoriteStar
-                      favorited={favorites.has(room.id)}
-                      disabled={togglingFavorite === room.id}
-                      size="sm"
-                      onToggle={() => void handleToggleFavorite(room.id)}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium">
-                        {user?.uid
-                          ? chatRoomDisplayTitle(room, user.uid, dmDisplayNames)
-                          : room.title}
-                        {room.activeVoiceSessionId && (
-                          <span className="ml-2 text-xs text-emerald-300">voice active</span>
-                        )}
-                        {room.locked && <span className="ml-2 text-xs text-orange-300">locked</span>}
-                      </p>
-                      <p className="line-clamp-1 text-sm text-slate-400">
-                        {room.lastMessagePreview || "No messages yet"}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-xs text-slate-500">{timeAgo(room.lastMessageAt)}</span>
-                  </Link>
-                ))}
-              </div>
+              {section.rooms.map((room) => (
+                <Link
+                  key={room.id}
+                  href={`/chat/${room.id}`}
+                  className="codex-list-row flex items-center gap-3"
+                >
+                  <FavoriteStar
+                    favorited={favorites.has(room.id)}
+                    disabled={togglingFavorite === room.id}
+                    size="sm"
+                    onToggle={() => void handleToggleFavorite(room.id)}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">
+                      {user?.uid
+                        ? chatRoomDisplayTitle(room, user.uid, dmDisplayNames)
+                        : room.title}
+                      {room.activeVoiceSessionId && (
+                        <span className="ml-2 text-xs text-emerald-300">voice</span>
+                      )}
+                      {room.locked && <span className="ml-2 text-xs text-orange-300">locked</span>}
+                    </p>
+                    <p className="line-clamp-1 text-sm codex-text-muted">
+                      {room.lastMessagePreview || "No messages yet"}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-xs codex-text-muted">
+                    {timeAgo(room.lastMessageAt)}
+                  </span>
+                </Link>
+              ))}
             </section>
           ))}
         </div>

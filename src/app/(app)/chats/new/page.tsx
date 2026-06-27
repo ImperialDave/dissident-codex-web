@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/UserAvatar";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Input } from "@/components/ui/Input";
 import { getUsersForModeration } from "@/services/moderationService";
 import { mapFirestoreError } from "@/lib/utils";
 import { getOrCreateDmRoom } from "@/services/chatService";
@@ -32,16 +34,21 @@ export default function NewMessagePage() {
   });
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">New Message</h1>
-      {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search users..."
-        className="codex-input w-full rounded-lg px-4 py-2"
-      />
-      <div className="space-y-2">
+    <div>
+      <PageHeader title="New message" backHref="/chats" />
+      {error && (
+        <p className="border-b border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+      <div className="border-b border-[var(--color-border)] px-4 py-3">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search users"
+        />
+      </div>
+      <div>
         {filtered.map((u) => (
           <button
             key={u.uid}
@@ -57,7 +64,7 @@ export default function NewMessagePage() {
               }
             }}
             disabled={busyUid === u.uid}
-            className="codex-surface codex-surface-hover flex w-full items-center gap-3 rounded-xl p-3 text-left disabled:opacity-50"
+            className="codex-list-row flex w-full items-center gap-3 text-left disabled:opacity-50"
           >
             <UserAvatar name={u.displayName} photoUrl={u.photoUrl} userId={u.uid} />
             <div className="min-w-0 flex-1">

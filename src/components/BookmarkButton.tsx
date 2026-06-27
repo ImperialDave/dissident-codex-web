@@ -1,10 +1,14 @@
 "use client";
 
+import { Bookmark } from "lucide-react";
+import clsx from "clsx";
+
 interface BookmarkButtonProps {
   saved: boolean;
   onToggle: () => void | Promise<void>;
   disabled?: boolean;
   size?: "sm" | "md";
+  variant?: "default" | "action";
   className?: string;
   label?: string;
 }
@@ -14,10 +18,19 @@ export function BookmarkButton({
   onToggle,
   disabled = false,
   size = "md",
+  variant = "default",
   className = "",
   label,
 }: BookmarkButtonProps) {
   const dim = size === "sm" ? 18 : 22;
+
+  const buttonClass =
+    variant === "action"
+      ? clsx("codex-post-action", saved && "text-[var(--color-accent)]", className)
+      : clsx(
+          "rounded-full p-1.5 transition hover:bg-white/5 disabled:opacity-50",
+          className
+        );
 
   return (
     <button
@@ -31,21 +44,15 @@ export function BookmarkButton({
       aria-pressed={saved}
       aria-label={label ?? (saved ? "Remove from saved posts" : "Save post")}
       title={saved ? "Remove from saved posts" : "Save post"}
-      className={`rounded-lg p-1.5 transition hover:bg-white/5 disabled:opacity-50 ${className}`}
+      className={buttonClass}
     >
-      <svg
-        width={dim}
-        height={dim}
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        className={
-          saved
-            ? "fill-[var(--color-accent)] text-[var(--color-accent)]"
-            : "fill-transparent stroke-slate-400 stroke-[1.75]"
-        }
-      >
-        <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18l-6-4-6 4V4z" />
-      </svg>
+      <Bookmark
+        className={clsx(
+          saved ? "fill-current text-[var(--color-accent)]" : "text-[var(--color-text-muted)]"
+        )}
+        style={{ width: dim, height: dim }}
+        strokeWidth={saved ? 0 : 1.75}
+      />
     </button>
   );
 }

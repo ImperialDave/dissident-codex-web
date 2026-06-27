@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { DmStripCard } from "@/components/DmStripCard";
+import { MessageCircle, Search, Star } from "lucide-react";
 import { PostCard } from "@/components/PostCard";
+import { Input } from "@/components/ui/Input";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useDmDisplayNames } from "@/hooks/useDmDisplayNames";
 import { chatRoomDisplayTitle } from "@/lib/chatDisplay";
 import { ALL_CATEGORY_LABEL, FEED_DM_STRIP_LIMIT } from "@/lib/constants";
@@ -20,6 +22,7 @@ import {
 } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
 import type { ChatRoom, FavoriteCategory, Post } from "@/models";
+import clsx from "clsx";
 
 function matchesSearch(post: Post, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -133,6 +136,10 @@ export default function FeedPage() {
   }, [user]);
 
   const hasPosts = favoritePosts.length > 0 || allPosts.length > 0;
+  const tabs = [
+    { id: ALL_CATEGORY_LABEL, label: "For you" },
+    ...favoriteCategories.map((f) => ({ id: f.name, label: f.name })),
+  ];
 
   function renderPostList(posts: Post[], priorityLabel?: string) {
     return posts.map((post) => (
@@ -151,139 +158,123 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="codex-page-header">
-        <h1 className="codex-page-title">Feed</h1>
-        <div className="codex-page-actions w-full sm:w-auto">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search posts..."
-            className="codex-input min-w-0 flex-1 rounded-lg px-4 py-2 text-sm sm:min-w-[12rem]"
-          />
-          <Link
-            href="/create"
-            className="codex-btn-accent shrink-0 rounded-lg px-4 py-2 text-center text-sm"
-          >
-            Create post
-          </Link>
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        title="Home"
+        actions={
+          <div className="relative w-40 sm:w-52">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search"
+              inputSize="sm"
+              className="pl-9"
+            />
+          </div>
+        }
+      />
 
-      {favoriteCategories.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setCategory(ALL_CATEGORY_LABEL)}
-            className={`rounded-full px-3 py-1 text-sm ${
-              category === ALL_CATEGORY_LABEL
-                ? "codex-chip-active"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            All
-          </button>
-          {favoriteCategories.map((fav) => (
+      {tabs.length > 1 && (
+        <div className="codex-tab-bar overflow-x-auto">
+          {tabs.map((tab) => (
             <button
-              key={fav.categoryId}
+              key={tab.id}
               type="button"
-              onClick={() => setCategory(fav.name)}
-              className={`rounded-full px-3 py-1 text-sm ${
-                category === fav.name
-                  ? "codex-chip-active"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
+              onClick={() => setCategory(tab.id)}
+              className={clsx(
+                "codex-tab whitespace-nowrap",
+                category === tab.id && "codex-tab-active"
+              )}
             >
-            ★ {fav.name}
+              {tab.id !== ALL_CATEGORY_LABEL && (
+                <Star className="mr-1 inline h-3 w-3 fill-current" />
+              )}
+              {tab.label}
             </button>
           ))}
         </div>
       )}
 
       {showPriority && favoriteCategories.length === 0 && (
-        <p className="codex-text-muted text-sm">
+        <p className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
           Pin topics on{" "}
           <Link href="/topics" className="text-[var(--color-accent)] hover:underline">
             Topics
           </Link>{" "}
-          or your{" "}
-          <Link href="/profile" className="text-[var(--color-accent)] hover:underline">
-            profile
-          </Link>{" "}
-          to filter and prioritize them here.
+          to filter your feed.
         </p>
       )}
 
       {modView && (
-        <p className="codex-text-muted text-sm">
-          Moderator view: hidden posts stay visible here so you can unhide them. Members will not
-          see hidden posts in the feed.
+        <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs codex-text-muted">
+          Moderator view: hidden posts remain visible here.
         </p>
       )}
 
       {error && (
-        <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
+        <div className="border-b border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {error}
         </div>
       )}
 
+      {showPriority && dmRooms.length > 0 && (
+        <Link
+          href="/chats"
+          className="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-3 transition hover:bg-white/5"
+        >
+          <MessageCircle className="h-5 w-5 text-[var(--color-accent)]" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">Messages</p>
+            <p className="truncate text-xs codex-text-muted">
+              {dmRooms
+                .slice(0, 3)
+                .map((room) =>
+                  user?.uid
+                    ? chatRoomDisplayTitle(room, user.uid, dmDisplayNames)
+                    : room.title
+                )
+                .join(", ")}
+            </p>
+          </div>
+          <span className="text-xs text-[var(--color-accent)]">View all</span>
+        </Link>
+      )}
+
       {loading ? (
-        <p className="text-slate-400">Loading posts...</p>
+        <p className="px-4 py-8 text-center codex-text-muted">Loading posts...</p>
+      ) : !hasPosts ? (
+        <div className="px-4 py-12 text-center">
+          <p className="codex-text-muted">No posts yet. Be the first to create one!</p>
+          <Link
+            href="/create"
+            className="codex-btn-accent mt-4 inline-block rounded-full px-6 py-2.5"
+          >
+            Create post
+          </Link>
+        </div>
       ) : (
-        <>
-          {showPriority && dmRooms.length > 0 && (
-            <section className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Messages</h2>
-                <Link href="/chats" className="text-sm text-[var(--color-accent)]">
-                  See all →
-                </Link>
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-1">
-                {dmRooms.map((room) => (
-                  <DmStripCard
-                    key={room.id}
-                    room={room}
-                    displayTitle={
-                      user?.uid
-                        ? chatRoomDisplayTitle(room, user.uid, dmDisplayNames)
-                        : room.title
-                    }
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
+        <div>
           {showPriority && favoritePosts.length > 0 && (
-            <section className="space-y-3">
-              <h2 className="text-lg font-semibold">From your communities</h2>
+            <>
+              <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
+                From your communities
+              </p>
               {renderPostList(favoritePosts, "Community")}
-            </section>
+            </>
           )}
-
-          {!hasPosts ? (
-            <div className="codex-surface rounded-xl p-6 text-center">
-              <p className="text-slate-400">No posts yet. Be the first to create one!</p>
-              <Link
-                href="/create"
-                className="codex-btn-accent mt-4 inline-block rounded-lg px-5 py-2"
-              >
-                Create the first post
-              </Link>
-            </div>
-          ) : (
-            <section className="space-y-3">
-              {showPriority && (dmRooms.length > 0 || favoritePosts.length > 0) && (
-                <h2 className="text-lg font-semibold">All posts</h2>
-              )}
-              {!showPriority && (
-                <h2 className="text-lg font-semibold">{category}</h2>
-              )}
-              {renderPostList(allPosts)}
-            </section>
+          {showPriority && favoritePosts.length > 0 && allPosts.length > 0 && (
+            <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
+              All posts
+            </p>
           )}
-        </>
+          {!showPriority && allPosts.length > 0 && (
+            <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
+              {category}
+            </p>
+          )}
+          {renderPostList(allPosts)}
+        </div>
       )}
     </div>
   );

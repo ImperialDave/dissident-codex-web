@@ -17,6 +17,7 @@ import { getPostsByUser } from "@/services/postService";
 import { uploadImage } from "@/services/mediaService";
 import { updateProfile } from "@/services/userService";
 import { ModerationMenu } from "@/components/ModerationMenu";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuthStore } from "@/stores/authStore";
 import type { Post } from "@/models";
 
@@ -71,9 +72,10 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div>
+      <PageHeader title="Profile" />
       <div
-        className="codex-surface relative h-40 overflow-hidden rounded-xl"
+        className="relative h-32 overflow-hidden border-b border-[var(--color-border)]"
         style={user.backgroundUrl ? { backgroundImage: `url(${user.backgroundUrl})`, backgroundSize: "cover" } : undefined}
       >
         <div className="absolute bottom-4 left-4 flex items-end gap-4">
@@ -88,7 +90,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="codex-surface flex flex-wrap items-center justify-between gap-3 rounded-xl p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] px-4 py-4">
         <div>
           <h2 className="font-semibold text-white">Account settings</h2>
           <p className="text-sm text-slate-300">{user.email}</p>
@@ -125,7 +127,7 @@ export default function ProfilePage() {
         </label>
       </div>
 
-      <div className="codex-surface space-y-3 rounded-xl p-4">
+      <div className="space-y-3 border-b border-[var(--color-border)] px-4 py-4">
         <input
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
@@ -154,7 +156,7 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      <div className="codex-surface rounded-xl p-4">
+      <div className="border-b border-[var(--color-border)] px-4 py-4">
         <h2 className="mb-1 font-semibold">Favorite communities</h2>
         <p className="mb-3 text-xs text-slate-400">
           Pin up to {MAX_FAVORITE_CATEGORIES} topics — their posts appear first on your feed.
@@ -192,7 +194,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="codex-surface rounded-xl p-4">
+      <div className="border-b border-[var(--color-border)] px-4 py-4">
         <h2 className="mb-1 font-semibold">Appearance</h2>
         <p className="mb-4 text-xs text-slate-400">
           Light or dark mode, neon or relaxed palettes.
@@ -200,7 +202,7 @@ export default function ProfilePage() {
         <AppearancePicker compact />
       </div>
 
-      <div className="codex-surface rounded-xl p-4">
+      <div className="border-b border-[var(--color-border)] px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold">Saved posts</h2>
@@ -216,13 +218,15 @@ export default function ProfilePage() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold">Your Posts ({posts.length})</h2>
+        <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
+          Your posts ({posts.length})
+        </p>
         {posts.length === 0 ? (
-          <p className="text-slate-400">No posts yet.</p>
+          <p className="px-4 py-8 text-center codex-text-muted">No posts yet.</p>
         ) : (
-          <div className="space-y-2">
+          <div>
             {posts.map((p) => (
-              <Link key={p.id} href={`/post/${p.id}`} className="codex-surface codex-surface-hover block rounded-lg p-3">
+              <Link key={p.id} href={`/post/${p.id}`} className="codex-list-row block">
                 <p className="font-medium">{p.title}</p>
                 <p className="text-xs text-slate-400">{p.category}</p>
               </Link>
@@ -231,7 +235,7 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <div className="codex-surface rounded-xl p-4 text-sm text-slate-400">
+      <div className="border-b border-[var(--color-border)] px-4 py-4 text-sm codex-text-muted">
         <p>Chess ELO: {user.chessElo ?? 1200}</p>
         <p>Games: {user.chessGamesPlayed ?? 0} · W/L/D: {user.chessWins ?? 0}/{user.chessLosses ?? 0}/{user.chessDraws ?? 0}</p>
       </div>

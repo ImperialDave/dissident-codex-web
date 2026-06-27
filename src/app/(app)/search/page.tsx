@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PostCard } from "@/components/PostCard";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Input } from "@/components/ui/Input";
+import clsx from "clsx";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { chatRoomDisplayTitle, resolveDmDisplayNames } from "@/lib/chatDisplay";
@@ -122,41 +125,37 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="codex-page-header">
-        <h1 className="codex-page-title">Search</h1>
-      </div>
-      <div className="flex gap-2">
-        <input
+    <div>
+      <PageHeader title="Search" />
+      <div className="flex gap-2 border-b border-[var(--color-border)] px-4 py-3">
+        <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
-          placeholder="Search posts, topics, chats, or users..."
-          className="codex-input flex-1 rounded-lg px-4 py-2"
+          placeholder="Search Codex"
+          className="flex-1"
         />
         <button
           onClick={search}
           disabled={loading || !query.trim()}
-          className="codex-btn-accent rounded-lg px-4 py-2 disabled:opacity-50"
+          className="codex-btn-accent shrink-0 rounded-full px-4 py-2 disabled:opacity-50"
         >
-          {loading ? "Searching..." : "Search"}
+          {loading ? "..." : "Go"}
         </button>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+        <div className="border-b border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {error}
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="codex-tab-bar">
         {(["posts", "topics", "chats", "users"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`rounded-full px-3 py-1 text-sm capitalize ${
-              tab === t ? "codex-chip-active" : "text-slate-400 hover:text-slate-200"
-            }`}
+            className={clsx("codex-tab capitalize", tab === t && "codex-tab-active")}
           >
             {t}
           </button>
@@ -164,7 +163,7 @@ export default function SearchPage() {
       </div>
 
       {tab === "posts" && (
-        <div className="space-y-3">
+        <div>
           {posts.length === 0 ? (
             <p className="text-slate-400">No matching posts.</p>
           ) : (
@@ -182,18 +181,18 @@ export default function SearchPage() {
       )}
 
       {tab === "topics" && (
-        <div className="space-y-2">
+        <div>
           {topics.length === 0 ? (
-            <p className="text-slate-400">No matching topics.</p>
+            <p className="px-4 py-8 text-center codex-text-muted">No matching topics.</p>
           ) : (
             topics.map((t) => (
               <Link
                 key={`${t.id}-${t.name}`}
                 href={`/feed?category=${encodeURIComponent(t.name)}`}
-                className="codex-surface codex-surface-hover block rounded-lg p-3"
+                className="codex-list-row block"
               >
                 <p className="font-medium">{t.name}</p>
-                <p className="text-xs text-slate-400">View posts in this topic</p>
+                <p className="text-xs codex-text-muted">View posts in this topic</p>
               </Link>
             ))
           )}
@@ -201,16 +200,12 @@ export default function SearchPage() {
       )}
 
       {tab === "chats" && (
-        <div className="space-y-2">
+        <div>
           {chats.length === 0 ? (
-            <p className="text-slate-400">No matching chats.</p>
+            <p className="px-4 py-8 text-center codex-text-muted">No matching chats.</p>
           ) : (
             chats.map((c) => (
-              <Link
-                key={c.id}
-                href={`/chat/${c.id}`}
-                className="codex-surface codex-surface-hover block rounded-lg p-3"
-              >
+              <Link key={c.id} href={`/chat/${c.id}`} className="codex-list-row block font-medium">
                 {user?.uid
                   ? chatRoomDisplayTitle(c, user.uid, chatDisplayNames)
                   : c.title}
@@ -221,15 +216,15 @@ export default function SearchPage() {
       )}
 
       {tab === "users" && (
-        <div className="space-y-2">
+        <div>
           {users.length === 0 ? (
-            <p className="text-slate-400">No matching users.</p>
+            <p className="px-4 py-8 text-center codex-text-muted">No matching users.</p>
           ) : (
             users.map((u) => (
               <Link
                 key={u.uid}
                 href={`/user/${u.uid}`}
-                className="codex-surface codex-surface-hover flex items-center gap-3 rounded-lg p-3"
+                className="codex-list-row flex items-center gap-3"
               >
                 <UserAvatar name={u.displayName} photoUrl={u.photoUrl} />
                 <div className="min-w-0 flex-1">

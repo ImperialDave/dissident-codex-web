@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import clsx from "clsx";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getLeaderboardData } from "@/services/categoryService";
 import { getChessLeaderboard } from "@/services/chessService";
 import { mapFirestoreError } from "@/lib/utils";
@@ -38,90 +39,80 @@ export default function LeaderboardPage() {
   const activeEntries = tab === "topics" ? data?.topTopics ?? [] : [];
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Leaderboard</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Top topics ranked by activity. Tap an entry to open the room.
-        </p>
-      </div>
+    <div>
+      <PageHeader title="Leaderboard" />
 
-      <div className="flex gap-2 rounded-xl border border-white/10 bg-[var(--color-surface)] p-1">
+      <div className="codex-tab-bar">
         {(
           [
-            { id: "topics" as const, label: "Top Topics" },
-            { id: "chess" as const, label: "Chess ELO" },
+            { id: "topics" as const, label: "Topics" },
+            { id: "chess" as const, label: "Chess" },
           ] as const
         ).map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setTab(item.id)}
-            className={clsx(
-              "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition",
-              tab === item.id
-                ? "bg-[var(--color-accent)] text-black"
-                : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-            )}
+            className={clsx("codex-tab", tab === item.id && "codex-tab-active")}
           >
             {item.label}
           </button>
         ))}
       </div>
 
-      {loading && <p className="text-slate-400">Loading rankings...</p>}
+      {loading && (
+        <p className="px-4 py-8 text-center codex-text-muted">Loading rankings...</p>
+      )}
 
       {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+        <p className="border-b border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
         </p>
       )}
 
       {!loading && !error && tab !== "chess" && activeEntries.length === 0 && (
-        <p className="rounded-xl border border-white/10 bg-[var(--color-surface)] p-6 text-center text-slate-400">
+        <p className="px-4 py-12 text-center codex-text-muted">
           No activity yet. Join a topic chat to get started!
         </p>
       )}
 
       {!loading && !error && tab !== "chess" && activeEntries.length > 0 && (
-        <div className="space-y-2">
+        <div>
           {activeEntries.map((entry) => (
             <Link
               key={entry.roomId}
               href={`/chat/${entry.roomId}`}
-              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 transition hover:border-[var(--color-accent)]/40"
+              className="codex-list-row flex items-center justify-between gap-3"
             >
               <div className="min-w-0">
-                <p className="font-medium text-white">
+                <p className="font-medium">
                   <span className="mr-2 text-[var(--color-accent)]">#{entry.rank}</span>
                   {entry.title}
                 </p>
-                <p className="mt-0.5 text-xs text-slate-400">{entryMeta(entry)}</p>
+                <p className="mt-0.5 text-xs codex-text-muted">{entryMeta(entry)}</p>
               </div>
-              {tab === "topics" && (
-                <span className="shrink-0 text-sm font-semibold text-[var(--color-accent)]">
-                  {entry.score} pts
-                </span>
-              )}
+              <span className="shrink-0 text-sm font-semibold text-[var(--color-accent)]">
+                {entry.score} pts
+              </span>
             </Link>
           ))}
         </div>
       )}
 
       {!loading && !error && tab === "chess" && (
-        <div className="space-y-2">
+        <div>
           {chess.length === 0 ? (
-            <p className="rounded-xl border border-white/10 bg-[var(--color-surface)] p-6 text-center text-slate-400">
-              No rated chess games yet. Finish a match to appear here!
+            <p className="px-4 py-12 text-center codex-text-muted">
+              No rated chess games yet.
             </p>
           ) : (
             chess.map((entry, index) => (
               <Link
                 key={entry.uid}
                 href={`/user/${entry.uid}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[var(--color-surface)] p-4 transition hover:border-[var(--color-accent)]/40"
+                className="codex-list-row flex items-center justify-between gap-3"
               >
-                <p className="font-medium text-white">
+                <p className="font-medium">
                   <span className="mr-2 text-[var(--color-accent)]">#{index + 1}</span>
                   {entry.displayName}
                 </p>

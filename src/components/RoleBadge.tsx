@@ -10,8 +10,33 @@ const ROLE_STYLES: Record<string, string> = {
   BANNED: "bg-red-500/20 text-red-200 border-red-500/40",
 };
 
-export function RoleBadge({ role }: { role: string }) {
+const ROLE_COMPACT: Record<string, string> = {
+  FOUNDER: "text-amber-400",
+  ADMIN: "text-yellow-300",
+  MOD: "text-blue-300",
+  USER: "",
+  SUSPENDED: "text-orange-300",
+  BANNED: "text-red-300",
+};
+
+export function RoleBadge({
+  role,
+  compact = false,
+}: {
+  role: string;
+  compact?: boolean;
+}) {
   const r = roleFromString(role);
+  if (r === "USER") return null;
+
+  if (compact) {
+    return (
+      <span className={clsx("text-xs font-medium", ROLE_COMPACT[r])}>
+        {roleDisplayName(r)}
+      </span>
+    );
+  }
+
   return (
     <span
       className={clsx(

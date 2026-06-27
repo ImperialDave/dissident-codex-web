@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ReactionsBlock } from "./ReactionsBlock";
 import type { ReactionSummary } from "@/services/reactionService";
 
@@ -13,11 +12,10 @@ interface PostCardReactionRowProps {
 export function PostCardReactionRow({
   postId,
   initialSummary,
-  commentCount,
 }: PostCardReactionRowProps) {
   return (
     <div
-      className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-400"
+      className="flex items-center"
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
@@ -27,12 +25,6 @@ export function PostCardReactionRow({
         compact
         showTrigger
       />
-      <Link
-        href={`/post/${postId}`}
-        className="text-slate-400 transition hover:text-[var(--color-accent)]"
-      >
-        {commentCount} comments
-      </Link>
     </div>
   );
 }
