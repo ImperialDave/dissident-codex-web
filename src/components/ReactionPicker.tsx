@@ -21,13 +21,14 @@ export function ReactionPicker({
       role="toolbar"
       aria-label="Quick reactions"
     >
-      {emojis.map((emoji) => (
+      {emojis.map((emoji, index) => (
         <button
           key={emoji}
           type="button"
           disabled={disabled}
           onClick={() => onPick(emoji)}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-xl transition hover:scale-110 hover:bg-white/10 disabled:opacity-50"
+          className="reaction-picker-emoji flex h-9 w-9 items-center justify-center rounded-full text-xl transition hover:scale-110 hover:bg-white/10 disabled:opacity-50 sm:h-10 sm:w-10"
+          style={{ animationDelay: `${index * 30}ms` }}
           aria-label={`React with ${emoji}`}
         >
           {emoji}
@@ -37,7 +38,8 @@ export function ReactionPicker({
         type="button"
         disabled={disabled}
         onClick={onOpenFull}
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-white/25 text-lg text-slate-300 transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-50"
+        className="reaction-picker-emoji flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-white/25 text-lg text-slate-300 transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-50 sm:h-10 sm:w-10"
+        style={{ animationDelay: `${emojis.length * 30}ms` }}
         aria-label="More reactions"
       >
         +

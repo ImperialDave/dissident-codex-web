@@ -1,5 +1,7 @@
 export const DEFAULT_REACTION_EMOJIS = ["👍", "❤️", "😂", "🔥", "👀"] as const;
 
+export const THUMBS_UP_EMOJI = DEFAULT_REACTION_EMOJIS[0];
+
 const EMOJI_SEGMENTER =
   typeof Intl !== "undefined" && "Segmenter" in Intl
     ? new Intl.Segmenter(undefined, { granularity: "grapheme" })

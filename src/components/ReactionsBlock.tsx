@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmojiPickerModal } from "./EmojiPickerModal";
-import { ReactionPicker } from "./ReactionPicker";
 import { ReactionPills } from "./ReactionPills";
-import { resolveQuickEmojis } from "@/lib/emoji";
+import { ReactionTriggerButton } from "./ReactionTriggerButton";
+import { resolveQuickEmojis, THUMBS_UP_EMOJI } from "@/lib/emoji";
 import { loadReactionPrefs, getCachedQuickEmojis } from "@/services/reactionPrefsService";
 import {
   listenMyReactions,
@@ -43,8 +42,6 @@ export function ReactionsBlock({
   const [summary, setSummary] = useState<ReactionSummary>(initialSummary ?? {});
   const [mine, setMine] = useState<Set<string>>(new Set());
   const [quickEmojis, setQuickEmojis] = useState<string[]>(getCachedQuickEmojis);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [fullOpen, setFullOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -83,8 +80,6 @@ export function ReactionsBlock({
         setError(err instanceof Error ? err.message : "Reaction failed");
       } finally {
         setBusy(false);
-        setPickerOpen(false);
-        setFullOpen(false);
       }
     },
     [target]
@@ -93,6 +88,15 @@ export function ReactionsBlock({
   return (
     <div className={`relative ${className}`}>
       <div className="flex flex-wrap items-center gap-2">
+        {showTrigger && (
+          <ReactionTriggerButton
+            active={mine.has(THUMBS_UP_EMOJI)}
+            disabled={busy}
+            quickEmojis={quickEmojis}
+            onToggle={handleToggle}
+            variant={compact ? "compact" : "default"}
+          />
+        )}
         <ReactionPills
           summary={summary}
           mine={mine}
@@ -100,40 +104,9 @@ export function ReactionsBlock({
           disabled={busy}
           compact={compact}
         />
-        {showTrigger && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => setPickerOpen((open) => !open)}
-            className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-slate-400 transition hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)] disabled:opacity-50"
-            aria-label="Add reaction"
-          >
-            React
-          </button>
-        )}
       </div>
 
-      {pickerOpen && (
-        <div className="absolute bottom-full left-0 z-20 mb-2 animate-in fade-in">
-          <ReactionPicker
-            emojis={quickEmojis}
-            disabled={busy}
-            onPick={handleToggle}
-            onOpenFull={() => {
-              setPickerOpen(false);
-              setFullOpen(true);
-            }}
-          />
-        </div>
-      )}
-
       {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
-
-      <EmojiPickerModal
-        open={fullOpen}
-        onClose={() => setFullOpen(false)}
-        onSelect={handleToggle}
-      />
     </div>
   );
 }

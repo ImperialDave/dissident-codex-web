@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { resolveQuickEmojis } from "@/lib/emoji";
-import { EmojiPickerModal } from "./EmojiPickerModal";
-import { ReactionPicker } from "./ReactionPicker";
+import { resolveQuickEmojis, THUMBS_UP_EMOJI } from "@/lib/emoji";
 import { ReactionPills } from "./ReactionPills";
+import { ReactionTriggerButton } from "./ReactionTriggerButton";
 import { getCachedQuickEmojis, loadReactionPrefs } from "@/services/reactionPrefsService";
 import {
   toggleReaction,
@@ -40,8 +39,6 @@ export function MessageReactions({
 }: MessageReactionsProps) {
   const [mine, setMine] = useState<Set<string>>(new Set());
   const [quickEmojis, setQuickEmojis] = useState<string[]>(getCachedQuickEmojis);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [fullOpen, setFullOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -71,8 +68,6 @@ export function MessageReactions({
         setQuickEmojis(getCachedQuickEmojis());
       } finally {
         setBusy(false);
-        setPickerOpen(false);
-        setFullOpen(false);
       }
     },
     [messageId, onSummaryChange, roomId, summary]
@@ -81,6 +76,14 @@ export function MessageReactions({
   return (
     <div className={`relative ${alignEnd ? "flex justify-end" : ""}`}>
       <div className={`flex flex-wrap items-center gap-1 ${alignEnd ? "justify-end" : ""}`}>
+        <ReactionTriggerButton
+          active={mine.has(THUMBS_UP_EMOJI)}
+          disabled={busy}
+          quickEmojis={quickEmojis}
+          onToggle={handleToggle}
+          variant="hover"
+          pickerAlign={alignEnd ? "end" : "start"}
+        />
         <ReactionPills
           summary={summary}
           mine={mine}
@@ -88,38 +91,7 @@ export function MessageReactions({
           disabled={busy}
           compact
         />
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => setPickerOpen((open) => !open)}
-          className="rounded-full px-1.5 py-0.5 text-[10px] text-slate-500 opacity-0 transition group-hover/reaction:opacity-100 hover:text-[var(--color-accent)] disabled:opacity-50"
-          aria-label="Add reaction"
-        >
-          +
-        </button>
       </div>
-
-      {pickerOpen && (
-        <div
-          className={`absolute bottom-full z-30 mb-1 ${alignEnd ? "right-0" : "left-0"}`}
-        >
-          <ReactionPicker
-            emojis={quickEmojis}
-            disabled={busy}
-            onPick={handleToggle}
-            onOpenFull={() => {
-              setPickerOpen(false);
-              setFullOpen(true);
-            }}
-          />
-        </div>
-      )}
-
-      <EmojiPickerModal
-        open={fullOpen}
-        onClose={() => setFullOpen(false)}
-        onSelect={handleToggle}
-      />
     </div>
   );
 }

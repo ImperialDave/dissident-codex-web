@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import "emoji-picker-element";
+import { useEffect, useRef, useState } from "react";
 
 type EmojiPickerElement = HTMLElement & {
   addEventListener(
@@ -22,9 +21,22 @@ interface EmojiPickerModalProps {
 
 export function EmojiPickerModal({ open, onClose, onSelect }: EmojiPickerModalProps) {
   const pickerRef = useRef<EmojiPickerElement | null>(null);
+  const [pickerReady, setPickerReady] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    let cancelled = false;
+    void import("emoji-picker-element").then(() => {
+      if (!cancelled) setPickerReady(true);
+    });
+    return () => {
+      cancelled = true;
+      setPickerReady(false);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !pickerReady) return;
     const picker = pickerRef.current;
     if (!picker) return;
 
@@ -35,7 +47,7 @@ export function EmojiPickerModal({ open, onClose, onSelect }: EmojiPickerModalPr
 
     picker.addEventListener("emoji-click", handleEmoji);
     return () => picker.removeEventListener("emoji-click", handleEmoji);
-  }, [open, onClose, onSelect]);
+  }, [open, onClose, onSelect, pickerReady]);
 
   if (!open) return null;
 
@@ -65,12 +77,16 @@ export function EmojiPickerModal({ open, onClose, onSelect }: EmojiPickerModalPr
           </button>
         </div>
         <div className="max-h-[60vh] overflow-auto p-2">
-          {/* @ts-expect-error emoji-picker-element custom element */}
-          <emoji-picker
-            ref={pickerRef}
-            className="w-full"
-            style={{ width: "100%", height: "360px", border: "none", background: "transparent" }}
-          />
+          {pickerReady ? (
+            /* @ts-expect-error emoji-picker-element custom element */
+            <emoji-picker
+              ref={pickerRef}
+              className="w-full"
+              style={{ width: "100%", height: "360px", border: "none", background: "transparent" }}
+            />
+          ) : (
+            <p className="py-8 text-center text-sm text-slate-400">Loading emojis…</p>
+          )}
         </div>
       </div>
     </div>

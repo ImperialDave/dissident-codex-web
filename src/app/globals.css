@@ -866,3 +866,59 @@ body::after {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+@keyframes reaction-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes reaction-emoji-in {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes reaction-thumb-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+}
+
+.reaction-picker-popover {
+  animation: reaction-pop-in 0.2s ease-out forwards;
+}
+
+.reaction-picker-emoji {
+  animation: reaction-emoji-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.reaction-thumb-active {
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+.reaction-thumb-holding {
+  box-shadow: 0 0 16px color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
+
+.reaction-thumb-bounce {
+  animation: reaction-thumb-bounce 0.22s ease-out;
+}
+
+.reaction-trigger-btn:disabled {
+  opacity: 0.5;
+}
