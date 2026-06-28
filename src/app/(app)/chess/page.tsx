@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Bot } from "lucide-react";
 import { ChessFriendList } from "@/components/ChessFriendList";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { getMyActiveGames } from "@/services/chessService";
@@ -20,8 +21,33 @@ export default function ChessLobbyPage() {
     <div>
       <PageHeader title="Chess" />
       <p className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
-        Challenge a friend below, or continue an active game.
+        Play vs bot for practice, challenge a friend, or continue an active game.
       </p>
+
+      <section>
+        <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
+          Play vs bot
+        </p>
+        <p className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
+          Local practice — no ELO changes, no notifications.
+        </p>
+        <div className="flex flex-wrap gap-2 border-b border-[var(--color-border)] px-4 py-4">
+          <Link
+            href="/chess/bot?difficulty=easy"
+            className="codex-btn-secondary inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium"
+          >
+            <Bot className="h-4 w-4" />
+            Easy
+          </Link>
+          <Link
+            href="/chess/bot?difficulty=medium"
+            className="codex-btn-accent inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold"
+          >
+            <Bot className="h-4 w-4" />
+            Medium
+          </Link>
+        </div>
+      </section>
 
       <ChessFriendList refreshIntervalMs={5000} />
 
