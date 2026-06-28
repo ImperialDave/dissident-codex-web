@@ -176,7 +176,7 @@ if (failed.length) {
   if (needsRules) {
     console.error(`
 ACTION REQUIRED: Production Firestore rules are stale.
-Paste ~/AndroidStudioProjects/Codex/firestore.rules into Firebase Console
+Paste firestore.rules from dissident-codex-firebase into Firebase Console
 → dissidentcodex → Firestore → Rules → Publish.
 Then search the editor for "feedHiddenTopics" and "blockedUsers".
 `);

@@ -64,7 +64,7 @@ export function mapCallableError(err: unknown): string {
   const combined = [message, details].filter(Boolean).join(" — ");
 
   if (code.includes("failed-precondition") && combined.toLowerCase().includes("livekit")) {
-    return "Voice server is not configured. Deploy Cloud Functions with LiveKit env vars (npm run deploy:voice from a machine that has functions/.env).";
+    return "Voice server is not configured. Deploy Cloud Functions with LiveKit env vars (npm run deploy:voice from dissident-codex-firebase with functions/.env).";
   }
   if (code.includes("unauthenticated")) {
     return "Sign in required for voice calls.";
@@ -79,7 +79,7 @@ export function mapCallableError(err: unknown): string {
     if (combined && combined !== "internal") {
       return mapFirestoreError(combined);
     }
-    return "Voice server error. LiveKit credentials may be missing on deployed Cloud Functions — run npm run deploy:voice with functions/.env filled in.";
+    return "Voice server error. LiveKit credentials may be missing on deployed Cloud Functions — run npm run deploy:voice from dissident-codex-firebase with functions/.env filled in.";
   }
   if (message && message !== "internal") {
     return mapFirestoreError(message);

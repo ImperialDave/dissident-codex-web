@@ -33,4 +33,7 @@ Hosting services (Render, Railway, Vercel, Firebase App Hosting) build from this
 
 ## Repo layout
 
-This repo is **website source only**. The Android app lives in a separate project.
+This repo is **website source only**.
+
+- **Firebase backend** (rules, functions, deploy): [dissident-codex-firebase](https://github.com/ImperialDave/dissident-codex-firebase) — sibling folder `../dissident-codex-firebase`
+- Deploy rules/functions from that repo (`npm run deploy:rules`, `npm run deploy:voice`, etc.)

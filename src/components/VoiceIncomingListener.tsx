@@ -22,7 +22,7 @@ function formatListenerError(err: unknown): string {
     return "Firestore index is building — try again in a few minutes.";
   }
   if (code === "permission-denied" || message.includes("permission") || message.includes("Permission")) {
-    return "Live call listener blocked by Firestore rules. Deploy latest firestore.rules; notification alerts still work.";
+    return "Live call listener blocked by Firestore rules. Deploy latest firestore.rules from dissident-codex-firebase; notification alerts still work.";
   }
   return message || "Could not listen for incoming calls.";
 }
