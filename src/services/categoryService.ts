@@ -12,7 +12,13 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
-import { ALL_CATEGORY_LABEL, COLLECTIONS, MAX_FAVORITE_CATEGORIES } from "@/lib/constants";
+import {
+  ALL_CATEGORY_LABEL,
+  COLLECTIONS,
+  MAX_FAVORITE_CATEGORIES,
+  SEARCH_POPULAR_CHATS_LIMIT,
+  SEARCH_POPULAR_TOPICS_LIMIT,
+} from "@/lib/constants";
 import {
   canModerate,
   CHAT_TYPE_TOPIC,
@@ -307,8 +313,7 @@ function sortLeaderboardEntries(
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
-/** Matches Android: topic rooms + user's DMs, scored by chat activity. */
-export async function getLeaderboardData(limit = 20): Promise<LeaderboardData> {
+async function buildTopicLeaderboardEntries(): Promise<Omit<LeaderboardEntry, "rank">[]> {
   const banned = new Set((await getBannedTopics()).map((t) => t.name.toLowerCase()));
   const feedHidden = new Set((await getFeedHiddenTopics()).map((t) => t.name.toLowerCase()));
   const postCounts = await getPostCountByCategory();
@@ -320,7 +325,7 @@ export async function getLeaderboardData(limit = 20): Promise<LeaderboardData> {
     rooms = [];
   }
 
-  const topicEntries = rooms
+  return rooms
     .filter((room) => room.type === CHAT_TYPE_TOPIC)
     .filter((room) => {
       const key = topicRoomName(room).toLowerCase();
@@ -337,16 +342,45 @@ export async function getLeaderboardData(limit = 20): Promise<LeaderboardData> {
         postCount,
         score: messageCount * 2 + postCount,
         lastMessageAt: room.lastMessageAt,
+        lastMessagePreview: room.lastMessagePreview || undefined,
         isTopic: true,
       };
     });
+}
 
+/** Matches Android: topic rooms + user's DMs, scored by chat activity. */
+export async function getLeaderboardData(limit = 20): Promise<LeaderboardData> {
+  const topicEntries = await buildTopicLeaderboardEntries();
   const topTopics = sortLeaderboardEntries(topicEntries, limit, (a, b) => {
     if (b.score !== a.score) return b.score - a.score;
     return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
   });
 
   return { topTopics };
+}
+
+export async function getPopularTopicsForSearch(
+  limit = SEARCH_POPULAR_TOPICS_LIMIT
+): Promise<LeaderboardEntry[]> {
+  const topicEntries = await buildTopicLeaderboardEntries();
+  return sortLeaderboardEntries(topicEntries, limit, (a, b) => {
+    if (b.postCount !== a.postCount) return b.postCount - a.postCount;
+    if (b.messageCount !== a.messageCount) return b.messageCount - a.messageCount;
+    return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
+  });
+}
+
+export async function getPopularChatRoomsForSearch(
+  limit = SEARCH_POPULAR_CHATS_LIMIT
+): Promise<LeaderboardEntry[]> {
+  const topicEntries = await buildTopicLeaderboardEntries();
+  return sortLeaderboardEntries(topicEntries, limit, (a, b) => {
+    if (b.messageCount !== a.messageCount) return b.messageCount - a.messageCount;
+    if ((b.lastMessageAt?.seconds ?? 0) !== (a.lastMessageAt?.seconds ?? 0)) {
+      return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
+    }
+    return b.postCount - a.postCount;
+  });
 }
 
 function favoriteCategoriesRef(uid: string) {

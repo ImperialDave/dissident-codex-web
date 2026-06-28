@@ -16,6 +16,8 @@ export const MAX_FAVORITE_CATEGORIES = 6;
 export const FEED_FAVORITE_POSTS_LIMIT = 30;
 export const MAX_FOLLOWING = 200;
 export const FEED_FOLLOWING_POSTS_LIMIT = 30;
+export const SEARCH_POPULAR_TOPICS_LIMIT = 20;
+export const SEARCH_POPULAR_CHATS_LIMIT = 20;
 
 export const COLLECTIONS = {
   USERS: "users",

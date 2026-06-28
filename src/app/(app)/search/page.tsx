@@ -10,7 +10,11 @@ import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { chatRoomDisplayTitle, resolveDmDisplayNames } from "@/lib/chatDisplay";
 import { mapFirestoreError } from "@/lib/utils";
-import { searchTopics } from "@/services/categoryService";
+import {
+  getPopularChatRoomsForSearch,
+  getPopularTopicsForSearch,
+  searchTopics,
+} from "@/services/categoryService";
 import {
   refreshSavedPostIds,
   searchPosts,
@@ -19,7 +23,15 @@ import {
 import { getChatRoomsForInbox, searchChatRooms } from "@/services/chatService";
 import { searchUsers } from "@/services/userService";
 import { useAuthStore } from "@/stores/authStore";
-import type { ChatRoom, Post, PostCategory, User } from "@/models";
+import type { ChatRoom, LeaderboardEntry, Post, PostCategory, User } from "@/models";
+
+function topicEntryMeta(entry: LeaderboardEntry): string {
+  return `${entry.postCount} posts · ${entry.messageCount} messages`;
+}
+
+function chatEntryMeta(entry: LeaderboardEntry): string {
+  return `${entry.messageCount} messages · ${entry.postCount} posts`;
+}
 
 export default function SearchPage() {
   const { user } = useAuthStore();
@@ -30,15 +42,40 @@ export default function SearchPage() {
   const [chats, setChats] = useState<ChatRoom[]>([]);
   const [chatDisplayNames, setChatDisplayNames] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<User[]>([]);
+  const [popularTopics, setPopularTopics] = useState<LeaderboardEntry[]>([]);
+  const [popularChats, setPopularChats] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [discoveryLoading, setDiscoveryLoading] = useState(true);
+  const [discoveryError, setDiscoveryError] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState("");
   const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
   const [togglingSavePostId, setTogglingSavePostId] = useState<string | null>(null);
+
+  const showSearchResults = query.trim().length > 0 && hasSearched;
 
   useEffect(() => {
     if (!user) return;
     refreshSavedPostIds().then(setSavedPostIds);
   }, [user]);
+
+  useEffect(() => {
+    setDiscoveryLoading(true);
+    setDiscoveryError("");
+    Promise.all([getPopularTopicsForSearch(), getPopularChatRoomsForSearch()])
+      .then(([topicsResult, chatsResult]) => {
+        setPopularTopics(topicsResult);
+        setPopularChats(chatsResult);
+      })
+      .catch((err) => {
+        setPopularTopics([]);
+        setPopularChats([]);
+        setDiscoveryError(
+          mapFirestoreError(err instanceof Error ? err.message : "Failed to load popular lists")
+        );
+      })
+      .finally(() => setDiscoveryLoading(false));
+  }, []);
 
   async function handleToggleSave(postId: string) {
     setTogglingSavePostId(postId);
@@ -62,6 +99,7 @@ export default function SearchPage() {
     const q = query.trim();
     if (!q) return;
 
+    setHasSearched(true);
     setLoading(true);
     setError("");
     setPosts([]);
@@ -124,13 +162,20 @@ export default function SearchPage() {
     setLoading(false);
   }
 
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    if (!value.trim()) {
+      setHasSearched(false);
+    }
+  }
+
   return (
     <div>
       <PageHeader title="Search" />
       <div className="flex gap-2 border-b border-[var(--color-border)] px-4 py-3">
         <Input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => handleQueryChange(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
           placeholder="Search Codex"
           className="flex-1"
@@ -150,6 +195,12 @@ export default function SearchPage() {
         </div>
       )}
 
+      {discoveryError && (
+        <div className="border-b border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          {discoveryError}
+        </div>
+      )}
+
       <div className="codex-tab-bar">
         {(["posts", "topics", "chats", "users"] as const).map((t) => (
           <button
@@ -165,7 +216,7 @@ export default function SearchPage() {
       {tab === "posts" && (
         <div>
           {posts.length === 0 ? (
-            <p className="text-slate-400">No matching posts.</p>
+            <p className="px-4 py-8 text-center codex-text-muted">No matching posts.</p>
           ) : (
             posts.map((p) => (
               <PostCard
@@ -182,35 +233,100 @@ export default function SearchPage() {
 
       {tab === "topics" && (
         <div>
-          {topics.length === 0 ? (
-            <p className="px-4 py-8 text-center codex-text-muted">No matching topics.</p>
-          ) : (
-            topics.map((t) => (
-              <Link
-                key={`${t.id}-${t.name}`}
-                href={`/feed?category=${encodeURIComponent(t.name)}`}
-                className="codex-list-row block"
-              >
-                <p className="font-medium">{t.name}</p>
-                <p className="text-xs codex-text-muted">View posts in this topic</p>
+          {showSearchResults ? (
+            topics.length === 0 ? (
+              <p className="px-4 py-8 text-center codex-text-muted">No matching topics.</p>
+            ) : (
+              topics.map((t) => (
+                <Link
+                  key={`${t.id}-${t.name}`}
+                  href={`/feed?category=${encodeURIComponent(t.name)}`}
+                  className="codex-list-row block"
+                >
+                  <p className="font-medium">{t.name}</p>
+                  <p className="text-xs codex-text-muted">View posts in this topic</p>
+                </Link>
+              ))
+            )
+          ) : discoveryLoading ? (
+            <p className="px-4 py-8 text-center codex-text-muted">Loading popular topics...</p>
+          ) : popularTopics.length === 0 ? (
+            <p className="px-4 py-8 text-center codex-text-muted">
+              No popular topics yet.{" "}
+              <Link href="/topics" className="text-[var(--color-accent)] hover:underline">
+                Browse topics
               </Link>
-            ))
+            </p>
+          ) : (
+            <div>
+              <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
+                Popular topics
+              </p>
+              {popularTopics.map((entry) => (
+                <Link
+                  key={entry.roomId}
+                  href={`/feed?category=${encodeURIComponent(entry.title)}`}
+                  className="codex-list-row block"
+                >
+                  <p className="font-medium">
+                    <span className="mr-2 text-[var(--color-accent)]">#{entry.rank}</span>
+                    {entry.title}
+                  </p>
+                  <p className="mt-0.5 text-xs codex-text-muted">{topicEntryMeta(entry)}</p>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       )}
 
       {tab === "chats" && (
         <div>
-          {chats.length === 0 ? (
-            <p className="px-4 py-8 text-center codex-text-muted">No matching chats.</p>
-          ) : (
-            chats.map((c) => (
-              <Link key={c.id} href={`/chat/${c.id}`} className="codex-list-row block font-medium">
-                {user?.uid
-                  ? chatRoomDisplayTitle(c, user.uid, chatDisplayNames)
-                  : c.title}
+          {showSearchResults ? (
+            chats.length === 0 ? (
+              <p className="px-4 py-8 text-center codex-text-muted">No matching chats.</p>
+            ) : (
+              chats.map((c) => (
+                <Link key={c.id} href={`/chat/${c.id}`} className="codex-list-row block font-medium">
+                  {user?.uid
+                    ? chatRoomDisplayTitle(c, user.uid, chatDisplayNames)
+                    : c.title}
+                </Link>
+              ))
+            )
+          ) : discoveryLoading ? (
+            <p className="px-4 py-8 text-center codex-text-muted">Loading popular chat rooms...</p>
+          ) : popularChats.length === 0 ? (
+            <p className="px-4 py-8 text-center codex-text-muted">
+              No popular chat rooms yet.{" "}
+              <Link href="/topics" className="text-[var(--color-accent)] hover:underline">
+                Browse topics
               </Link>
-            ))
+            </p>
+          ) : (
+            <div>
+              <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
+                Popular chat rooms
+              </p>
+              {popularChats.map((entry) => (
+                <Link
+                  key={entry.roomId}
+                  href={`/chat/${entry.roomId}`}
+                  className="codex-list-row block"
+                >
+                  <p className="font-medium">
+                    <span className="mr-2 text-[var(--color-accent)]">#{entry.rank}</span>
+                    {entry.title}
+                  </p>
+                  <p className="mt-0.5 text-xs codex-text-muted">{chatEntryMeta(entry)}</p>
+                  {entry.lastMessagePreview && (
+                    <p className="mt-1 truncate text-xs text-slate-400">
+                      Last: {entry.lastMessagePreview}
+                    </p>
+                  )}
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       )}

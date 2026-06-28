@@ -232,6 +232,7 @@ export interface LeaderboardEntry {
   postCount: number;
   score: number;
   lastMessageAt?: Timestamp | null;
+  lastMessagePreview?: string;
   isTopic: boolean;
 }
 
