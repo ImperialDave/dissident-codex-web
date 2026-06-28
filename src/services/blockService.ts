@@ -13,6 +13,7 @@ import {
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS } from "@/lib/constants";
 import { fetchUser } from "./authService";
+import { clearFollowingCache } from "./followService";
 
 let blockedCache: Set<string> | null = null;
 
@@ -104,10 +105,12 @@ export async function blockUser(otherUid: string): Promise<void> {
   });
   batch.delete(doc(db, COLLECTIONS.USERS, uid, "friends", otherUid));
   batch.delete(doc(db, COLLECTIONS.USERS, otherUid, "friends", uid));
+  batch.delete(doc(db, COLLECTIONS.USERS, uid, "following", otherUid));
 
   await batch.commit();
   await clearFriendRequestsBetween(uid, otherUid);
   blockedCache = null;
+  clearFollowingCache();
 }
 
 export async function unblockUser(otherUid: string): Promise<void> {

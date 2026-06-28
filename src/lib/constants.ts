@@ -14,6 +14,8 @@ export const VOICE_MAX_GROUP = 25;
 export const FEED_DM_STRIP_LIMIT = 12;
 export const MAX_FAVORITE_CATEGORIES = 6;
 export const FEED_FAVORITE_POSTS_LIMIT = 30;
+export const MAX_FOLLOWING = 200;
+export const FEED_FOLLOWING_POSTS_LIMIT = 30;
 
 export const COLLECTIONS = {
   USERS: "users",

@@ -195,6 +195,13 @@ export interface Friend {
   since?: Timestamp | null;
 }
 
+export interface UserFollow {
+  uid: string;
+  displayName: string;
+  photoUrl?: string | null;
+  followedAt?: Timestamp | null;
+}
+
 export interface FriendRequest {
   id: string;
   fromUid: string;

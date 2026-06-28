@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { FollowButton } from "@/components/FollowButton";
 import { ProfilePostsList } from "@/components/ProfilePostsList";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -20,6 +21,7 @@ import {
   respondToFriendRequest,
   sendFriendRequest,
 } from "@/services/friendService";
+import { isFollowing, toggleFollow } from "@/services/followService";
 import { startChessGame } from "@/services/chessService";
 import { ensureMicrophoneForVoice } from "@/lib/microphonePermission";
 import { mapFirestoreError } from "@/lib/utils";
@@ -35,7 +37,8 @@ export default function UserProfilePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [friendStatus, setFriendStatus] = useState<string>("none");
-  const [busy, setBusy] = useState<"message" | "chess" | "friend" | "call" | null>(null);
+  const [following, setFollowing] = useState(false);
+  const [busy, setBusy] = useState<"message" | "chess" | "friend" | "call" | "follow" | null>(null);
   const [error, setError] = useState("");
   const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
   const [togglingSavePostId, setTogglingSavePostId] = useState<string | null>(null);
@@ -56,7 +59,10 @@ export default function UserProfilePage() {
     getPostsByUser(uid)
       .then(setPosts)
       .finally(() => setPostsLoading(false));
-    if (!isSelf) getFriendshipStatus(uid).then(setFriendStatus);
+    if (!isSelf) {
+      getFriendshipStatus(uid).then(setFriendStatus);
+      isFollowing(uid).then(setFollowing);
+    }
   }, [uid, isSelf]);
 
   useEffect(() => {
@@ -180,6 +186,19 @@ export default function UserProfilePage() {
     }
   }
 
+  async function handleToggleFollow() {
+    setError("");
+    setBusy("follow");
+    try {
+      const nowFollowing = await toggleFollow(uid);
+      setFollowing(nowFollowing);
+    } catch (err) {
+      setError(err instanceof Error ? mapFirestoreError(err.message) : "Could not update follow");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <div>
       <PageHeader title={user.displayName} backHref="/feed" />
@@ -218,7 +237,12 @@ export default function UserProfilePage() {
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2 border-b border-[var(--color-border)] px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] px-4 py-3">
+        <FollowButton
+          isFollowing={following}
+          busy={busy === "follow"}
+          onToggle={handleToggleFollow}
+        />
         {friendStatus === "none" && (
           <button
             onClick={addFriend}

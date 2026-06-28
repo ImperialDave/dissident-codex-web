@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { MessageCircle, Search, Star } from "lucide-react";
+import { MessageCircle, Search, Star, UserPlus } from "lucide-react";
 import { PostCard } from "@/components/PostCard";
 import { Input } from "@/components/ui/Input";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useDmDisplayNames } from "@/hooks/useDmDisplayNames";
 import { chatRoomDisplayTitle } from "@/lib/chatDisplay";
 import { ALL_CATEGORY_LABEL, FEED_DM_STRIP_LIMIT } from "@/lib/constants";
-import { partitionFeedPosts } from "@/lib/feedRank";
+import { partitionFeedSections } from "@/lib/feedRank";
 import { mapFirestoreError } from "@/lib/utils";
 import { getFavoriteCategories } from "@/services/categoryService";
+import { getFollowingIds } from "@/services/followService";
 import { getRecentDmRooms } from "@/services/chatService";
 import {
   getPosts,
@@ -37,8 +38,10 @@ function matchesSearch(post: Post, query: string): boolean {
 export default function FeedPage() {
   const searchParams = useSearchParams();
   const { user, isModerator } = useAuthStore();
+  const [followingPosts, setFollowingPosts] = useState<Post[]>([]);
   const [favoritePosts, setFavoritePosts] = useState<Post[]>([]);
   const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [followingCount, setFollowingCount] = useState(0);
   const [dmRooms, setDmRooms] = useState<ChatRoom[]>([]);
   const dmDisplayNames = useDmDisplayNames(dmRooms, user?.uid);
   const [category, setCategory] = useState("All");
@@ -56,28 +59,34 @@ export default function FeedPage() {
     setLoading(true);
     setError("");
     try {
-      const [data, favorites, dms] = await Promise.all([
+      const [data, favorites, dms, followingIds] = await Promise.all([
         getPosts(category === ALL_CATEGORY_LABEL ? null : category, 50, {
           includeHidden: modView,
         }),
         getFavoriteCategories(),
         showPriority ? getRecentDmRooms(FEED_DM_STRIP_LIMIT) : Promise.resolve([]),
+        showPriority ? getFollowingIds() : Promise.resolve(new Set<string>()),
       ]);
       setDmRooms(dms);
       setFavoriteCategories(favorites);
+      setFollowingCount(followingIds.size);
 
       const filtered = data.filter((p) => matchesSearch(p, search));
 
       if (showPriority) {
         const favoriteNames = new Set(favorites.map((f) => f.name.toLowerCase()));
-        const { favoritePosts: fav, allPosts: rest } = partitionFeedPosts(filtered, favoriteNames);
+        const { followingPosts: following, favoritePosts: fav, allPosts: rest } =
+          partitionFeedSections(filtered, followingIds, favoriteNames);
+        setFollowingPosts(following);
         setFavoritePosts(fav);
         setAllPosts(rest);
       } else {
+        setFollowingPosts([]);
         setFavoritePosts([]);
         setAllPosts(filtered);
       }
     } catch (err) {
+      setFollowingPosts([]);
       setFavoritePosts([]);
       setAllPosts([]);
       setDmRooms([]);
@@ -112,6 +121,7 @@ export default function FeedPage() {
     try {
       const hidden = await togglePostFeedVisibility(postId);
       const update = (p: Post) => (p.id === postId ? { ...p, hiddenFromFeed: hidden } : p);
+      setFollowingPosts((prev) => prev.map(update));
       setFavoritePosts((prev) => prev.map(update));
       setAllPosts((prev) => prev.map(update));
     } catch (err) {
@@ -135,7 +145,8 @@ export default function FeedPage() {
     refreshSavedPostIds().then(setSavedPostIds);
   }, [user]);
 
-  const hasPosts = favoritePosts.length > 0 || allPosts.length > 0;
+  const hasPosts =
+    followingPosts.length > 0 || favoritePosts.length > 0 || allPosts.length > 0;
   const tabs = [
     { id: ALL_CATEGORY_LABEL, label: "For you" },
     ...favoriteCategories.map((f) => ({ id: f.name, label: f.name })),
@@ -196,13 +207,24 @@ export default function FeedPage() {
         </div>
       )}
 
-      {showPriority && favoriteCategories.length === 0 && (
+      {showPriority && followingCount === 0 && (
+        <p className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
+          <UserPlus className="mr-1 inline h-4 w-4 align-text-bottom" />
+          Follow people from their{" "}
+          <Link href="/search" className="text-[var(--color-accent)] hover:underline">
+            profile
+          </Link>{" "}
+          to see their posts here.
+        </p>
+      )}
+
+      {showPriority && favoriteCategories.length === 0 && followingCount > 0 && (
         <p className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
           Pin topics on{" "}
           <Link href="/topics" className="text-[var(--color-accent)] hover:underline">
             Topics
           </Link>{" "}
-          to filter your feed.
+          to also filter by community.
         </p>
       )}
 
@@ -255,6 +277,14 @@ export default function FeedPage() {
         </div>
       ) : (
         <div>
+          {showPriority && followingPosts.length > 0 && (
+            <>
+              <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
+                From people you follow
+              </p>
+              {renderPostList(followingPosts, "Following")}
+            </>
+          )}
           {showPriority && favoritePosts.length > 0 && (
             <>
               <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
@@ -263,7 +293,9 @@ export default function FeedPage() {
               {renderPostList(favoritePosts, "Community")}
             </>
           )}
-          {showPriority && favoritePosts.length > 0 && allPosts.length > 0 && (
+          {showPriority &&
+            (followingPosts.length > 0 || favoritePosts.length > 0) &&
+            allPosts.length > 0 && (
             <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
               All posts
             </p>
