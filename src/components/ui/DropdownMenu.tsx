@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
 interface DropdownMenuProps {
@@ -56,7 +57,7 @@ export function DropdownMenu({
 interface DropdownItemProps {
   children: ReactNode;
   onClick?: () => void;
-  href?: string;
+  icon?: LucideIcon;
   destructive?: boolean;
   className?: string;
 }
@@ -64,6 +65,7 @@ interface DropdownItemProps {
 export function DropdownItem({
   children,
   onClick,
+  icon: Icon,
   destructive,
   className,
 }: DropdownItemProps) {
@@ -73,12 +75,17 @@ export function DropdownItem({
       role="menuitem"
       onClick={onClick}
       className={clsx(
-        "codex-dropdown-item block w-full px-4 py-2.5 text-left text-[15px]",
+        "codex-dropdown-item flex w-full items-center gap-3 px-4 py-2.5 text-left text-[15px]",
         destructive && "codex-dropdown-item-danger",
         className
       )}
     >
-      {children}
+      {Icon && <Icon className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.75} />}
+      <span className="min-w-0 flex-1">{children}</span>
     </button>
   );
+}
+
+export function DropdownDivider() {
+  return <div className="codex-dropdown-divider" role="separator" />;
 }

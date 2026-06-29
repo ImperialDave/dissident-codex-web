@@ -4,6 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
+import { AccountMenu } from "@/components/AccountMenu";
 
 interface PageHeaderProps {
   title: string;
@@ -11,6 +12,9 @@ interface PageHeaderProps {
   actions?: ReactNode;
   sticky?: boolean;
   className?: string;
+  showAccountMenu?: boolean;
+  /** When true, avatar menu shows on desktop too (e.g. profile page). */
+  accountMenuAlways?: boolean;
 }
 
 export function PageHeader({
@@ -19,6 +23,8 @@ export function PageHeader({
   actions,
   sticky = true,
   className,
+  showAccountMenu = true,
+  accountMenuAlways = false,
 }: PageHeaderProps) {
   return (
     <header
@@ -42,7 +48,16 @@ export function PageHeader({
           {title}
         </h1>
       </div>
-      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+      {(actions || showAccountMenu) && (
+        <div className="flex shrink-0 items-center gap-2">
+          {actions}
+          {showAccountMenu && (
+            <AccountMenu
+              className={accountMenuAlways ? undefined : "xl:hidden"}
+            />
+          )}
+        </div>
+      )}
     </header>
   );
 }

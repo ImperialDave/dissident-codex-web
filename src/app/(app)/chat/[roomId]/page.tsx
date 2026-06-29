@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { scrollToBottomIfPinned } from "@/lib/chatScroll";
 import { timeAgo } from "@/lib/utils";
+import { AccountMenu } from "@/components/AccountMenu";
 import { ChatRoomTitle } from "@/components/ChatRoomTitle";
 import { FavoriteStar } from "@/components/FavoriteStar";
 import { VoiceChatControls } from "@/components/VoiceChatControls";
@@ -175,20 +176,23 @@ export default function ChatRoomPage() {
             </h1>
             {room?.locked && <p className="text-xs text-orange-300">This room is locked</p>}
           </div>
-          <FavoriteStar
-            favorited={favorited}
-            disabled={favoriteLoading}
-            onToggle={async () => {
-              setFavoriteLoading(true);
-              try {
-                setFavorited(await toggleFavoriteRoom(roomId));
-              } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to update favorite");
-              } finally {
-                setFavoriteLoading(false);
-              }
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <AccountMenu className="xl:hidden" />
+            <FavoriteStar
+              favorited={favorited}
+              disabled={favoriteLoading}
+              onToggle={async () => {
+                setFavoriteLoading(true);
+                try {
+                  setFavorited(await toggleFavoriteRoom(roomId));
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Failed to update favorite");
+                } finally {
+                  setFavoriteLoading(false);
+                }
+              }}
+            />
+          </div>
         </div>
 
         <VoiceChatControls room={room} roomId={roomId} myUid={user?.uid} />

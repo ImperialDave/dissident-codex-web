@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -29,7 +31,9 @@ import { useAuthStore } from "@/stores/authStore";
 import type { Post } from "@/models";
 
 export default function ProfilePage() {
-  const { user, refreshUser, isModerator, isFounder } = useAuthStore();
+  const router = useRouter();
+  const { user, refreshUser, logout, isModerator, isFounder } = useAuthStore();
+  const [signingOut, setSigningOut] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [bio, setBio] = useState("");
   const [flair, setFlair] = useState("");
@@ -122,7 +126,7 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <PageHeader title="Profile" />
+      <PageHeader title="Profile" accountMenuAlways />
       <div
         className="relative h-32 overflow-hidden border-b border-[var(--color-border)]"
         style={user.backgroundUrl ? { backgroundImage: `url(${user.backgroundUrl})`, backgroundSize: "cover" } : undefined}
@@ -169,7 +173,7 @@ export default function ProfilePage() {
           <h2 className="font-semibold text-white">Account settings</h2>
           <p className="text-sm text-slate-300">{user.email}</p>
           <p className="mt-1 text-xs text-slate-400">
-            Update your password from here or the account menu in the top-right header.
+            Update your password here, or use the account menu (avatar on mobile, sidebar on desktop).
           </p>
         </div>
         <button
@@ -178,6 +182,30 @@ export default function ProfilePage() {
           className="codex-btn-accent rounded-lg px-4 py-2 text-sm"
         >
           Change password
+        </button>
+      </div>
+
+      <div className="codex-settings-section flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-semibold text-white">Session</h2>
+          <p className="text-sm text-slate-300">Sign out of Codex on this device.</p>
+        </div>
+        <button
+          type="button"
+          disabled={signingOut}
+          onClick={async () => {
+            setSigningOut(true);
+            try {
+              await logout();
+              router.replace("/login");
+            } finally {
+              setSigningOut(false);
+            }
+          }}
+          className="codex-btn-sign-out w-full sm:w-auto disabled:opacity-50"
+        >
+          <LogOut className="h-4 w-4" />
+          {signingOut ? "Signing out..." : "Sign out"}
         </button>
       </div>
 
