@@ -22,7 +22,14 @@ import {
   sendChatMessage,
   toggleFavoriteRoom,
 } from "@/services/chatService";
-import { isImageFile, uploadChatImage, uploadChatVideo } from "@/services/mediaService";
+import { resolveImageContentType } from "@/lib/imageUpload";
+import { IMAGE_FILE_ACCEPT, VIDEO_FILE_ACCEPT } from "@/lib/mediaAccept";
+import {
+  isImageFile,
+  isVideoFile,
+  uploadChatImage,
+  uploadChatVideo,
+} from "@/services/mediaService";
 import type { GifResult } from "@/services/giphyService";
 import { useAuthStore } from "@/stores/authStore";
 import type { ChatMessage, ChatRoom } from "@/models";
@@ -96,13 +103,13 @@ export default function ChatRoomPage() {
       kind: "file",
       file,
       previewUrl: URL.createObjectURL(file),
-      mediaType: file.type === "image/gif" ? "gif" : "image",
+      mediaType: resolveImageContentType(file) === "image/gif" ? "gif" : "image",
     });
   }
 
   function handleVideoPick(file: File | undefined) {
     if (!file) return;
-    if (!file.type.startsWith("video/")) {
+    if (!isVideoFile(file)) {
       setError("Only videos are allowed");
       return;
     }
@@ -292,14 +299,14 @@ export default function ChatRoomPage() {
           <input
             ref={imageInputRef}
             type="file"
-            accept="image/*"
+            accept={IMAGE_FILE_ACCEPT}
             className="hidden"
             onChange={(e) => handleImagePick(e.target.files?.[0])}
           />
           <input
             ref={videoInputRef}
             type="file"
-            accept="video/*"
+            accept={VIDEO_FILE_ACCEPT}
             className="hidden"
             onChange={(e) => handleVideoPick(e.target.files?.[0])}
           />

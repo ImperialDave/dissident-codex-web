@@ -19,8 +19,11 @@ import {
   getPost,
   togglePostFeedVisibility,
 } from "@/services/postService";
+import { resolveImageContentType } from "@/lib/imageUpload";
+import { IMAGE_FILE_ACCEPT, VIDEO_FILE_ACCEPT } from "@/lib/mediaAccept";
 import {
   isImageFile,
+  isVideoFile,
   uploadCommentImage,
   uploadCommentVideo,
 } from "@/services/mediaService";
@@ -85,13 +88,13 @@ export default function PostDetailPage() {
       kind: "file",
       file,
       previewUrl: URL.createObjectURL(file),
-      mediaType: file.type === "image/gif" ? "gif" : "image",
+      mediaType: resolveImageContentType(file) === "image/gif" ? "gif" : "image",
     });
   }
 
   function handleVideoPick(file: File | undefined) {
     if (!file) return;
-    if (!file.type.startsWith("video/")) {
+    if (!isVideoFile(file)) {
       setError("Only videos are allowed");
       return;
     }
@@ -349,14 +352,14 @@ export default function PostDetailPage() {
             <input
               ref={imageInputRef}
               type="file"
-              accept="image/*"
+              accept={IMAGE_FILE_ACCEPT}
               className="hidden"
               onChange={(e) => handleImagePick(e.target.files?.[0])}
             />
             <input
               ref={videoInputRef}
               type="file"
-              accept="video/*"
+              accept={VIDEO_FILE_ACCEPT}
               className="hidden"
               onChange={(e) => handleVideoPick(e.target.files?.[0])}
             />

@@ -25,7 +25,7 @@ import {
   dmRoomId,
   mapFirestoreError,
   normalizeCategoryName,
-  resolveMediaType,
+  normalizeMediaTypeForFirestore,
   resolveRole,
   topicRoomId,
 } from "@/lib/utils";
@@ -214,7 +214,7 @@ export async function sendChatMessage(
   const t = text.trim();
   const imageUrl = options?.imageUrl?.trim() || null;
   const resolvedMediaType = imageUrl
-    ? resolveMediaType(options?.mediaType, imageUrl) || "image"
+    ? normalizeMediaTypeForFirestore(options?.mediaType, imageUrl) || "image"
     : null;
 
   if (!t && !imageUrl) throw new Error("Message cannot be empty");

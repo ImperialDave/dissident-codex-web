@@ -23,6 +23,7 @@ import {
   toggleSavePost,
 } from "@/services/postService";
 import { mapFirestoreError } from "@/lib/utils";
+import { IMAGE_FILE_ACCEPT } from "@/lib/mediaAccept";
 import { uploadImage } from "@/services/mediaService";
 import { updateProfile } from "@/services/userService";
 import { ModerationMenu } from "@/components/ModerationMenu";
@@ -221,11 +222,11 @@ export default function ProfilePage() {
       <div className="codex-settings-section grid gap-4 sm:grid-cols-2">
         <label className="text-sm">
           Avatar
-          <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleAvatar(e.target.files[0])} className="mt-1 block w-full text-xs" />
+          <input type="file" accept={IMAGE_FILE_ACCEPT} onChange={(e) => e.target.files?.[0] && handleAvatar(e.target.files[0])} className="mt-1 block w-full text-xs" />
         </label>
         <label className="text-sm">
           Banner
-          <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleBanner(e.target.files[0])} className="mt-1 block w-full text-xs" />
+          <input type="file" accept={IMAGE_FILE_ACCEPT} onChange={(e) => e.target.files?.[0] && handleBanner(e.target.files[0])} className="mt-1 block w-full text-xs" />
         </label>
       </div>
 

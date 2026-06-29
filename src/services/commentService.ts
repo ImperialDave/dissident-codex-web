@@ -14,7 +14,12 @@ import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_COMMENT } from "@/lib/constants";
 import { canModerate, type Comment } from "@/models";
 import { fetchFirestoreRole, fetchUser } from "./authService";
-import { mapFirestoreError, resolveRole, stripUndefinedFields } from "@/lib/utils";
+import {
+  mapFirestoreError,
+  normalizeMediaTypeForFirestore,
+  resolveRole,
+  stripUndefinedFields,
+} from "@/lib/utils";
 
 export async function getComments(postId: string): Promise<Comment[]> {
   const snap = await getDocs(
@@ -68,7 +73,12 @@ export async function addComment(
     createdAt: Timestamp.now(),
     ...(options?.parentCommentId ? { parentCommentId: options.parentCommentId } : {}),
     ...(options?.replyToAuthorName ? { replyToAuthorName: options.replyToAuthorName } : {}),
-    ...(options?.imageUrl ? { imageUrl: options.imageUrl, mediaType: options.mediaType || "image" } : {}),
+    ...(options?.imageUrl
+      ? {
+          imageUrl: options.imageUrl,
+          mediaType: normalizeMediaTypeForFirestore(options.mediaType, options.imageUrl) || "image",
+        }
+      : {}),
   };
   try {
     await setDoc(ref, stripUndefinedFields(comment as unknown as Record<string, unknown>));

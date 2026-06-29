@@ -219,6 +219,19 @@ export function resolveMediaType(
   return containsGifUrl(url) ? "gif" : "image";
 }
 
+/** Firestore rules only accept lowercase image | gif | video (posts: image | gif). */
+export function normalizeMediaTypeForFirestore(
+  mediaType?: string | null,
+  url?: string | null
+): "image" | "gif" | "video" | undefined {
+  const resolved = resolveMediaType(mediaType, url);
+  if (!resolved) return undefined;
+  const lower = resolved.toLowerCase();
+  if (lower === "gif") return "gif";
+  if (lower === "video") return "video";
+  return "image";
+}
+
 export function chatMessageType(
   mediaType?: string | null,
   imageUrl?: string | null

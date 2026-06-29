@@ -10,7 +10,8 @@ import { uploadImage } from "@/services/mediaService";
 import { createPost } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
 import { canPost } from "@/models";
-import { resolveRole, safeLocalStorage } from "@/lib/utils";
+import { IMAGE_FILE_ACCEPT } from "@/lib/mediaAccept";
+import { normalizeMediaTypeForFirestore, resolveRole, safeLocalStorage } from "@/lib/utils";
 
 type Draft = {
   title: string;
@@ -108,7 +109,11 @@ export default function CreatePostPage() {
       let mediaType = remoteMediaType;
       if (imageFile) {
         imageUrl = await uploadImage(imageFile, "post_images");
-        mediaType = imageFile.type === "image/gif" ? "gif" : "image";
+        mediaType =
+          normalizeMediaTypeForFirestore(
+            imageFile.type === "image/gif" ? "gif" : "image",
+            imageUrl
+          ) ?? "image";
       }
 
       const post = await createPost(title, body, trimmedCategory, imageUrl, mediaType);
@@ -166,7 +171,7 @@ export default function CreatePostPage() {
             rows={8}
             maxLength={MAX_BODY}
             className="codex-input w-full rounded-none border-x-0 border-t-0 px-0 py-3 text-lg"
-            required
+            required={!imageFile && !remoteImageUrl}
           />
           <p className="mt-1 text-right text-xs text-slate-500">
             {body.length}/{MAX_BODY}
@@ -214,7 +219,7 @@ export default function CreatePostPage() {
               Upload image
               <input
                 type="file"
-                accept="image/*"
+                accept={IMAGE_FILE_ACCEPT}
                 className="hidden"
                 onChange={(e) => handleImagePick(e.target.files?.[0] || null)}
               />

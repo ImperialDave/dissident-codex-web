@@ -19,7 +19,7 @@ import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_BODY, MAX_TITLE } from "@/lib/constants";
 import {
   mapFirestoreError,
-  resolveMediaType,
+  normalizeMediaTypeForFirestore,
   resolveRole,
   stripUndefinedFields,
   truncateAuthorName,
@@ -91,7 +91,8 @@ export async function createPost(
   const t = title.trim();
   const b = body.trim();
   const cat = category.trim();
-  if (!t || !b) throw new Error("Title and body are required");
+  const hasImage = Boolean(imageUrl?.trim());
+  if (!t || (!b && !hasImage)) throw new Error("Title and body or image are required");
   if (t.length > MAX_TITLE) throw new Error(`Title too long (max ${MAX_TITLE})`);
   if (b.length > MAX_BODY) throw new Error(`Body too long (max ${MAX_BODY})`);
   if (!cat) throw new Error("Category is required");
@@ -101,7 +102,7 @@ export async function createPost(
   const postRef = doc(collection(db, COLLECTIONS.POSTS));
   const now = Timestamp.now();
   const authorRole = await fetchFirestoreRole(fbUser.uid);
-  const resolvedMediaType = resolveMediaType(mediaType, imageUrl);
+  const resolvedMediaType = normalizeMediaTypeForFirestore(mediaType, imageUrl);
   const authorName = truncateAuthorName(
     user.displayName || fbUser.email?.split("@")[0] || "User"
   );

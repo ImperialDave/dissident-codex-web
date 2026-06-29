@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Orbitron } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
@@ -12,6 +12,12 @@ const orbitron = Orbitron({
 export const metadata: Metadata = {
   title: "Codex — Coding Discussion Forum",
   description: "Discuss code, chat, play chess, and build community on Codex.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Phone } from "lucide-react";
+import { ExternalLink, Phone } from "lucide-react";
+import { isInAppBrowser } from "@/lib/detectInAppBrowser";
 import { BottomNav } from "@/components/navigation/BottomNav";
 import { RightRail } from "@/components/navigation/RightRail";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
@@ -16,6 +17,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const incomingSession = useIncomingCallStore((s) => s.session);
   const expandIncomingCall = useIncomingCallStore((s) => s.expand);
   const [unread, setUnread] = useState(0);
+  const [inAppBrowser, setInAppBrowser] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -31,6 +33,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
+
+  useEffect(() => {
+    setInAppBrowser(isInAppBrowser(navigator.userAgent));
+  }, []);
 
   if (loading) {
     return (
@@ -48,6 +54,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="codex-center-pane">
         <main className="codex-main-column pb-16 xl:pb-0">
+          {inAppBrowser && (
+            <div className="flex items-start gap-2 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-200">
+              <ExternalLink className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>
+                For photos and uploads on iPhone, open Codex in Safari — tap the menu (⋯) and choose
+                &ldquo;Open in Browser&rdquo;.
+              </p>
+            </div>
+          )}
           {incomingSession && (
             <button
               type="button"
