@@ -15,22 +15,23 @@ export function sortChatRooms(rooms: ChatRoom[], favoriteIds: Set<string>): Chat
   });
 }
 
+/** Inbox buckets: DMs, invite-only groups, and topic communities (public chats). */
 export function groupChatRoomsByType(rooms: ChatRoom[]): {
   dms: ChatRoom[];
   privateGroups: ChatRoom[];
-  publicGroups: ChatRoom[];
+  communities: ChatRoom[];
 } {
   const dms: ChatRoom[] = [];
   const privateGroups: ChatRoom[] = [];
-  const publicGroups: ChatRoom[] = [];
+  const communities: ChatRoom[] = [];
 
   for (const room of rooms) {
     if (room.type === CHAT_TYPE_DM) dms.push(room);
     else if (room.type === CHAT_TYPE_GROUP) privateGroups.push(room);
-    else if (room.type === CHAT_TYPE_TOPIC) publicGroups.push(room);
+    else if (room.type === CHAT_TYPE_TOPIC) communities.push(room);
   }
 
-  return { dms, privateGroups, publicGroups };
+  return { dms, privateGroups, communities };
 }
 
 export function isDmRoom(room: ChatRoom): boolean {

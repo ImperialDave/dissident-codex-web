@@ -4,15 +4,16 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { MessageCircle, Search, Star, UserPlus } from "lucide-react";
+import { CommunityStripCard } from "@/components/CommunityStripCard";
 import { PostCard } from "@/components/PostCard";
 import { Input } from "@/components/ui/Input";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useDmDisplayNames } from "@/hooks/useDmDisplayNames";
 import { chatRoomDisplayTitle } from "@/lib/chatDisplay";
-import { ALL_CATEGORY_LABEL, FEED_DM_STRIP_LIMIT } from "@/lib/constants";
+import { ALL_CATEGORY_LABEL, FEED_COMMUNITY_STRIP_LIMIT, FEED_DM_STRIP_LIMIT } from "@/lib/constants";
 import { partitionFeedSections } from "@/lib/feedRank";
 import { mapFirestoreError } from "@/lib/utils";
-import { getFavoriteCategories } from "@/services/categoryService";
+import { getFavoriteCategories, getRankedTopicCommunities } from "@/services/categoryService";
 import { getFollowingIds } from "@/services/followService";
 import { getRecentDmRooms } from "@/services/chatService";
 import {
@@ -22,7 +23,7 @@ import {
   toggleSavePost,
 } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
-import type { ChatRoom, FavoriteCategory, Post } from "@/models";
+import type { ChatRoom, FavoriteCategory, LeaderboardEntry, Post } from "@/models";
 import clsx from "clsx";
 
 function matchesSearch(post: Post, query: string): boolean {
@@ -43,6 +44,7 @@ export default function FeedPage() {
   const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [followingCount, setFollowingCount] = useState(0);
   const [dmRooms, setDmRooms] = useState<ChatRoom[]>([]);
+  const [communities, setCommunities] = useState<LeaderboardEntry[]>([]);
   const dmDisplayNames = useDmDisplayNames(dmRooms, user?.uid);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
@@ -59,15 +61,19 @@ export default function FeedPage() {
     setLoading(true);
     setError("");
     try {
-      const [data, favorites, dms, followingIds] = await Promise.all([
+      const [data, favorites, dms, followingIds, rankedCommunities] = await Promise.all([
         getPosts(category === ALL_CATEGORY_LABEL ? null : category, 50, {
           includeHidden: modView,
         }),
         getFavoriteCategories(),
         showPriority ? getRecentDmRooms(FEED_DM_STRIP_LIMIT) : Promise.resolve([]),
         showPriority ? getFollowingIds() : Promise.resolve(new Set<string>()),
+        showPriority
+          ? getRankedTopicCommunities(FEED_COMMUNITY_STRIP_LIMIT, "balanced")
+          : Promise.resolve([]),
       ]);
       setDmRooms(dms);
+      setCommunities(rankedCommunities);
       setFavoriteCategories(favorites);
       setFollowingCount(followingIds.size);
 
@@ -90,6 +96,7 @@ export default function FeedPage() {
       setFavoritePosts([]);
       setAllPosts([]);
       setDmRooms([]);
+      setCommunities([]);
       const message = err instanceof Error ? err.message : "Failed to load feed";
       setError(mapFirestoreError(message));
     } finally {
@@ -240,14 +247,30 @@ export default function FeedPage() {
         </div>
       )}
 
+      {showPriority && communities.length > 0 && (
+        <div className="border-b border-[var(--color-border)] px-4 py-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-sm font-medium">Active communities</p>
+            <Link href="/chats" className="text-xs text-[var(--color-accent)] hover:underline">
+              See all
+            </Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {communities.map((entry) => (
+              <CommunityStripCard key={entry.roomId} entry={entry} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {showPriority && dmRooms.length > 0 && (
         <Link
-          href="/chats"
+          href="/chats?tab=inbox"
           className="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-3 transition hover:bg-white/5"
         >
           <MessageCircle className="h-5 w-5 text-[var(--color-accent)]" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">Messages</p>
+            <p className="text-sm font-medium">Inbox</p>
             <p className="truncate text-xs codex-text-muted">
               {dmRooms
                 .slice(0, 3)

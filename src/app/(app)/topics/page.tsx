@@ -3,18 +3,21 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { CommunityRoomRow } from "@/components/CommunityRoomRow";
 import { FavoriteStar } from "@/components/FavoriteStar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Input } from "@/components/ui/Input";
-import { MAX_FAVORITE_CATEGORIES } from "@/lib/constants";
+import { MAX_FAVORITE_CATEGORIES, TOPICS_TRENDING_LIMIT } from "@/lib/constants";
 import { mapFirestoreError, normalizeCategoryName } from "@/lib/utils";
 import {
   ensureTopicChatRoom,
   getCreateCategoryNames,
   getFavoriteCategories,
+  getRankedTopicCommunities,
   searchTopics,
   toggleFavoriteCategory,
 } from "@/services/categoryService";
+import type { LeaderboardEntry } from "@/models";
 
 export default function TopicsPage() {
   const router = useRouter();
@@ -26,6 +29,11 @@ export default function TopicsPage() {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [favoriteNames, setFavoriteNames] = useState<Set<string>>(new Set());
   const [togglingFavorite, setTogglingFavorite] = useState<string | null>(null);
+  const [trending, setTrending] = useState<LeaderboardEntry[]>([]);
+
+  useEffect(() => {
+    getRankedTopicCommunities(TOPICS_TRENDING_LIMIT, "chat").then(setTrending).catch(() => setTrending([]));
+  }, []);
 
   useEffect(() => {
     Promise.all([getCreateCategoryNames(), getFavoriteCategories()])
@@ -102,6 +110,22 @@ export default function TopicsPage() {
       {error && (
         <div className="border-b border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {error}
+        </div>
+      )}
+
+      {trending.length > 0 && (
+        <div className="border-b border-[var(--color-border)]">
+          <div className="flex items-center justify-between px-4 py-2">
+            <p className="text-xs font-semibold uppercase tracking-wide codex-text-muted">
+              Trending communities
+            </p>
+            <Link href="/chats" className="text-xs text-[var(--color-accent)] hover:underline">
+              See all
+            </Link>
+          </div>
+          {trending.map((entry) => (
+            <CommunityRoomRow key={entry.roomId} entry={entry} />
+          ))}
         </div>
       )}
 

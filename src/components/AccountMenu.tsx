@@ -60,7 +60,7 @@ export function AccountMenu({ variant = "compact", className }: AccountMenuProps
     ) : (
       <>
         <DropdownItem icon={MessageCircle} onClick={() => navigate("/chats")}>
-          Messages
+          Communities
         </DropdownItem>
         <DropdownItem icon={User} onClick={() => navigate("/profile")}>
           Profile

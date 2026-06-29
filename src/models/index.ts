@@ -233,6 +233,8 @@ export interface LeaderboardEntry {
   score: number;
   lastMessageAt?: Timestamp | null;
   lastMessagePreview?: string;
+  activeVoiceSessionId?: string | null;
+  locked?: boolean;
   isTopic: boolean;
 }
 

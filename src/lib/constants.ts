@@ -18,6 +18,10 @@ export const MAX_FOLLOWING = 200;
 export const FEED_FOLLOWING_POSTS_LIMIT = 30;
 export const SEARCH_POPULAR_TOPICS_LIMIT = 20;
 export const SEARCH_POPULAR_CHATS_LIMIT = 20;
+export const FEED_COMMUNITY_STRIP_LIMIT = 8;
+export const COMMUNITIES_BROWSE_LIMIT = 30;
+export const TOPICS_TRENDING_LIMIT = 6;
+export const RIGHT_RAIL_COMMUNITIES_LIMIT = 5;
 
 export const COLLECTIONS = {
   USERS: "users",

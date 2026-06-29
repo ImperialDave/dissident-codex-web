@@ -34,6 +34,8 @@ import { normalizeCategoryName, resolveRole } from "@/lib/utils";
 import { getChatRoomsForInbox, getOrCreateTopicRoom } from "./chatService";
 import type { ChatRoom } from "@/models";
 
+export type TopicCommunityRankMode = "balanced" | "chat" | "posts";
+
 export async function getCategories(): Promise<PostCategory[]> {
   const snap = await getDocs(collection(getFirebaseDb(), COLLECTIONS.CATEGORIES));
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<PostCategory, "id">) }));
@@ -343,44 +345,60 @@ async function buildTopicLeaderboardEntries(): Promise<Omit<LeaderboardEntry, "r
         score: messageCount * 2 + postCount,
         lastMessageAt: room.lastMessageAt,
         lastMessagePreview: room.lastMessagePreview || undefined,
+        activeVoiceSessionId: room.activeVoiceSessionId ?? null,
+        locked: room.locked,
         isTopic: true,
       };
     });
 }
 
+function compareTopicCommunities(
+  a: Omit<LeaderboardEntry, "rank">,
+  b: Omit<LeaderboardEntry, "rank">,
+  mode: TopicCommunityRankMode
+): number {
+  if (mode === "posts") {
+    if (b.postCount !== a.postCount) return b.postCount - a.postCount;
+    if (b.messageCount !== a.messageCount) return b.messageCount - a.messageCount;
+    return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
+  }
+  if (mode === "chat") {
+    if (b.messageCount !== a.messageCount) return b.messageCount - a.messageCount;
+    if ((b.lastMessageAt?.seconds ?? 0) !== (a.lastMessageAt?.seconds ?? 0)) {
+      return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
+    }
+    return b.postCount - a.postCount;
+  }
+  if (b.score !== a.score) return b.score - a.score;
+  return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
+}
+
+export async function getRankedTopicCommunities(
+  limit = 20,
+  mode: TopicCommunityRankMode = "balanced"
+): Promise<LeaderboardEntry[]> {
+  const topicEntries = await buildTopicLeaderboardEntries();
+  return sortLeaderboardEntries(topicEntries, limit, (a, b) =>
+    compareTopicCommunities(a, b, mode)
+  );
+}
+
 /** Matches Android: topic rooms + user's DMs, scored by chat activity. */
 export async function getLeaderboardData(limit = 20): Promise<LeaderboardData> {
-  const topicEntries = await buildTopicLeaderboardEntries();
-  const topTopics = sortLeaderboardEntries(topicEntries, limit, (a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
-  });
-
+  const topTopics = await getRankedTopicCommunities(limit, "balanced");
   return { topTopics };
 }
 
 export async function getPopularTopicsForSearch(
   limit = SEARCH_POPULAR_TOPICS_LIMIT
 ): Promise<LeaderboardEntry[]> {
-  const topicEntries = await buildTopicLeaderboardEntries();
-  return sortLeaderboardEntries(topicEntries, limit, (a, b) => {
-    if (b.postCount !== a.postCount) return b.postCount - a.postCount;
-    if (b.messageCount !== a.messageCount) return b.messageCount - a.messageCount;
-    return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
-  });
+  return getRankedTopicCommunities(limit, "posts");
 }
 
 export async function getPopularChatRoomsForSearch(
   limit = SEARCH_POPULAR_CHATS_LIMIT
 ): Promise<LeaderboardEntry[]> {
-  const topicEntries = await buildTopicLeaderboardEntries();
-  return sortLeaderboardEntries(topicEntries, limit, (a, b) => {
-    if (b.messageCount !== a.messageCount) return b.messageCount - a.messageCount;
-    if ((b.lastMessageAt?.seconds ?? 0) !== (a.lastMessageAt?.seconds ?? 0)) {
-      return (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0);
-    }
-    return b.postCount - a.postCount;
-  });
+  return getRankedTopicCommunities(limit, "chat");
 }
 
 function favoriteCategoriesRef(uid: string) {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CommunityRoomRow } from "@/components/CommunityRoomRow";
 import { PostCard } from "@/components/PostCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Input } from "@/components/ui/Input";
@@ -27,10 +28,6 @@ import type { ChatRoom, LeaderboardEntry, Post, PostCategory, User } from "@/mod
 
 function topicEntryMeta(entry: LeaderboardEntry): string {
   return `${entry.postCount} posts · ${entry.messageCount} messages`;
-}
-
-function chatEntryMeta(entry: LeaderboardEntry): string {
-  return `${entry.messageCount} messages · ${entry.postCount} posts`;
 }
 
 export default function SearchPage() {
@@ -295,10 +292,10 @@ export default function SearchPage() {
               ))
             )
           ) : discoveryLoading ? (
-            <p className="px-4 py-8 text-center codex-text-muted">Loading popular chat rooms...</p>
+            <p className="px-4 py-8 text-center codex-text-muted">Loading popular communities...</p>
           ) : popularChats.length === 0 ? (
             <p className="px-4 py-8 text-center codex-text-muted">
-              No popular chat rooms yet.{" "}
+              No popular communities yet.{" "}
               <Link href="/topics" className="text-[var(--color-accent)] hover:underline">
                 Browse topics
               </Link>
@@ -306,25 +303,10 @@ export default function SearchPage() {
           ) : (
             <div>
               <p className="border-b border-[var(--color-border)] px-4 py-2 text-xs font-semibold uppercase tracking-wide codex-text-muted">
-                Popular chat rooms
+                Popular communities
               </p>
               {popularChats.map((entry) => (
-                <Link
-                  key={entry.roomId}
-                  href={`/chat/${entry.roomId}`}
-                  className="codex-list-row block"
-                >
-                  <p className="font-medium">
-                    <span className="mr-2 text-[var(--color-accent)]">#{entry.rank}</span>
-                    {entry.title}
-                  </p>
-                  <p className="mt-0.5 text-xs codex-text-muted">{chatEntryMeta(entry)}</p>
-                  {entry.lastMessagePreview && (
-                    <p className="mt-1 truncate text-xs text-slate-400">
-                      Last: {entry.lastMessagePreview}
-                    </p>
-                  )}
-                </Link>
+                <CommunityRoomRow key={entry.roomId} entry={entry} />
               ))}
             </div>
           )}

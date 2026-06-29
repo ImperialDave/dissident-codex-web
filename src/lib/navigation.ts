@@ -32,7 +32,7 @@ export const PRIMARY_NAV: NavItem[] = [
 
 export const SECONDARY_NAV: NavItem[] = [
   { href: "/topics", label: "Topics", icon: Tags },
-  { href: "/chats", label: "Messages", icon: MessageCircle },
+  { href: "/chats", label: "Communities", icon: MessageCircle },
   { href: "/friends", label: "Friends", icon: Users },
   { href: "/chess", label: "Chess", icon: Gamepad2 },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
