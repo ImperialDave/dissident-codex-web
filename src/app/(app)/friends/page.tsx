@@ -121,6 +121,8 @@ export default function FriendsPage() {
                 showMessageButton
                 onMessage={() => messageFriend(f.uid)}
                 onChess={() => playChess(f.uid)}
+                onRelationshipChanged={load}
+                onRelationshipError={setError}
               />
             ))}
           </div>

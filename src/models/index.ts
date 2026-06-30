@@ -195,6 +195,14 @@ export interface Friend {
   since?: Timestamp | null;
 }
 
+export interface BlockedUser {
+  uid: string;
+  displayName: string;
+  blockedAt?: Timestamp | null;
+}
+
+export type BlockStatus = "none" | "you_blocked" | "they_blocked";
+
 export interface UserFollow {
   uid: string;
   displayName: string;
