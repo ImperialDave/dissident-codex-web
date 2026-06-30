@@ -1,4 +1,5 @@
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+export const MAX_IMAGE_MB = MAX_IMAGE_BYTES / (1024 * 1024);
 export const MAX_IMAGE_DIMENSION = 2048;
 export const JPEG_QUALITY = 0.85;
 
@@ -135,7 +136,7 @@ export async function prepareImageForUpload(file: File): Promise<File> {
 
   if (contentType === "image/gif") {
     if (file.size > MAX_IMAGE_BYTES) {
-      throw new Error("Image must be under 10MB");
+      throw new Error(`Image must be under ${MAX_IMAGE_MB}MB`);
     }
     return file;
   }
