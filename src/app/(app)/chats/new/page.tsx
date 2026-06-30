@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Input } from "@/components/ui/Input";
 import { getUsersForModeration } from "@/services/moderationService";
 import { mapFirestoreError } from "@/lib/utils";
+import { getBlockedUserIds } from "@/services/blockService";
 import { getOrCreateDmRoom } from "@/services/chatService";
 import { useAuthStore } from "@/stores/authStore";
 import type { User } from "@/models";
@@ -20,8 +21,8 @@ export default function NewMessagePage() {
   const [busyUid, setBusyUid] = useState<string | null>(null);
 
   useEffect(() => {
-    getUsersForModeration(150).then((list) =>
-      setUsers(list.filter((u) => u.uid !== user?.uid))
+    Promise.all([getUsersForModeration(150), getBlockedUserIds()]).then(([list, blockedIds]) =>
+      setUsers(list.filter((u) => u.uid !== user?.uid && !blockedIds.has(u.uid)))
     );
   }, [user?.uid]);
 
