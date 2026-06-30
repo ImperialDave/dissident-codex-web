@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/Button";
+import { UserRelationshipMenu } from "@/components/UserRelationshipMenu";
 import type { ChessGame, Friend } from "@/models";
 
 interface FriendListRowProps {
@@ -12,6 +13,8 @@ interface FriendListRowProps {
   showMessageButton?: boolean;
   onMessage?: () => void;
   onChess: () => void;
+  onRelationshipChanged?: () => void | Promise<void>;
+  onRelationshipError?: (message: string) => void;
 }
 
 export function FriendListRow({
@@ -21,6 +24,8 @@ export function FriendListRow({
   showMessageButton = false,
   onMessage,
   onChess,
+  onRelationshipChanged,
+  onRelationshipError,
 }: FriendListRowProps) {
   const chessLabel = busy
     ? showMessageButton
@@ -38,7 +43,7 @@ export function FriendListRow({
         <UserAvatar name={friend.displayName} photoUrl={friend.photoUrl} size="sm" />
         <span className="font-medium">{friend.displayName}</span>
       </Link>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         {showMessageButton && onMessage && (
           <Button variant="secondary" size="sm" onClick={onMessage} disabled={busy}>
             Message
@@ -52,6 +57,16 @@ export function FriendListRow({
         >
           {chessLabel}
         </Button>
+        {onRelationshipChanged && (
+          <UserRelationshipMenu
+            otherUid={friend.uid}
+            displayName={friend.displayName}
+            friendStatus="friends"
+            blockStatus="none"
+            onChanged={onRelationshipChanged}
+            onError={onRelationshipError}
+          />
+        )}
       </div>
     </div>
   );
