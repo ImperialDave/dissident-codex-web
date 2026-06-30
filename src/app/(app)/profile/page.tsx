@@ -8,6 +8,7 @@ import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AppearancePicker } from "@/components/AppearancePicker";
+import { BlockedUsersSection } from "@/components/BlockedUsersSection";
 import { MAX_FAVORITE_CATEGORIES } from "@/lib/constants";
 import { normalizeCategoryName } from "@/lib/utils";
 import {
@@ -296,6 +297,8 @@ export default function ProfilePage() {
           })}
         </div>
       </div>
+
+      <BlockedUsersSection />
 
       <div className="codex-settings-section">
         <h2 className="mb-1 font-semibold">Appearance</h2>
