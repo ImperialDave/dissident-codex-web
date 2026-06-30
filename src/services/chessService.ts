@@ -20,6 +20,7 @@ import { COLLECTIONS } from "@/lib/constants";
 import { chessGameId, mapFirestoreError } from "@/lib/utils";
 import type { ChessGame, ChessLeaderboardEntry, User } from "@/models";
 import { fetchUser } from "./authService";
+import { isBlockedEitherWay } from "./blockService";
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -171,6 +172,9 @@ async function startChessGameClient(opponentUid: string): Promise<ChessGame> {
 }
 
 export async function startChessGame(opponentUid: string): Promise<ChessGame> {
+  if (await isBlockedEitherWay(opponentUid)) {
+    throw new Error("You cannot play chess with this user");
+  }
   try {
     const fn = httpsCallable(getFirebaseFunctions(), "startChessGame");
     const result = await fn({ opponentUid });
