@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FollowButton } from "@/components/FollowButton";
+import { UserRelationshipMenu } from "@/components/UserRelationshipMenu";
 import { ProfilePostsList } from "@/components/ProfilePostsList";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -20,14 +21,16 @@ import {
   getIncomingRequestFrom,
   respondToFriendRequest,
   sendFriendRequest,
+  type FriendshipStatus,
 } from "@/services/friendService";
+import { getBlockStatus } from "@/services/blockService";
 import { isFollowing, toggleFollow } from "@/services/followService";
 import { startChessGame } from "@/services/chessService";
 import { ensureMicrophoneForVoice } from "@/lib/microphonePermission";
 import { mapFirestoreError } from "@/lib/utils";
 import { startDmVoiceCall } from "@/services/voiceService";
 import { useAuthStore } from "@/stores/authStore";
-import type { Post, User } from "@/models";
+import type { BlockStatus, Post, User } from "@/models";
 
 export default function UserProfilePage() {
   const { uid } = useParams<{ uid: string }>();
@@ -36,7 +39,8 @@ export default function UserProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
-  const [friendStatus, setFriendStatus] = useState<string>("none");
+  const [friendStatus, setFriendStatus] = useState<FriendshipStatus>("none");
+  const [blockStatus, setBlockStatus] = useState<BlockStatus>("none");
   const [following, setFollowing] = useState(false);
   const [busy, setBusy] = useState<"message" | "chess" | "friend" | "call" | "follow" | null>(null);
   const [error, setError] = useState("");
@@ -53,17 +57,34 @@ export default function UserProfilePage() {
     }
   }, [me?.uid, uid, router]);
 
+  const refreshRelationship = useCallback(async () => {
+    if (isSelf) return;
+    const [status, blocked, postsList] = await Promise.all([
+      getFriendshipStatus(uid),
+      getBlockStatus(uid),
+      getPostsByUser(uid),
+    ]);
+    setFriendStatus(status);
+    setBlockStatus(blocked);
+    setPosts(postsList);
+    if (blocked === "none") {
+      setFollowing(await isFollowing(uid));
+    } else {
+      setFollowing(false);
+    }
+  }, [uid, isSelf]);
+
   useEffect(() => {
     setPostsLoading(true);
     fetchUser(uid).then(setUser);
-    getPostsByUser(uid)
-      .then(setPosts)
-      .finally(() => setPostsLoading(false));
     if (!isSelf) {
-      getFriendshipStatus(uid).then(setFriendStatus);
-      isFollowing(uid).then(setFollowing);
+      refreshRelationship().finally(() => setPostsLoading(false));
+    } else {
+      getPostsByUser(uid)
+        .then(setPosts)
+        .finally(() => setPostsLoading(false));
     }
-  }, [uid, isSelf]);
+  }, [uid, isSelf, refreshRelationship]);
 
   useEffect(() => {
     if (!me) return;
@@ -199,9 +220,26 @@ export default function UserProfilePage() {
     }
   }
 
+  const interactionsBlocked = blockStatus !== "none";
+
   return (
     <div>
-      <PageHeader title={user.displayName} backHref="/feed" />
+      <PageHeader
+        title={user.displayName}
+        backHref="/feed"
+        actions={
+          !isSelf ? (
+            <UserRelationshipMenu
+              otherUid={uid}
+              displayName={user.displayName}
+              friendStatus={friendStatus}
+              blockStatus={blockStatus}
+              onChanged={refreshRelationship}
+              onError={setError}
+            />
+          ) : undefined
+        }
+      />
 
       <div
         className="relative h-32 overflow-hidden border-b border-[var(--color-border)]"
@@ -237,6 +275,25 @@ export default function UserProfilePage() {
         </p>
       )}
 
+      {blockStatus === "they_blocked" && (
+        <div className="border-b border-[var(--color-border)] px-4 py-8 text-center">
+          <p className="text-lg font-semibold">Profile unavailable</p>
+          <p className="mt-2 text-sm codex-text-muted">
+            You cannot view this user&apos;s profile or interact with them.
+          </p>
+        </div>
+      )}
+
+      {blockStatus === "you_blocked" && (
+        <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4">
+          <p className="text-sm codex-text-muted">
+            You blocked {user.displayName}. Unblock them from the menu above to see their posts and
+            message them again.
+          </p>
+        </div>
+      )}
+
+      {!interactionsBlocked && (
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] px-4 py-3">
         <FollowButton
           isFollowing={following}
@@ -293,12 +350,16 @@ export default function UserProfilePage() {
           {busy === "chess" ? "Starting..." : "Play chess"}
         </button>
       </div>
+      )}
 
+      {blockStatus !== "they_blocked" && (
       <div className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
         Chess ELO: {user.chessElo ?? 1200} · Games: {user.chessGamesPlayed ?? 0} · W/L/D:{" "}
         {user.chessWins ?? 0}/{user.chessLosses ?? 0}/{user.chessDraws ?? 0}
       </div>
+      )}
 
+      {blockStatus !== "they_blocked" && (
       <ProfilePostsList
         posts={posts}
         loading={postsLoading}
@@ -311,6 +372,7 @@ export default function UserProfilePage() {
         togglingVisibilityPostId={togglingVisibilityPostId}
         onToggleFeedVisibility={modView ? handleToggleFeedVisibility : undefined}
       />
+      )}
     </div>
   );
 }
