@@ -14,6 +14,7 @@ import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS, MAX_COMMENT } from "@/lib/constants";
 import { canModerate, type Comment } from "@/models";
 import { fetchFirestoreRole, fetchUser } from "./authService";
+import { excludeBlockedAuthors, getBlockedUserIds } from "./blockService";
 import {
   mapFirestoreError,
   normalizeMediaTypeForFirestore,
@@ -22,12 +23,14 @@ import {
 } from "@/lib/utils";
 
 export async function getComments(postId: string): Promise<Comment[]> {
-  const snap = await getDocs(
-    query(collection(getFirebaseDb(), COLLECTIONS.COMMENTS), where("postId", "==", postId))
+  const [snap, blockedIds] = await Promise.all([
+    getDocs(query(collection(getFirebaseDb(), COLLECTIONS.COMMENTS), where("postId", "==", postId))),
+    getBlockedUserIds(),
+  ]);
+  const comments = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Comment, "id">) }));
+  return excludeBlockedAuthors(comments, blockedIds).sort(
+    (a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0)
   );
-  return snap.docs
-    .map((d) => ({ id: d.id, ...(d.data() as Omit<Comment, "id">) }))
-    .sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
 }
 
 export async function addComment(

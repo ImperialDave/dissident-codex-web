@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { COLLECTIONS } from "@/lib/constants";
+import type { BlockStatus, BlockedUser } from "@/models";
 import { fetchUser } from "./authService";
 import { clearFollowingCache } from "./followService";
 
@@ -49,6 +50,36 @@ export async function isBlocked(otherUid: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export async function getBlockStatus(otherUid: string): Promise<BlockStatus> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid || uid === otherUid) return "none";
+
+  const db = getFirebaseDb();
+  try {
+    const [mine, theirs] = await Promise.all([
+      getDoc(doc(db, COLLECTIONS.USERS, uid, "blockedUsers", otherUid)),
+      getDoc(doc(db, COLLECTIONS.USERS, otherUid, "blockedUsers", uid)),
+    ]);
+    if (mine.exists()) return "you_blocked";
+    if (theirs.exists()) return "they_blocked";
+    return "none";
+  } catch {
+    return "none";
+  }
+}
+
+export async function getBlockedUsers(): Promise<BlockedUser[]> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) return [];
+
+  const snap = await getDocs(
+    collection(getFirebaseDb(), COLLECTIONS.USERS, uid, "blockedUsers")
+  );
+  return snap.docs
+    .map((d) => ({ uid: d.id, ...(d.data() as Omit<BlockedUser, "uid">) }))
+    .sort((a, b) => (b.blockedAt?.seconds ?? 0) - (a.blockedAt?.seconds ?? 0));
 }
 
 export async function isBlockedEitherWay(otherUid: string): Promise<boolean> {
@@ -125,6 +156,14 @@ export function excludeBlockedAuthors<T extends { authorId: string }>(
   items: T[],
   blockedIds: Set<string>
 ): T[] {
+  return excludeBlockedUserIds(items, blockedIds, (item) => item.authorId);
+}
+
+export function excludeBlockedUserIds<T>(
+  items: T[],
+  blockedIds: Set<string>,
+  getUserId: (item: T) => string
+): T[] {
   if (blockedIds.size === 0) return items;
-  return items.filter((item) => !blockedIds.has(item.authorId));
+  return items.filter((item) => !blockedIds.has(getUserId(item)));
 }

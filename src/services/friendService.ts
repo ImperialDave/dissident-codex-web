@@ -15,7 +15,7 @@ import { COLLECTIONS } from "@/lib/constants";
 import { mapFirestoreError, stripUndefinedFields } from "@/lib/utils";
 import type { Friend, FriendRequest } from "@/models";
 import { fetchUser } from "./authService";
-import { isBlockedEitherWay } from "./blockService";
+import { excludeBlockedUserIds, getBlockedUserIds, isBlockedEitherWay } from "./blockService";
 
 export type FriendshipStatus = "none" | "friends" | "pending_out" | "pending_in";
 
@@ -154,12 +154,60 @@ export async function getIncomingFriendRequests(): Promise<FriendRequest[]> {
       where("status", "==", "pending")
     )
   );
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FriendRequest, "id">) }));
+  const requests = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FriendRequest, "id">) }));
+  const blockedIds = await getBlockedUserIds();
+  return excludeBlockedUserIds(requests, blockedIds, (request) => request.fromUid);
 }
 
 export async function getFriends(targetUid?: string): Promise<Friend[]> {
   const uid = targetUid || getFirebaseAuth().currentUser?.uid;
   if (!uid) return [];
   const snap = await getDocs(collection(getFirebaseDb(), COLLECTIONS.USERS, uid, "friends"));
-  return snap.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<Friend, "uid">) }));
+  const friends = snap.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<Friend, "uid">) }));
+  if (!targetUid) {
+    const blockedIds = await getBlockedUserIds();
+    return excludeBlockedUserIds(friends, blockedIds, (friend) => friend.uid);
+  }
+  return friends;
+}
+
+export async function removeFriend(otherUid: string): Promise<void> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) throw new Error("Not logged in");
+  if (uid === otherUid) throw new Error("Invalid user");
+
+  const status = await getFriendshipStatus(otherUid);
+  if (status !== "friends") throw new Error("Not friends with this user");
+
+  const batch = writeBatch(getFirebaseDb());
+  batch.delete(doc(getFirebaseDb(), COLLECTIONS.USERS, uid, "friends", otherUid));
+  batch.delete(doc(getFirebaseDb(), COLLECTIONS.USERS, otherUid, "friends", uid));
+  try {
+    await batch.commit();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to remove friend";
+    throw new Error(mapFirestoreError(message));
+  }
+}
+
+export async function cancelOutgoingFriendRequest(otherUid: string): Promise<void> {
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) throw new Error("Not logged in");
+
+  const snap = await getDocs(
+    query(
+      collection(getFirebaseDb(), COLLECTIONS.FRIEND_REQUESTS),
+      where("fromUid", "==", uid),
+      where("toUid", "==", otherUid),
+      where("status", "==", "pending")
+    )
+  );
+  if (snap.empty) throw new Error("No pending request found");
+
+  try {
+    await Promise.all(snap.docs.map((d) => updateDoc(d.ref, { status: "declined" })));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to cancel request";
+    throw new Error(mapFirestoreError(message));
+  }
 }
