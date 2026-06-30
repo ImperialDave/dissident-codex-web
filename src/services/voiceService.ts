@@ -15,6 +15,7 @@ import {
 import { httpsCallable } from "firebase/functions";
 import { getFirebaseAuth, getFirebaseDb, getFirebaseFunctions } from "@/lib/firebase";
 import { mapCallableError } from "@/lib/utils";
+import { isBlockedEitherWay } from "./blockService";
 import { COLLECTIONS, VOICE_MAX_DM, VOICE_MAX_GROUP, VOICE_MAX_TOPIC } from "@/lib/constants";
 import {
   CHAT_TYPE_DM,
@@ -183,6 +184,9 @@ export async function startDmVoiceCall(room: ChatRoom): Promise<VoiceSession> {
 
   const calleeUid = otherDmUid(room, uid);
   if (!calleeUid) throw new Error("Could not resolve callee.");
+  if (await isBlockedEitherWay(calleeUid)) {
+    throw new Error("You cannot call this user");
+  }
 
   const now = Timestamp.now();
   const sessionRef = doc(collection(getFirebaseDb(), COLLECTIONS.VOICE_SESSIONS));

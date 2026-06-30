@@ -26,7 +26,7 @@ import {
 } from "@/lib/utils";
 import { canModerate, canPost, type Post } from "@/models";
 import { fetchFirestoreRole, fetchUser } from "./authService";
-import { excludeBlockedAuthors, getBlockedUserIds } from "./blockService";
+import { excludeBlockedAuthors, getBlockedUserIds, isBlockedEitherWay } from "./blockService";
 
 function toPost(id: string, data: DocumentData): Post {
   const imageUrl =
@@ -179,10 +179,7 @@ export async function deletePost(postId: string): Promise<void> {
 
 export async function getPostsByUser(uid: string): Promise<Post[]> {
   const me = getFirebaseAuth().currentUser?.uid;
-  if (me) {
-    const blocked = await getBlockedUserIds();
-    if (blocked.has(uid)) return [];
-  }
+  if (me && me !== uid && (await isBlockedEitherWay(uid))) return [];
   const snap = await getDocs(
     query(collection(getFirebaseDb(), COLLECTIONS.POSTS), where("authorId", "==", uid))
   );
