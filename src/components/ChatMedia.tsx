@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { containsGifUrl } from "@/lib/utils";
+import { isGifMedia } from "@/lib/gifMedia";
 import { MediaLightbox } from "@/components/MediaLightbox";
+import { PausableGif } from "@/components/PausableGif";
 
 interface ChatMediaProps {
   url?: string | null;
@@ -24,8 +25,7 @@ export function ChatMedia({
   if (!url?.trim()) return null;
 
   const isVideo = mediaType?.toLowerCase() === "video";
-  const isGif =
-    mediaType?.toLowerCase() === "gif" || containsGifUrl(url);
+  const isGif = isGifMedia(mediaType, url);
 
   if (isVideo) {
     return (
@@ -43,14 +43,37 @@ export function ChatMedia({
     );
   }
 
-  const img = (
+  const imageClassName = `w-full ${
+    isGif ? "max-h-64 object-contain" : "max-h-64 object-cover"
+  } ${enlargeable ? "cursor-zoom-in" : ""}`;
+
+  const media = isGif ? (
+    <PausableGif
+      src={url}
+      alt={alt}
+      imageClassName={imageClassName}
+      onImageClick={enlargeable ? () => setLightboxOpen(true) : undefined}
+    />
+  ) : enlargeable ? (
+    <button
+      type="button"
+      onClick={() => setLightboxOpen(true)}
+      className="block w-full text-left"
+      aria-label="View full size"
+    >
+      <img
+        src={url}
+        alt={alt}
+        loading="lazy"
+        className={imageClassName}
+      />
+    </button>
+  ) : (
     <img
       src={url}
       alt={alt}
       loading="lazy"
-      className={`w-full ${
-        isGif ? "max-h-64 object-contain" : "max-h-64 object-cover"
-      } ${enlargeable ? "cursor-zoom-in" : ""}`}
+      className={imageClassName}
     />
   );
 
@@ -59,21 +82,15 @@ export function ChatMedia({
       <div
         className={`overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] ${className}`}
       >
-        {enlargeable ? (
-          <button
-            type="button"
-            onClick={() => setLightboxOpen(true)}
-            className="block w-full text-left"
-            aria-label="View full size"
-          >
-            {img}
-          </button>
-        ) : (
-          img
-        )}
+        {media}
       </div>
       {lightboxOpen && (
-        <MediaLightbox url={url} alt={alt} onClose={() => setLightboxOpen(false)} />
+        <MediaLightbox
+          url={url}
+          alt={alt}
+          mediaType={mediaType}
+          onClose={() => setLightboxOpen(false)}
+        />
       )}
     </>
   );

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { containsGifUrl, normalizeMediaUrl } from "@/lib/utils";
+import { normalizeMediaUrl } from "@/lib/utils";
+import { isGifMedia } from "@/lib/gifMedia";
 import { MediaLightbox } from "@/components/MediaLightbox";
+import { PausableGif } from "@/components/PausableGif";
 
 interface PostMediaProps {
   url?: string | null;
@@ -25,23 +27,44 @@ export function PostMedia({
   const resolvedUrl = normalizeMediaUrl(url);
   if (!resolvedUrl) return null;
 
-  const isGif =
-    mediaType?.toLowerCase() === "gif" || containsGifUrl(resolvedUrl);
+  const isGif = isGifMedia(mediaType, resolvedUrl);
+  const imageClassName = `w-full ${
+    preview
+      ? isGif
+        ? "max-h-56 object-contain"
+        : "max-h-56 object-cover"
+      : isGif
+        ? "max-h-[28rem] object-contain"
+        : "max-h-96 object-cover"
+  } ${enlargeable ? "cursor-zoom-in" : ""}`;
 
-  const img = (
+  const media = isGif ? (
+    <PausableGif
+      src={resolvedUrl}
+      alt={alt}
+      imageClassName={imageClassName}
+      onImageClick={enlargeable ? () => setLightboxOpen(true) : undefined}
+    />
+  ) : enlargeable ? (
+    <button
+      type="button"
+      onClick={() => setLightboxOpen(true)}
+      className="block w-full text-left"
+      aria-label="View full size"
+    >
+      <img
+        src={resolvedUrl}
+        alt={alt}
+        loading="lazy"
+        className={imageClassName}
+      />
+    </button>
+  ) : (
     <img
       src={resolvedUrl}
       alt={alt}
       loading="lazy"
-      className={`w-full ${
-        preview
-          ? isGif
-            ? "max-h-56 object-contain"
-            : "max-h-56 object-cover"
-          : isGif
-            ? "max-h-[28rem] object-contain"
-            : "max-h-96 object-cover"
-      } ${enlargeable ? "cursor-zoom-in" : ""}`}
+      className={imageClassName}
     />
   );
 
@@ -52,21 +75,15 @@ export function PostMedia({
           preview ? "mt-3" : "mt-4"
         } ${className}`}
       >
-        {enlargeable ? (
-          <button
-            type="button"
-            onClick={() => setLightboxOpen(true)}
-            className="block w-full text-left"
-            aria-label="View full size"
-          >
-            {img}
-          </button>
-        ) : (
-          img
-        )}
+        {media}
       </div>
       {lightboxOpen && (
-        <MediaLightbox url={resolvedUrl} alt={alt} onClose={() => setLightboxOpen(false)} />
+        <MediaLightbox
+          url={resolvedUrl}
+          alt={alt}
+          mediaType={mediaType}
+          onClose={() => setLightboxOpen(false)}
+        />
       )}
     </>
   );

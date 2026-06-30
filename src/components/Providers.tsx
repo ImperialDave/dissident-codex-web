@@ -5,6 +5,7 @@ import { GlobalVoiceController } from "@/components/GlobalVoiceController";
 import { IncomingCallOverlay } from "@/components/IncomingCallOverlay";
 import { MicrophonePermissionDialog } from "@/components/MicrophonePermissionDialog";
 import { useAuthStore } from "@/stores/authStore";
+import { useGifPlaybackStore } from "@/stores/gifPlaybackStore";
 import { useThemeStore } from "@/stores/themeStore";
 
 function GlobalVoiceLayer() {
@@ -16,11 +17,13 @@ function GlobalVoiceLayer() {
 export function Providers({ children }: { children: React.ReactNode }) {
   const initAuth = useAuthStore((s) => s.init);
   const initTheme = useThemeStore((s) => s.init);
+  const initGifPlayback = useGifPlaybackStore((s) => s.init);
 
   useEffect(() => {
     initTheme();
+    initGifPlayback();
     return initAuth();
-  }, [initAuth, initTheme]);
+  }, [initAuth, initGifPlayback, initTheme]);
 
   return (
     <>
