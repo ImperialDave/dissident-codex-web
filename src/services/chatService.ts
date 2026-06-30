@@ -39,6 +39,7 @@ import {
   type ChatRoom,
 } from "@/models";
 import { fetchFirestoreRole, fetchUser } from "./authService";
+import { excludeBlockedUserIds, getBlockedUserIds, isBlockedEitherWay } from "./blockService";
 
 function toRoom(id: string, data: Record<string, unknown>): ChatRoom {
   const rawType = typeof data.type === "string" ? data.type.toLowerCase() : "";
@@ -79,8 +80,6 @@ export async function getChatRoom(roomId: string): Promise<ChatRoom | null> {
     if (!snap.exists()) return null;
     return toRoom(snap.id, snap.data());
   } catch (err) {
-    // Missing topic rooms return permission-denied until rules allow null reads;
-    // treat as not found so create flow can proceed (matches Android).
     if (err instanceof Error && err.message.includes("permission-denied")) {
       return null;
     }
@@ -99,9 +98,14 @@ export async function getChatRoomsForInbox(): Promise<ChatRoom[]> {
     getDocs(query(collection(db, COLLECTIONS.CHAT_ROOMS), where("type", "==", CHAT_TYPE_GROUP), where("memberIds", "array-contains", uid), limit(50))),
   ]);
 
+  const blockedIds = await getBlockedUserIds();
   const rooms = [
     ...topicSnap.docs.map((d) => toRoom(d.id, d.data())),
-    ...dmSnap.docs.map((d) => toRoom(d.id, d.data())),
+    ...excludeBlockedUserIds(
+      dmSnap.docs.map((d) => toRoom(d.id, d.data())),
+      blockedIds,
+      (room) => room.memberIds.find((id) => id !== uid) || ""
+    ),
     ...groupSnap.docs.map((d) => toRoom(d.id, d.data())),
   ];
   return rooms.sort((a, b) => (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0));
@@ -118,9 +122,12 @@ export async function getRecentDmRooms(max = 12): Promise<ChatRoom[]> {
       limit(max)
     )
   );
-  return snap.docs
-    .map((d) => toRoom(d.id, d.data()))
-    .sort((a, b) => (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0));
+  const blockedIds = await getBlockedUserIds();
+  return excludeBlockedUserIds(
+    snap.docs.map((d) => toRoom(d.id, d.data())),
+    blockedIds,
+    (room) => room.memberIds.find((id) => id !== uid) || ""
+  ).sort((a, b) => (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0));
 }
 
 export function listenChatRooms(
@@ -301,6 +308,9 @@ export async function getOrCreateDmRoom(otherUserId: string): Promise<ChatRoom> 
   const me = getFirebaseAuth().currentUser?.uid;
   if (!me) throw new Error("Not logged in");
   if (me === otherUserId) throw new Error("Cannot message yourself");
+  if (await isBlockedEitherWay(otherUserId)) {
+    throw new Error("You cannot message this user");
+  }
 
   const roomId = dmRoomId(me, otherUserId);
   const existing = await getChatRoom(roomId);
