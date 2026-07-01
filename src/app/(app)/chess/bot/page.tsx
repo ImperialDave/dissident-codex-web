@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
+import { CodexChessboard } from "@/components/CodexChessboard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import {
@@ -155,7 +155,7 @@ export default function ChessBotPage() {
   }
 
   return (
-    <div>
+    <div className="codex-chess-page">
       <PageHeader title={`${humanName} vs ${BOT_NAME}`} />
       <p className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
         Practice mode · {difficultyLabel(difficulty)} bot · You are white
@@ -172,11 +172,12 @@ export default function ChessBotPage() {
       )}
 
       <div className="border-b border-[var(--color-border)]">
-        <Chessboard
+        <CodexChessboard
           position={game.fen}
           onPieceDrop={applyHumanMove}
           boardOrientation="white"
           arePiecesDraggable={isHumanTurn && !thinking}
+          playerColor="w"
         />
       </div>
 

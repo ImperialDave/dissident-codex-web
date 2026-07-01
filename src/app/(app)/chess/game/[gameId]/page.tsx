@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
+import { CodexChessboard } from "@/components/CodexChessboard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { applyMove, getGameById, listenGame, resignGame } from "@/services/chessService";
@@ -28,11 +28,17 @@ export default function ChessGamePage() {
     return null;
   }, [game, user]);
 
-  const isMyTurn = useMemo(() => {
-    if (!game || !user) return false;
-    const color = game.whiteUid === user.uid ? "w" : game.blackUid === user.uid ? "b" : null;
-    return color === game.turn;
+  const myPieceColor = useMemo(() => {
+    if (!game || !user) return null;
+    if (game.whiteUid === user.uid) return "w" as const;
+    if (game.blackUid === user.uid) return "b" as const;
+    return null;
   }, [game, user]);
+
+  const isMyTurn = useMemo(() => {
+    if (!game || !myPieceColor) return false;
+    return myPieceColor === game.turn;
+  }, [game, myPieceColor]);
 
   const onDrop = useCallback(
     (sourceSquare: string, targetSquare: string) => {
@@ -61,7 +67,7 @@ export default function ChessGamePage() {
   }
 
   return (
-    <div>
+    <div className="codex-chess-page">
       <PageHeader title={`${game.whiteName} vs ${game.blackName}`} />
       <p className="border-b border-[var(--color-border)] px-4 py-3 text-sm codex-text-muted">
         Status: {game.status} · Turn: {game.turn === "w" ? "White" : "Black"}
@@ -75,11 +81,12 @@ export default function ChessGamePage() {
       )}
 
       <div className="border-b border-[var(--color-border)]">
-        <Chessboard
+        <CodexChessboard
           position={game.fen}
           onPieceDrop={onDrop}
           boardOrientation={myColor || "white"}
           arePiecesDraggable={game.status === "active" && isMyTurn}
+          playerColor={myPieceColor ?? undefined}
         />
       </div>
 
