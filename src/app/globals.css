@@ -339,6 +339,46 @@ body::after {
     padding: 1rem;
   }
 
+  .codex-chess-page {
+    overscroll-behavior: contain;
+  }
+
+  .codex-chess-board {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    touch-action: none;
+    overscroll-behavior-x: none;
+    padding: 0.75rem 20px 0.5rem;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  @media (min-width: 768px) {
+    .codex-chess-board {
+      padding: 0;
+    }
+  }
+
+  .codex-chess-board__frame {
+    width: 100%;
+    max-width: min(100%, 560px);
+  }
+
+  .codex-chess-board__hint {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-muted, var(--color-on-surface));
+    opacity: 0.7;
+    text-align: center;
+  }
+
+  @media (min-width: 768px) {
+    .codex-chess-board__hint {
+      display: none;
+    }
+  }
+
   .codex-dropdown {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
