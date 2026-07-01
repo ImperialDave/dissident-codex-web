@@ -3,12 +3,15 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { BiblePicker } from "@/components/bible/BiblePicker";
+import { RichPostText } from "@/components/bible/RichPostText";
 import { ChatMedia } from "@/components/ChatMedia";
 import { GifPicker } from "@/components/GifPicker";
 import { PostFeedVisibilityToggle } from "@/components/PostFeedVisibilityToggle";
 import { PostMedia } from "@/components/PostMedia";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
+import { insertTextAtCursor } from "@/lib/insertTextAtCursor";
 import { flattenComments } from "@/lib/commentThread";
 import { timeAgo } from "@/lib/utils";
 import { addComment, deleteComment, getComments } from "@/services/commentService";
@@ -48,9 +51,11 @@ export default function PostDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
+  const [bibleOpen, setBibleOpen] = useState(false);
   const [pendingMedia, setPendingMedia] = useState<PendingMedia | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const commentRef = useRef<HTMLTextAreaElement>(null);
 
   const load = useCallback(async () => {
     const [p, c] = await Promise.all([getPost(id), getComments(id)]);
@@ -195,7 +200,9 @@ export default function PostDetailPage() {
             </span>
           )}
         </div>
-        <p className="whitespace-pre-wrap text-slate-200">{post.body}</p>
+        <p className="whitespace-pre-wrap text-slate-200">
+          <RichPostText text={post.body} />
+        </p>
         <PostMedia
           url={post.imageUrl}
           mediaType={post.mediaType}
@@ -280,7 +287,9 @@ export default function PostDetailPage() {
               />
             )}
             {comment.text?.trim() && (
-              <p className="text-sm text-slate-200">{comment.text}</p>
+              <p className="whitespace-pre-wrap text-sm text-slate-200">
+                <RichPostText text={comment.text} />
+              </p>
             )}
             <ReactionsBlock
               target={{ type: "comment", commentId: comment.id }}
@@ -381,6 +390,14 @@ export default function PostDetailPage() {
             </button>
             <button
               type="button"
+              onClick={() => setBibleOpen(true)}
+              disabled={submitting}
+              className="codex-btn-secondary rounded-full px-3 py-1.5 text-sm disabled:opacity-50"
+            >
+              Bible
+            </button>
+            <button
+              type="button"
               onClick={() => videoInputRef.current?.click()}
               disabled={submitting}
               className="codex-btn-secondary rounded-full px-3 py-1.5 text-sm disabled:opacity-50"
@@ -389,6 +406,7 @@ export default function PostDetailPage() {
             </button>
           </div>
           <textarea
+            ref={commentRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Write a comment..."
@@ -406,6 +424,20 @@ export default function PostDetailPage() {
         </form>
       </section>
 
+      <BiblePicker
+        open={bibleOpen}
+        onClose={() => setBibleOpen(false)}
+        onInsert={(reference) => {
+          const { value, cursor } = insertTextAtCursor(text, reference, commentRef.current);
+          setText(value);
+          requestAnimationFrame(() => {
+            const el = commentRef.current;
+            if (!el) return;
+            el.focus();
+            el.setSelectionRange(cursor, cursor);
+          });
+        }}
+      />
       <GifPicker open={gifOpen} onClose={() => setGifOpen(false)} onSelect={handleGifSelect} />
     </div>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { MessageCircle, MoreHorizontal } from "lucide-react";
 import type { Post } from "@/models";
+import { RichPostText } from "@/components/bible/RichPostText";
 import { BookmarkButton } from "./BookmarkButton";
 import { PostFeedVisibilityToggle } from "./PostFeedVisibilityToggle";
 import { PostMedia } from "./PostMedia";
@@ -123,7 +124,9 @@ export function PostCard({
 
           <Link href={`/post/${post.id}`} className="mt-2 block">
             <h3 className="text-[17px] font-normal leading-snug">{post.title}</h3>
-            <p className="mt-1 line-clamp-3 text-[15px] codex-text-muted">{post.body}</p>
+            <p className="mt-1 line-clamp-3 text-[15px] codex-text-muted whitespace-pre-wrap">
+              <RichPostText text={post.body} />
+            </p>
             <PostMedia url={post.imageUrl} mediaType={post.mediaType} preview />
           </Link>
 

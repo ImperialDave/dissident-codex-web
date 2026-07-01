@@ -2,7 +2,9 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BiblePicker } from "@/components/bible/BiblePicker";
 import { GifPicker } from "@/components/GifPicker";
+import { insertTextAtCursor } from "@/lib/insertTextAtCursor";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { MAX_BODY, MAX_TITLE } from "@/lib/constants";
 import { getCreateCategoryNames, resolveOrCreateCategory } from "@/services/categoryService";
@@ -36,10 +38,12 @@ export default function CreatePostPage() {
   const [remoteImageUrl, setRemoteImageUrl] = useState<string | null>(null);
   const [remoteMediaType, setRemoteMediaType] = useState<string | null>(null);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
+  const [biblePickerOpen, setBiblePickerOpen] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     getCreateCategoryNames().then((cats) => {
@@ -163,8 +167,18 @@ export default function CreatePostPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-slate-400">Body</label>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <label className="block text-sm text-slate-400">Body</label>
+            <button
+              type="button"
+              onClick={() => setBiblePickerOpen(true)}
+              className="codex-btn-ghost rounded-full px-3 py-1 text-xs"
+            >
+              Bible reference
+            </button>
+          </div>
           <textarea
+            ref={bodyRef}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="What's on your mind?"
@@ -286,6 +300,21 @@ export default function CreatePostPage() {
           </button>
         </div>
       </form>
+
+      <BiblePicker
+        open={biblePickerOpen}
+        onClose={() => setBiblePickerOpen(false)}
+        onInsert={(reference) => {
+          const { value, cursor } = insertTextAtCursor(body, reference, bodyRef.current);
+          setBody(value);
+          requestAnimationFrame(() => {
+            const el = bodyRef.current;
+            if (!el) return;
+            el.focus();
+            el.setSelectionRange(cursor, cursor);
+          });
+        }}
+      />
 
       <GifPicker
         open={gifPickerOpen}
