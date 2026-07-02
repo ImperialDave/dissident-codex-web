@@ -6,6 +6,7 @@ import type { VoiceCallPhase } from "@/components/VoiceCallBar";
 import { useVoiceRoom } from "@/hooks/useVoiceRoom";
 import { chatRoomDisplayTitle, resolveDmDisplayNames } from "@/lib/chatDisplay";
 import { ensureMicrophoneForVoice } from "@/lib/microphonePermission";
+import { sanitizeUserError } from "@/lib/sanitizeError";
 import { getChatRoom } from "@/services/chatService";
 import {
   declineDmVoiceCall,
@@ -134,7 +135,7 @@ export function GlobalVoiceController() {
         setJoinIntent(created.id);
         setSession(created);
       } catch (err) {
-        setVoiceError(err instanceof Error ? err.message : "Could not start call");
+        setVoiceError(sanitizeUserError(err, "Could not start call"));
       } finally {
         setVoiceBusy(false);
       }
@@ -159,7 +160,7 @@ export function GlobalVoiceController() {
         const joined = await joinTopicOrGroupVoice(targetRoom);
         setJoinIntent(joined.id);
       } catch (err) {
-        setVoiceError(err instanceof Error ? err.message : "Could not join voice");
+        setVoiceError(sanitizeUserError(err, "Could not join voice"));
       } finally {
         setVoiceBusy(false);
       }
@@ -188,7 +189,7 @@ export function GlobalVoiceController() {
       voice.resetConnect();
       await voice.connect();
     } catch (err) {
-      setVoiceError(err instanceof Error ? err.message : "Could not join voice");
+      setVoiceError(sanitizeUserError(err, "Could not join voice"));
     } finally {
       setManualJoinBusy(false);
     }
@@ -202,7 +203,7 @@ export function GlobalVoiceController() {
       voice.resetConnect();
       await voice.connect();
     } catch (err) {
-      setVoiceError(err instanceof Error ? err.message : "Could not join voice");
+      setVoiceError(sanitizeUserError(err, "Could not join voice"));
     } finally {
       setManualJoinBusy(false);
     }
@@ -217,7 +218,7 @@ export function GlobalVoiceController() {
       clearJoinIntent();
       setSession(null);
     } catch (err) {
-      setVoiceError(err instanceof Error ? err.message : "Could not cancel call");
+      setVoiceError(sanitizeUserError(err, "Could not cancel call"));
     } finally {
       setVoiceBusy(false);
     }
@@ -231,7 +232,7 @@ export function GlobalVoiceController() {
       clearJoinIntent();
       setSession(null);
     } catch (err) {
-      setVoiceError(err instanceof Error ? err.message : "Could not end call");
+      setVoiceError(sanitizeUserError(err, "Could not end call"));
     }
   }, [voice, resetMicPreflight, clearJoinIntent]);
 

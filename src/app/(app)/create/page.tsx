@@ -13,7 +13,7 @@ import { createPost } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
 import { canPost } from "@/models";
 import { IMAGE_FILE_ACCEPT } from "@/lib/mediaAccept";
-import { normalizeMediaTypeForFirestore, resolveRole, safeLocalStorage } from "@/lib/utils";
+import { normalizeMediaTypeForFirestore, resolveRole, safeLocalStorage, sanitizeUserError } from "@/lib/utils";
 
 type Draft = {
   title: string;
@@ -135,7 +135,7 @@ export default function CreatePostPage() {
       setSuccess("Post published!");
       router.push(`/post/${post.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create post");
+      setError(sanitizeUserError(err, "Failed to create post"));
       requestAnimationFrame(() => {
         errorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       });

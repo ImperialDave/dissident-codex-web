@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch(endpoint, { next: { revalidate: 60 } });
     if (!response.ok) {
       return NextResponse.json(
-        { error: `Giphy API error (${response.status})` },
+        { error: "GIF search is temporarily unavailable." },
         { status: 502 }
       );
     }
@@ -66,6 +66,6 @@ export async function GET(request: NextRequest) {
     const body = await response.json();
     return NextResponse.json({ items: parseGiphyPayload(body) });
   } catch {
-    return NextResponse.json({ error: "Failed to reach Giphy." }, { status: 502 });
+    return NextResponse.json({ error: "GIF search is temporarily unavailable." }, { status: 502 });
   }
 }

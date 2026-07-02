@@ -10,7 +10,7 @@ import clsx from "clsx";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { chatRoomDisplayTitle, resolveDmDisplayNames } from "@/lib/chatDisplay";
-import { mapFirestoreError } from "@/lib/utils";
+import { mapFirestoreError, sanitizeUserError } from "@/lib/utils";
 import {
   getPopularChatRoomsForSearch,
   getPopularTopicsForSearch,
@@ -68,7 +68,7 @@ export default function SearchPage() {
         setPopularTopics([]);
         setPopularChats([]);
         setDiscoveryError(
-          mapFirestoreError(err instanceof Error ? err.message : "Failed to load popular lists")
+          mapFirestoreError(sanitizeUserError(err, "Failed to load popular lists"))
         );
       })
       .finally(() => setDiscoveryLoading(false));
@@ -122,8 +122,7 @@ export default function SearchPage() {
 
     const errors: string[] = [];
 
-    const formatError = (err: unknown) =>
-      mapFirestoreError(err instanceof Error ? err.message : String(err));
+    const formatError = (err: unknown) => mapFirestoreError(sanitizeUserError(err));
 
     if (postsResult.status === "fulfilled") {
       setPosts(postsResult.value);

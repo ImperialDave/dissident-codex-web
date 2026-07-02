@@ -13,7 +13,7 @@ import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { insertTextAtCursor } from "@/lib/insertTextAtCursor";
 import { flattenComments } from "@/lib/commentThread";
-import { timeAgo } from "@/lib/utils";
+import { timeAgo, sanitizeUserError } from "@/lib/utils";
 import { addComment, deleteComment, getComments } from "@/services/commentService";
 import { ReactionsBlock } from "@/components/ReactionsBlock";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -153,7 +153,7 @@ export default function PostDetailPage() {
       clearPendingMedia();
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to comment");
+      setError(sanitizeUserError(err, "Failed to comment"));
     } finally {
       setSubmitting(false);
     }
@@ -226,7 +226,7 @@ export default function PostDetailPage() {
                   const hidden = await togglePostFeedVisibility(id);
                   setPost((p) => p && { ...p, hiddenFromFeed: hidden });
                 } catch (err) {
-                  setError(err instanceof Error ? err.message : "Failed to update visibility");
+                  setError(sanitizeUserError(err, "Failed to update visibility"));
                 } finally {
                   setVisibilityLoading(false);
                 }

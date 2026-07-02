@@ -7,7 +7,7 @@ import { ModerationMenu } from "@/components/ModerationMenu";
 import { ModEmpty, ModPageShell, ModRow, ModSection, ModStatGrid } from "@/components/ModPageShell";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserAvatar } from "@/components/UserAvatar";
-import { isFounderEmail } from "@/lib/utils";
+import { isFounderEmail, sanitizeUserError } from "@/lib/utils";
 import { syncFounderRole } from "@/services/authService";
 import { computeModerationStats, getUsersForModeration } from "@/services/moderationService";
 import { useAuthStore } from "@/stores/authStore";
@@ -31,7 +31,7 @@ export default function FounderToolsPage() {
   useEffect(() => {
     if (!isFounder()) return;
     loadUsers().catch((err) =>
-      setDeleteError(err instanceof Error ? err.message : "Failed to load users")
+      setDeleteError(sanitizeUserError(err, "Failed to load users"))
     );
   }, [isFounder]);
 
@@ -60,7 +60,7 @@ export default function FounderToolsPage() {
       await refreshUser();
       setMessage("Founder role synced to Firestore.");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Sync failed");
+      setMessage(sanitizeUserError(err, "Sync failed"));
     } finally {
       setSyncing(false);
     }

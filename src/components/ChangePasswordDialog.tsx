@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { sanitizeUserError } from "@/lib/sanitizeError";
 import { changePassword } from "@/services/authService";
 
 interface ChangePasswordDialogProps {
@@ -50,7 +51,7 @@ export function ChangePasswordDialog({ open, onClose }: ChangePasswordDialogProp
       setConfirmPassword("");
       setTimeout(() => onClose(), 1200);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not change password.");
+      setError(sanitizeUserError(err, "Could not change password."));
     } finally {
       setLoading(false);
     }

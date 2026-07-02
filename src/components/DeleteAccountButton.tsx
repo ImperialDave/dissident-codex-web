@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { deleteUserAccount } from "@/services/moderationService";
 import type { User } from "@/models";
-import { isFounderEmail } from "@/lib/utils";
+import { isFounderEmail, sanitizeUserError } from "@/lib/utils";
 
 interface DeleteAccountButtonProps {
   target: User;
@@ -41,7 +41,7 @@ export function DeleteAccountButton({
       setOpen(false);
       await onDeleted?.();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete account";
+      const message = sanitizeUserError(err, "Failed to delete account");
       setError(message);
       onError?.(message);
     } finally {

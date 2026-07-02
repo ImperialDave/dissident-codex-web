@@ -1,5 +1,8 @@
 import { Timestamp } from "firebase/firestore";
 import { FOUNDER_EMAIL } from "./constants";
+import { sanitizeUserError, sanitizeUserErrorMessage } from "./sanitizeError";
+
+export { sanitizeUserError, sanitizeUserErrorMessage } from "./sanitizeError";
 import { roleFromString, type RoleName, type User } from "@/models";
 
 export function isFounderEmail(email?: string | null): boolean {
@@ -36,10 +39,7 @@ export function mapFirestoreError(message: string): string {
   if (message.includes("permission-denied")) {
     return "Permission denied. Try logging out and back in. On iPhone, use Safari directly (not an in-app browser from Discord/Instagram). If it still fails, your account profile may be incomplete — contact a mod.";
   }
-  if (message.includes("unavailable")) {
-    return "Service temporarily unavailable. Try again.";
-  }
-  return message;
+  return sanitizeUserErrorMessage(message, "Could not complete that action. Try again.");
 }
 
 function callableErrorFields(err: unknown): { code: string; message: string; details: string } {
@@ -58,14 +58,11 @@ function callableErrorFields(err: unknown): { code: string; message: string; det
   return { code, message, details };
 }
 
-/** Firebase callable (httpsCallable) errors often surface as bare "internal". */
+/** Callable backend errors often surface as bare "internal". */
 export function mapCallableError(err: unknown): string {
   const { code, message, details } = callableErrorFields(err);
-  const combined = [message, details].filter(Boolean).join(" — ");
+  const combined = [code, message, details].filter(Boolean).join(" — ");
 
-  if (code.includes("failed-precondition") && combined.toLowerCase().includes("livekit")) {
-    return "Voice server is not configured. Deploy Cloud Functions with LiveKit env vars (npm run deploy:voice from dissident-codex-firebase with functions/.env).";
-  }
   if (code.includes("unauthenticated")) {
     return "Sign in required for voice calls.";
   }
@@ -73,27 +70,21 @@ export function mapCallableError(err: unknown): string {
     return mapFirestoreError(message || "permission-denied");
   }
   if (code.includes("not-found")) {
-    return combined || "Voice session not found.";
+    return sanitizeUserErrorMessage(combined, "Voice session not found.");
+  }
+  if (code.includes("failed-precondition")) {
+    return sanitizeUserErrorMessage(combined, "Voice calls are not available right now.");
   }
   if (code.includes("internal")) {
-    if (combined && combined !== "internal") {
-      return mapFirestoreError(combined);
-    }
-    return "Voice server error. LiveKit credentials may be missing on deployed Cloud Functions — run npm run deploy:voice from dissident-codex-firebase with functions/.env filled in.";
+    return sanitizeUserErrorMessage(combined, "Voice call failed. Try again later.");
   }
-  if (message && message !== "internal") {
-    return mapFirestoreError(message);
-  }
-  if (err instanceof Error && err.message && err.message !== "internal") {
-    return mapFirestoreError(err.message);
-  }
-  return "Voice call failed. Try again or contact support.";
+  return sanitizeUserError(err, "Voice call failed. Try again or contact support.");
 }
 
-/** Account-deletion callable errors — not voice/LiveKit. */
+/** Account-deletion callable errors. */
 export function mapDeleteAccountError(err: unknown): string {
   const { code, message, details } = callableErrorFields(err);
-  const combined = [message, details].filter(Boolean).join(" — ");
+  const combined = [code, message, details].filter(Boolean).join(" — ");
 
   if (code.includes("unauthenticated")) {
     return "Sign in required.";
@@ -102,33 +93,18 @@ export function mapDeleteAccountError(err: unknown): string {
     return "Founder access required to delete accounts.";
   }
   if (code.includes("invalid-argument")) {
-    return combined || "Invalid request.";
+    return sanitizeUserErrorMessage(combined, "Invalid request.");
   }
   if (code.includes("failed-precondition")) {
-    return combined || "This account cannot be deleted.";
+    return sanitizeUserErrorMessage(combined, "This account cannot be deleted.");
   }
   if (code.includes("not-found")) {
-    if (combined.toLowerCase().includes("user")) {
-      return combined;
-    }
-    return (
-      combined ||
-      "Delete account function not found. Deploy functions:deleteUserAccount to Firebase."
-    );
+    return sanitizeUserErrorMessage(combined, "Account deletion is not available right now.");
   }
   if (code.includes("internal")) {
-    if (combined && combined !== "internal") {
-      return mapFirestoreError(combined);
-    }
-    return "Account deletion failed on the server. Check Firebase Functions logs for deleteUserAccount.";
+    return sanitizeUserErrorMessage(combined, "Account deletion failed. Try again later.");
   }
-  if (message && message !== "internal") {
-    return mapFirestoreError(message);
-  }
-  if (err instanceof Error && err.message && err.message !== "internal") {
-    return mapFirestoreError(err.message);
-  }
-  return "Account deletion failed. Try again or contact support.";
+  return sanitizeUserError(err, "Account deletion failed. Try again or contact support.");
 }
 
 /** Safari private mode and some in-app browsers throw on localStorage writes. */

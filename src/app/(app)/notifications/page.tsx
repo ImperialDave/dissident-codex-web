@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { timeAgo } from "@/lib/utils";
+import { timeAgo, sanitizeUserError } from "@/lib/utils";
 import {
   clearAllNotifications,
   deleteNotification,
@@ -39,7 +39,7 @@ export default function NotificationsPage() {
       await deleteNotification(id);
     } catch (err) {
       setNotifications(prev);
-      setError(err instanceof Error ? err.message : "Failed to delete notification");
+      setError(sanitizeUserError(err, "Failed to delete notification"));
     } finally {
       setBusy(null);
     }
@@ -56,7 +56,7 @@ export default function NotificationsPage() {
       await clearAllNotifications();
     } catch (err) {
       setNotifications(prev);
-      setError(err instanceof Error ? err.message : "Failed to clear notifications");
+      setError(sanitizeUserError(err, "Failed to clear notifications"));
     } finally {
       setBusy(null);
     }

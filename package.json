@@ -9,7 +9,8 @@
     "start": "HOSTNAME=0.0.0.0 node .next/standalone/server.js",
     "lint": "eslint",
     "build-bible": "node scripts/build-bible-web.mjs",
-    "test:bible": "node --experimental-strip-types --test scripts/bible-parse.test.mjs"
+    "test:bible": "node --experimental-strip-types --test scripts/bible-parse.test.mjs",
+    "test:errors": "node --experimental-strip-types --test scripts/sanitize-error.test.mjs"
   },
   "dependencies": {
     "chess.js": "^1.4.0",

@@ -14,6 +14,7 @@ import {
 import { getTopicRooms, lockTopicRoom } from "@/services/chatService";
 import { useAuthStore } from "@/stores/authStore";
 import type { BannedTopic, ChatRoom, FeedHiddenTopic } from "@/models";
+import { sanitizeUserError } from "@/lib/utils";
 
 export default function ModTopicsPage() {
   const { isModerator } = useAuthStore();
@@ -42,7 +43,7 @@ export default function ModTopicsPage() {
   useEffect(() => {
     if (isModerator()) {
       load().catch((err) =>
-        setError(err instanceof Error ? err.message : "Failed to load topic data")
+        setError(sanitizeUserError(err, "Failed to load topic data"))
       );
     }
   }, [isModerator]);
@@ -89,7 +90,7 @@ export default function ModTopicsPage() {
                 setTopicName("");
                 await load();
               } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to ban topic");
+                setError(sanitizeUserError(err, "Failed to ban topic"));
               }
             }}
             disabled={!topicName.trim()}
@@ -143,7 +144,7 @@ export default function ModTopicsPage() {
                         }
                         await load();
                       } catch (err) {
-                        setError(err instanceof Error ? err.message : "Failed to update topic");
+                        setError(sanitizeUserError(err, "Failed to update topic"));
                       } finally {
                         setBusy(null);
                       }

@@ -14,6 +14,7 @@ import {
   type BotDifficulty,
 } from "@/lib/chessBot";
 import { useAuthStore } from "@/stores/authStore";
+import { sanitizeUserError } from "@/lib/utils";
 
 type GameStatus = "active" | "finished";
 
@@ -108,7 +109,7 @@ export default function ChessBotPage() {
             ...end,
           });
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Bot move failed");
+          setError(sanitizeUserError(err, "Bot move failed"));
         } finally {
           setThinking(false);
         }

@@ -6,7 +6,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Input } from "@/components/ui/Input";
 import { getUsersForModeration } from "@/services/moderationService";
-import { mapFirestoreError } from "@/lib/utils";
+import { mapFirestoreError, sanitizeUserError } from "@/lib/utils";
 import { getBlockedUserIds } from "@/services/blockService";
 import { getOrCreateDmRoom } from "@/services/chatService";
 import { useAuthStore } from "@/stores/authStore";
@@ -60,7 +60,7 @@ export default function NewMessagePage() {
                 const room = await getOrCreateDmRoom(u.uid);
                 router.push(`/chat/${room.id}`);
               } catch (err) {
-                setError(mapFirestoreError(err instanceof Error ? err.message : "Could not open chat"));
+                setError(mapFirestoreError(sanitizeUserError(err, "Could not open chat")));
                 setBusyUid(null);
               }
             }}

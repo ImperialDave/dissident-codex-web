@@ -6,7 +6,7 @@ import clsx from "clsx";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { getLeaderboardData } from "@/services/categoryService";
 import { getChessLeaderboard } from "@/services/chessService";
-import { mapFirestoreError } from "@/lib/utils";
+import { mapFirestoreError, sanitizeUserError } from "@/lib/utils";
 import type { ChessLeaderboardEntry, LeaderboardData, LeaderboardEntry } from "@/models";
 
 type Tab = "topics" | "chess";
@@ -31,7 +31,7 @@ export default function LeaderboardPage() {
         setChess(chessBoard);
       })
       .catch((err) => {
-        setError(mapFirestoreError(err instanceof Error ? err.message : "Failed to load leaderboard"));
+        setError(mapFirestoreError(sanitizeUserError(err, "Failed to load leaderboard")));
       })
       .finally(() => setLoading(false));
   }, []);

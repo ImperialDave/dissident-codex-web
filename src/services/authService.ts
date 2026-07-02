@@ -20,7 +20,7 @@ import {
   FOUNDER_EMAIL,
   MAX_NAME,
 } from "@/lib/constants";
-import { isFounderEmail, resolveRole, withResolvedRole } from "@/lib/utils";
+import { isFounderEmail, resolveRole, sanitizeUserError, withResolvedRole } from "@/lib/utils";
 import { roleFromString, type User } from "@/models";
 
 export async function registerUser(
@@ -180,7 +180,7 @@ export async function changePassword(
     if (code.includes("weak-password")) {
       throw new Error("New password is too weak. Use at least 6 characters.");
     }
-    throw err instanceof Error ? err : new Error("Could not change password.");
+    throw new Error(sanitizeUserError(err, "Could not change password."));
   }
 }
 

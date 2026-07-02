@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { sanitizeUserError } from "@/lib/sanitizeError";
 import { useVoiceUiStore } from "@/stores/voiceUiStore";
 import { getActiveVoiceSessionForRoom, listenVoiceSession } from "@/services/voiceService";
 import { CHAT_TYPE_DM, CHAT_TYPE_GROUP, CHAT_TYPE_TOPIC, type ChatRoom, type VoiceSession } from "@/models";
@@ -76,7 +77,7 @@ export function VoiceChatControls({ room, roomId, myUid }: VoiceChatControlsProp
     try {
       await startDmCall(room!);
     } catch (err) {
-      setVoiceError(err instanceof Error ? err.message : "Could not start call");
+      setVoiceError(sanitizeUserError(err, "Could not start call"));
     } finally {
       setVoiceBusy(false);
     }
@@ -89,7 +90,7 @@ export function VoiceChatControls({ room, roomId, myUid }: VoiceChatControlsProp
     try {
       await joinChannelVoice(room!);
     } catch (err) {
-      setVoiceError(err instanceof Error ? err.message : "Could not join voice");
+      setVoiceError(sanitizeUserError(err, "Could not join voice"));
     } finally {
       setVoiceBusy(false);
     }

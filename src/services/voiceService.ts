@@ -358,7 +358,7 @@ export async function fetchVoiceToken(
     const result = await fn({ sessionId, displayName });
     const data = result.data as VoiceTokenResult;
     if (!data?.token || !data?.url) {
-      throw new Error("Could not get voice token. Is LiveKit configured?");
+      throw new Error("Voice calls are not available right now.");
     }
     return data;
   } catch (err) {

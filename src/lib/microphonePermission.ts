@@ -1,3 +1,4 @@
+import { sanitizeUserError, sanitizeUserErrorMessage } from "@/lib/sanitizeError";
 import { useVoiceUiStore } from "@/stores/voiceUiStore";
 
 export type MicrophoneAccessStatus = "granted" | "denied" | "unsupported" | "error";
@@ -19,7 +20,7 @@ function micErrorMessage(err: unknown): string {
       return "Microphone is in use by another app. Close other apps using the mic and try again.";
     }
   }
-  return err instanceof Error ? err.message : "Could not access microphone";
+  return sanitizeUserError(err, "Could not access microphone");
 }
 
 export async function requestMicrophoneAccess(): Promise<MicrophoneAccessResult> {
@@ -89,5 +90,5 @@ export function mapMicrophoneConnectError(err: unknown): string {
   ) {
     return "Microphone blocked — allow in site settings, then try again.";
   }
-  return message;
+  return sanitizeUserErrorMessage(message, "Could not connect microphone.");
 }

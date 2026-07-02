@@ -1,5 +1,6 @@
 import { httpsCallable } from "firebase/functions";
 import { getFirebaseFunctions } from "@/lib/firebase";
+import { sanitizeUserErrorMessage } from "@/lib/sanitizeError";
 
 export interface GifResult {
   id: string;
@@ -36,8 +37,10 @@ async function searchGiphyApi(query: string, limit: number): Promise<GifResult[]
 
   if (!response.ok) {
     const message =
-      typeof body?.error === "string" ? body.error : `GIF search failed (${response.status})`;
-    throw new Error(message);
+      typeof body?.error === "string"
+        ? body.error
+        : "GIF search is temporarily unavailable.";
+    throw new Error(sanitizeUserErrorMessage(message, "GIF search failed. Try again."));
   }
 
   return parseGifResults(body);
@@ -58,12 +61,18 @@ export async function searchGiphy(query: string, limit = 24): Promise<GifResult[
     try {
       return await searchGiphyCloud(query, bounded);
     } catch (cloudErr) {
-      const apiMessage = apiErr instanceof Error ? apiErr.message : "GIF search failed";
-      const cloudMessage = cloudErr instanceof Error ? cloudErr.message : "GIF search failed";
-      if (cloudMessage.includes("not-found") || cloudMessage.includes("404")) {
-        throw apiErr instanceof Error ? apiErr : new Error(apiMessage);
+      const apiMessage = sanitizeUserErrorMessage(
+        apiErr instanceof Error ? apiErr.message : "GIF search failed",
+        "GIF search failed. Try again."
+      );
+      const cloudMessage = sanitizeUserErrorMessage(
+        cloudErr instanceof Error ? cloudErr.message : "GIF search failed",
+        "GIF search failed. Try again."
+      );
+      if (cloudMessage.includes("not available") || cloudMessage.includes("not found")) {
+        throw new Error(apiMessage);
       }
-      throw apiErr instanceof Error ? apiErr : new Error(apiMessage || cloudMessage);
+      throw new Error(apiMessage || cloudMessage);
     }
   }
 }

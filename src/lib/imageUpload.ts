@@ -1,3 +1,5 @@
+import { sanitizeUserErrorMessage } from "./sanitizeError";
+
 export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 export const MAX_IMAGE_MB = MAX_IMAGE_BYTES / (1024 * 1024);
 export const MAX_IMAGE_DIMENSION = 2048;
@@ -165,5 +167,5 @@ export function mapStorageUploadError(err: unknown): string {
   if (message.includes("invalid") || message.includes("contentType")) {
     return "Upload blocked — try a JPEG/PNG photo or open the site in Safari.";
   }
-  return message;
+  return sanitizeUserErrorMessage(message, "Upload failed. Try a smaller file or sign in again.");
 }

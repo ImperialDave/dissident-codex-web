@@ -7,6 +7,7 @@ import { loginUser, registerUser } from "@/services/authService";
 import { AppearanceMenu } from "@/components/AppearanceMenu";
 import { ColorModeToggle } from "@/components/ColorModeToggle";
 import { Input } from "@/components/ui/Input";
+import { sanitizeUserError } from "@/lib/sanitizeError";
 import { useAuthStore } from "@/stores/authStore";
 import clsx from "clsx";
 
@@ -38,7 +39,7 @@ export default function LoginPage() {
       setSession(fbUser, profile);
       router.replace("/feed");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(sanitizeUserError(err));
     } finally {
       setSubmitting(false);
     }

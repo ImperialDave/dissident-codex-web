@@ -5,6 +5,7 @@ import { ReactionPills } from "./ReactionPills";
 import { ReactionTriggerButton } from "./ReactionTriggerButton";
 import { resolveQuickEmojis, THUMBS_UP_EMOJI } from "@/lib/emoji";
 import { loadReactionPrefs, getCachedQuickEmojis } from "@/services/reactionPrefsService";
+import { sanitizeUserError } from "@/lib/utils";
 import {
   listenMyReactions,
   listenReactionSummary,
@@ -77,7 +78,7 @@ export function ReactionsBlock({
         });
         setQuickEmojis(getCachedQuickEmojis());
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Reaction failed");
+        setError(sanitizeUserError(err, "Reaction failed"));
       } finally {
         setBusy(false);
       }

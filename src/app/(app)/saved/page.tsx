@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { PostCard } from "@/components/PostCard";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { mapFirestoreError } from "@/lib/utils";
+import { mapFirestoreError, sanitizeUserError } from "@/lib/utils";
 import {
   getSavedPosts,
   refreshSavedPostIds,
@@ -29,7 +29,7 @@ export default function SavedPostsPage() {
     } catch (err) {
       setPosts([]);
       setSavedPostIds(new Set());
-      const message = err instanceof Error ? err.message : "Failed to load saved posts";
+      const message = sanitizeUserError(err, "Failed to load saved posts");
       setError(mapFirestoreError(message));
     } finally {
       setLoading(false);

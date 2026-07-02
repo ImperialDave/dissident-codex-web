@@ -10,7 +10,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { AppearancePicker } from "@/components/AppearancePicker";
 import { BlockedUsersSection } from "@/components/BlockedUsersSection";
 import { MAX_FAVORITE_CATEGORIES } from "@/lib/constants";
-import { normalizeCategoryName } from "@/lib/utils";
+import { normalizeCategoryName, sanitizeUserError } from "@/lib/utils";
 import {
   getFeedCategoryNames,
   getFavoriteCategories,
@@ -283,7 +283,7 @@ export default function ProfilePage() {
                     const favs = await getFavoriteCategories(user.uid);
                     setFavoriteCategoryIds(new Set(favs.map((f) => f.categoryId)));
                   } catch (err) {
-                    setFavoriteError(err instanceof Error ? err.message : "Failed to update favorite");
+                    setFavoriteError(sanitizeUserError(err, "Failed to update favorite"));
                   }
                 }}
                 className={`rounded-full px-3 py-1 text-sm ${

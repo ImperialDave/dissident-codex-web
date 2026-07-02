@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { applyMove, getGameById, listenGame, resignGame } from "@/services/chessService";
 import { useAuthStore } from "@/stores/authStore";
 import type { ChessGame } from "@/models";
+import { sanitizeUserError } from "@/lib/utils";
 
 export default function ChessGamePage() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -50,7 +51,7 @@ export default function ChessGamePage() {
           if (!move) return;
           await applyMove(gameId, sourceSquare, targetSquare, move.promotion);
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Invalid move");
+          setError(sanitizeUserError(err, "Invalid move"));
         }
       })();
       return true;

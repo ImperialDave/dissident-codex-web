@@ -14,7 +14,7 @@ import {
   sortChatRooms,
 } from "@/lib/chatDisplay";
 import { COMMUNITIES_BROWSE_LIMIT } from "@/lib/constants";
-import { mapFirestoreError, timeAgo } from "@/lib/utils";
+import { mapFirestoreError, timeAgo, sanitizeUserError } from "@/lib/utils";
 import { getRankedTopicCommunities } from "@/services/categoryService";
 import { getFavoriteRoomIds, listenChatRooms, toggleFavoriteRoom } from "@/services/chatService";
 import { useAuthStore } from "@/stores/authStore";
@@ -55,7 +55,7 @@ export default function ChatsPage() {
       .then(setCommunities)
       .catch((err) => {
         setCommunities([]);
-        setError(mapFirestoreError(err instanceof Error ? err.message : "Failed to load communities"));
+        setError(mapFirestoreError(sanitizeUserError(err, "Failed to load communities")));
       })
       .finally(() => setCommunitiesLoading(false));
   }, []);

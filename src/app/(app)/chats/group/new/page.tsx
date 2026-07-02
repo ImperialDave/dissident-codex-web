@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { createGroupRoom } from "@/services/chatService";
 import { getFriends } from "@/services/friendService";
-import { mapFirestoreError } from "@/lib/utils";
+import { mapFirestoreError, sanitizeUserError } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import type { Friend } from "@/models";
 
@@ -42,7 +42,7 @@ export default function NewGroupPage() {
       const room = await createGroupRoom(title, [...selected]);
       router.push(`/chat/${room.id}`);
     } catch (err) {
-      setError(mapFirestoreError(err instanceof Error ? err.message : "Could not create group"));
+      setError(mapFirestoreError(sanitizeUserError(err, "Could not create group")));
       setBusy(false);
     }
   }

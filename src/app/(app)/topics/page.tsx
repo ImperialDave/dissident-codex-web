@@ -8,7 +8,7 @@ import { FavoriteStar } from "@/components/FavoriteStar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Input } from "@/components/ui/Input";
 import { MAX_FAVORITE_CATEGORIES, TOPICS_TRENDING_LIMIT } from "@/lib/constants";
-import { mapFirestoreError, normalizeCategoryName } from "@/lib/utils";
+import { mapFirestoreError, normalizeCategoryName, sanitizeUserError } from "@/lib/utils";
 import {
   ensureTopicChatRoom,
   getCreateCategoryNames,
@@ -168,7 +168,7 @@ export default function TopicsPage() {
                       setFavoriteNames(new Set(favs.map((f) => f.name.toLowerCase())));
                     } catch (err) {
                       setError(
-                        err instanceof Error ? err.message : "Failed to update favorite community"
+                        sanitizeUserError(err, "Failed to update favorite community")
                       );
                     } finally {
                       setTogglingFavorite(null);

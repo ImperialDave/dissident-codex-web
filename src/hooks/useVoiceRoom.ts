@@ -15,7 +15,7 @@ import {
   applySpeakerVolumeToRoom,
   teardownMicGainPipeline,
 } from "@/lib/voiceVolume";
-import { mapCallableError } from "@/lib/utils";
+import { mapCallableError, sanitizeUserError } from "@/lib/utils";
 import { useVoiceUiStore } from "@/stores/voiceUiStore";
 import {
   endVoiceSessionLocal,
@@ -191,7 +191,7 @@ export function useVoiceRoom({ session, displayName, shouldConnect }: UseVoiceRo
       setNeedsAudioUnlock(false);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not enable audio playback");
+      setError(sanitizeUserError(err, "Could not enable audio playback"));
     }
   }, []);
 

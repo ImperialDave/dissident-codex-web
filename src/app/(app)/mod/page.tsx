@@ -23,6 +23,7 @@ import { PostFeedVisibilityToggle } from "@/components/PostFeedVisibilityToggle"
 import { deletePost, getPosts, togglePostFeedVisibility } from "@/services/postService";
 import { useAuthStore } from "@/stores/authStore";
 import { roleFromString, type Comment, type RoleName, type User, type Post } from "@/models";
+import { sanitizeUserError } from "@/lib/utils";
 
 const BASE_ROLES: RoleName[] = ["USER", "MOD", "ADMIN", "SUSPENDED", "BANNED"];
 
@@ -54,7 +55,7 @@ export default function ModToolsPage() {
   useEffect(() => {
     if (!isModerator()) return;
     refresh().catch((err) =>
-      setError(err instanceof Error ? err.message : "Failed to load moderation data")
+      setError(sanitizeUserError(err, "Failed to load moderation data"))
     );
   }, [isModerator]);
 
@@ -133,7 +134,7 @@ export default function ModToolsPage() {
                         await updateUserRole(u.uid, e.target.value as RoleName);
                         await refresh();
                       } catch (err) {
-                        setError(err instanceof Error ? err.message : "Role update failed");
+                        setError(sanitizeUserError(err, "Role update failed"));
                       }
                     }}
                     className="codex-input rounded-lg px-2 py-1 text-sm"
@@ -199,7 +200,7 @@ export default function ModToolsPage() {
                         )
                       );
                     } catch (err) {
-                      setError(err instanceof Error ? err.message : "Failed to update post");
+                      setError(sanitizeUserError(err, "Failed to update post"));
                     } finally {
                       setTogglingPostId(null);
                     }

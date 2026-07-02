@@ -10,7 +10,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { scrollToBottomIfPinned } from "@/lib/chatScroll";
-import { timeAgo } from "@/lib/utils";
+import { timeAgo, sanitizeUserError } from "@/lib/utils";
 import { AccountMenu } from "@/components/AccountMenu";
 import { ChatRoomTitle } from "@/components/ChatRoomTitle";
 import { FavoriteStar } from "@/components/FavoriteStar";
@@ -156,7 +156,7 @@ export default function ChatRoomPage() {
       setText("");
       clearPendingMedia();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Send failed");
+      setError(sanitizeUserError(err, "Send failed"));
     } finally {
       setSending(false);
     }
@@ -193,7 +193,7 @@ export default function ChatRoomPage() {
                 try {
                   setFavorited(await toggleFavoriteRoom(roomId));
                 } catch (err) {
-                  setError(err instanceof Error ? err.message : "Failed to update favorite");
+                  setError(sanitizeUserError(err, "Failed to update favorite"));
                 } finally {
                   setFavoriteLoading(false);
                 }

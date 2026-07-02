@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { sanitizeUserError } from "@/lib/sanitizeError";
 import { searchGiphy, type GifResult } from "@/services/giphyService";
 
 interface GifPickerProps {
@@ -21,7 +22,7 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
     try {
       setGifs(await searchGiphy(term.trim()));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "GIF search failed");
+      setError(sanitizeUserError(err, "GIF search failed. Try again."));
       setGifs([]);
     } finally {
       setLoading(false);

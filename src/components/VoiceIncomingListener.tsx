@@ -7,24 +7,13 @@ import {
   getVoiceSession,
   listenIncomingDmCalls,
 } from "@/services/voiceService";
+import { sanitizeUserError } from "@/lib/sanitizeError";
 import { useAuthStore } from "@/stores/authStore";
 import { useIncomingCallStore } from "@/stores/incomingCallStore";
 import type { VoiceSession } from "@/models";
 
 function formatListenerError(err: unknown): string {
-  const code =
-    err && typeof err === "object" && "code" in err
-      ? String((err as { code?: string }).code ?? "")
-      : "";
-  const message = err instanceof Error ? err.message : String(err);
-
-  if (code === "failed-precondition" || message.includes("index")) {
-    return "Firestore index is building — try again in a few minutes.";
-  }
-  if (code === "permission-denied" || message.includes("permission") || message.includes("Permission")) {
-    return "Live call listener blocked by Firestore rules. Deploy latest firestore.rules from dissident-codex-firebase; notification alerts still work.";
-  }
-  return message || "Could not listen for incoming calls.";
+  return sanitizeUserError(err, "Could not listen for incoming calls.");
 }
 
 export function VoiceIncomingListener() {

@@ -12,7 +12,7 @@ import { useDmDisplayNames } from "@/hooks/useDmDisplayNames";
 import { chatRoomDisplayTitle } from "@/lib/chatDisplay";
 import { ALL_CATEGORY_LABEL, FEED_COMMUNITY_STRIP_LIMIT, FEED_DM_STRIP_LIMIT } from "@/lib/constants";
 import { partitionFeedSections } from "@/lib/feedRank";
-import { mapFirestoreError } from "@/lib/utils";
+import { mapFirestoreError, sanitizeUserError } from "@/lib/utils";
 import { getFavoriteCategories, getRankedTopicCommunities } from "@/services/categoryService";
 import { getFollowingIds } from "@/services/followService";
 import { getRecentDmRooms } from "@/services/chatService";
@@ -97,7 +97,7 @@ export default function FeedPage() {
       setAllPosts([]);
       setDmRooms([]);
       setCommunities([]);
-      const message = err instanceof Error ? err.message : "Failed to load feed";
+      const message = sanitizeUserError(err, "Failed to load feed");
       setError(mapFirestoreError(message));
     } finally {
       setLoading(false);

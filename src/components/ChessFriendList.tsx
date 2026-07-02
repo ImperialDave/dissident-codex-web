@@ -9,6 +9,7 @@ import { getMyActiveGames, startChessGame } from "@/services/chessService";
 import { getFriends } from "@/services/friendService";
 import { useAuthStore } from "@/stores/authStore";
 import type { ChessGame, Friend } from "@/models";
+import { sanitizeUserError } from "@/lib/utils";
 
 interface ChessFriendListProps {
   refreshIntervalMs?: number;
@@ -46,7 +47,7 @@ export function ChessFriendList({ refreshIntervalMs = 5000 }: ChessFriendListPro
       const game = await startChessGame(uid);
       router.push(`/chess/game/${game.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start chess game");
+      setError(sanitizeUserError(err, "Could not start chess game"));
       setBusyUid(null);
     }
   }

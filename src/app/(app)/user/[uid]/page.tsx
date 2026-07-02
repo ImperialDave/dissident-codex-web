@@ -27,7 +27,7 @@ import { getBlockStatus } from "@/services/blockService";
 import { isFollowing, toggleFollow } from "@/services/followService";
 import { startChessGame } from "@/services/chessService";
 import { ensureMicrophoneForVoice } from "@/lib/microphonePermission";
-import { mapFirestoreError } from "@/lib/utils";
+import { mapFirestoreError, sanitizeUserError } from "@/lib/utils";
 import { startDmVoiceCall } from "@/services/voiceService";
 import { useAuthStore } from "@/stores/authStore";
 import type { BlockStatus, Post, User } from "@/models";
@@ -140,7 +140,7 @@ export default function UserProfilePage() {
       const room = await getOrCreateDmRoom(uid);
       router.push(`/chat/${room.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not open chat");
+      setError(sanitizeUserError(err, "Could not open chat"));
     } finally {
       setBusy(null);
     }
@@ -153,7 +153,7 @@ export default function UserProfilePage() {
       const game = await startChessGame(uid);
       router.push(`/chess/game/${game.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start chess game");
+      setError(sanitizeUserError(err, "Could not start chess game"));
     } finally {
       setBusy(null);
     }
@@ -173,7 +173,7 @@ export default function UserProfilePage() {
       await startDmVoiceCall(room);
       router.push(`/chat/${room.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start voice call");
+      setError(sanitizeUserError(err, "Could not start voice call"));
     } finally {
       setBusy(null);
     }
@@ -186,7 +186,7 @@ export default function UserProfilePage() {
       await sendFriendRequest(uid);
       setFriendStatus("pending_out");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send friend request");
+      setError(sanitizeUserError(err, "Could not send friend request"));
     } finally {
       setBusy(null);
     }
@@ -201,7 +201,7 @@ export default function UserProfilePage() {
       await respondToFriendRequest(req.id, true);
       setFriendStatus("friends");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not accept request");
+      setError(sanitizeUserError(err, "Could not accept request"));
     } finally {
       setBusy(null);
     }
