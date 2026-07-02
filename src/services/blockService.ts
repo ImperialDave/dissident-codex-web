@@ -58,16 +58,20 @@ export async function getBlockStatus(otherUid: string): Promise<BlockStatus> {
 
   const db = getFirebaseDb();
   try {
-    const [mine, theirs] = await Promise.all([
-      getDoc(doc(db, COLLECTIONS.USERS, uid, "blockedUsers", otherUid)),
-      getDoc(doc(db, COLLECTIONS.USERS, otherUid, "blockedUsers", uid)),
-    ]);
+    const mine = await getDoc(doc(db, COLLECTIONS.USERS, uid, "blockedUsers", otherUid));
     if (mine.exists()) return "you_blocked";
-    if (theirs.exists()) return "they_blocked";
-    return "none";
   } catch {
     return "none";
   }
+
+  try {
+    const theirs = await getDoc(doc(db, COLLECTIONS.USERS, otherUid, "blockedUsers", uid));
+    if (theirs.exists()) return "they_blocked";
+  } catch {
+    // Only the block owner can read their list; permission denied is expected here.
+  }
+
+  return "none";
 }
 
 export async function getBlockedUsers(): Promise<BlockedUser[]> {
@@ -88,11 +92,15 @@ export async function isBlockedEitherWay(otherUid: string): Promise<boolean> {
 
   const db = getFirebaseDb();
   try {
-    const [mine, theirs] = await Promise.all([
-      getDoc(doc(db, COLLECTIONS.USERS, uid, "blockedUsers", otherUid)),
-      getDoc(doc(db, COLLECTIONS.USERS, otherUid, "blockedUsers", uid)),
-    ]);
-    return mine.exists() || theirs.exists();
+    const mine = await getDoc(doc(db, COLLECTIONS.USERS, uid, "blockedUsers", otherUid));
+    if (mine.exists()) return true;
+  } catch {
+    return false;
+  }
+
+  try {
+    const theirs = await getDoc(doc(db, COLLECTIONS.USERS, otherUid, "blockedUsers", uid));
+    return theirs.exists();
   } catch {
     return false;
   }

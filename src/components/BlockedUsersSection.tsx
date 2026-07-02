@@ -40,7 +40,7 @@ export function BlockedUsersSection() {
   }
 
   return (
-    <div className="codex-settings-section">
+    <div id="blocked-users" className="codex-settings-section scroll-mt-20">
       <h2 className="mb-1 font-semibold">Blocked users</h2>
       <p className="mb-4 text-xs codex-text-muted">
         People you block cannot message you and their posts are hidden from your feed.

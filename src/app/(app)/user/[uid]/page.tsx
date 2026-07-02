@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { Ban } from "lucide-react";
 import { BlockUserBanner } from "@/components/BlockUserBanner";
 import { FollowButton } from "@/components/FollowButton";
 import { UserRelationshipMenu } from "@/components/UserRelationshipMenu";
@@ -256,6 +257,12 @@ export default function UserProfilePage() {
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold">{user.displayName}</h1>
               <RoleBadge role={user.role} />
+              {blockStatus === "you_blocked" && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-xs font-medium text-red-300">
+                  <Ban className="h-3 w-3" aria-hidden />
+                  Blocked
+                </span>
+              )}
             </div>
             {user.flair && (
               <p className="text-sm text-[var(--color-accent)]">{user.flair}</p>

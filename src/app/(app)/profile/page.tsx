@@ -52,6 +52,12 @@ export default function ProfilePage() {
   const [postsError, setPostsError] = useState("");
 
   useEffect(() => {
+    if (window.location.hash !== "#blocked-users") return;
+    const el = document.getElementById("blocked-users");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [user]);
+
+  useEffect(() => {
     if (!user) return;
     setBio(user.bio || "");
     setFlair(user.flair || "");
@@ -187,6 +193,8 @@ export default function ProfilePage() {
         </button>
       </div>
 
+      <BlockedUsersSection />
+
       <div className="codex-settings-section flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold text-white">Session</h2>
@@ -297,8 +305,6 @@ export default function ProfilePage() {
           })}
         </div>
       </div>
-
-      <BlockedUsersSection />
 
       <div className="codex-settings-section">
         <h2 className="mb-1 font-semibold">Appearance</h2>

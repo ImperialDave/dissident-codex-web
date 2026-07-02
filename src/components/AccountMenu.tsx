@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Bookmark, KeyRound, LogOut, MessageCircle, User } from "lucide-react";
+import { Ban, Bookmark, KeyRound, LogOut, MessageCircle, User } from "lucide-react";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { DropdownDivider, DropdownItem, DropdownMenu } from "@/components/ui/DropdownMenu";
@@ -43,6 +43,9 @@ export function AccountMenu({ variant = "compact", className }: AccountMenuProps
         <DropdownItem icon={Bookmark} onClick={() => navigate("/saved")}>
           Saved posts
         </DropdownItem>
+        <DropdownItem icon={Ban} onClick={() => navigate("/profile#blocked-users")}>
+          Blocked users
+        </DropdownItem>
         <DropdownItem
           icon={KeyRound}
           onClick={() => {
@@ -64,6 +67,9 @@ export function AccountMenu({ variant = "compact", className }: AccountMenuProps
         </DropdownItem>
         <DropdownItem icon={User} onClick={() => navigate("/profile")}>
           Profile
+        </DropdownItem>
+        <DropdownItem icon={Ban} onClick={() => navigate("/profile#blocked-users")}>
+          Blocked users
         </DropdownItem>
         <DropdownDivider />
         <DropdownItem icon={LogOut} destructive onClick={handleLogout}>
