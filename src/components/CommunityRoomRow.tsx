@@ -5,15 +5,25 @@ import type { LeaderboardEntry } from "@/models";
 interface CommunityRoomRowProps {
   entry: LeaderboardEntry;
   showRank?: boolean;
+  linkTo?: "chat" | "posts";
 }
 
 export function communityEntryMeta(entry: LeaderboardEntry): string {
   return `${entry.messageCount} messages · ${entry.postCount} posts`;
 }
 
-export function CommunityRoomRow({ entry, showRank = true }: CommunityRoomRowProps) {
+export function CommunityRoomRow({
+  entry,
+  showRank = true,
+  linkTo = "chat",
+}: CommunityRoomRowProps) {
+  const href =
+    linkTo === "posts" && entry.isTopic
+      ? `/topics/${encodeURIComponent(entry.title)}`
+      : `/chat/${entry.roomId}`;
+
   return (
-    <Link href={`/chat/${entry.roomId}`} className="codex-list-row block">
+    <Link href={href} className="codex-list-row block">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="font-medium">

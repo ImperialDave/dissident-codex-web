@@ -124,7 +124,7 @@ export default function TopicsPage() {
             </Link>
           </div>
           {trending.map((entry) => (
-            <CommunityRoomRow key={entry.roomId} entry={entry} />
+            <CommunityRoomRow key={entry.roomId} entry={entry} linkTo="posts" />
           ))}
         </div>
       )}
@@ -136,7 +136,12 @@ export default function TopicsPage() {
           {filtered.map((name) => (
             <div key={name} className="codex-list-row">
               <div className="flex items-start justify-between gap-2">
-                <p className="font-semibold">{name}</p>
+                <Link
+                  href={`/topics/${encodeURIComponent(name)}`}
+                  className="font-semibold hover:text-[var(--color-accent)]"
+                >
+                  {name}
+                </Link>
                 <FavoriteStar
                   size="sm"
                   favorited={
@@ -176,8 +181,9 @@ export default function TopicsPage() {
                   }}
                 />
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="mt-3">
                 <button
+                  type="button"
                   disabled={opening === name}
                   onClick={async () => {
                     setOpening(name);
@@ -195,16 +201,10 @@ export default function TopicsPage() {
                       setOpening(null);
                     }
                   }}
-                  className="codex-btn-accent rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
+                  className="codex-btn-ghost rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
                 >
                   {opening === name ? "Opening..." : "Open chat"}
                 </button>
-                <Link
-                  href={`/feed?category=${encodeURIComponent(name)}`}
-                  className="codex-btn-ghost rounded-lg px-3 py-1.5 text-sm"
-                >
-                  View posts
-                </Link>
               </div>
             </div>
           ))}

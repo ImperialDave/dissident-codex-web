@@ -236,7 +236,7 @@ export default function SearchPage() {
               topics.map((t) => (
                 <Link
                   key={`${t.id}-${t.name}`}
-                  href={`/feed?category=${encodeURIComponent(t.name)}`}
+                  href={`/topics/${encodeURIComponent(t.name)}`}
                   className="codex-list-row block"
                 >
                   <p className="font-medium">{t.name}</p>
@@ -261,7 +261,7 @@ export default function SearchPage() {
               {popularTopics.map((entry) => (
                 <Link
                   key={entry.roomId}
-                  href={`/feed?category=${encodeURIComponent(entry.title)}`}
+                  href={`/topics/${encodeURIComponent(entry.title)}`}
                   className="codex-list-row block"
                 >
                   <p className="font-medium">
