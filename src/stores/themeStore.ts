@@ -43,7 +43,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
 function applyTheme(id: ThemeId, colorMode: ColorMode) {
   const theme = THEMES.find((t) => t.id === id) || THEMES[0]!;
   const root = document.documentElement;
-  const vars = colorMode === "light" ? lightVars(theme) : darkVars(theme, theme.family === "calm");
+  const vars = colorMode === "light" ? lightVars(theme) : darkVars(theme);
 
   root.style.setProperty("--color-primary", vars.primary);
   root.style.setProperty("--color-surface", vars.surface);
@@ -59,11 +59,15 @@ function applyTheme(id: ThemeId, colorMode: ColorMode) {
   root.style.setProperty("--color-text-glow", vars.textGlow);
   root.style.setProperty("--color-header-bg", vars.headerBg);
   root.style.setProperty("--color-input-bg", vars.inputBg);
+  root.style.setProperty("--color-surface-shadow", vars.surfaceShadow);
+  root.style.setProperty("--color-ambient-glow", vars.ambientGlow);
+  root.style.setProperty("--color-ambient-glow-alt", vars.ambientGlowAlt);
   root.dataset.theme = id;
   root.dataset.colorMode = colorMode;
 }
 
-function darkVars(theme: Theme, calm: boolean) {
+function darkVars(theme: Theme) {
+  const calm = theme.family === "calm";
   return {
     primary: theme.primary,
     surface: theme.surface,
@@ -73,38 +77,33 @@ function darkVars(theme: Theme, calm: boolean) {
     bgGradient: theme.bgGradient,
     surfaceGradient: theme.surfaceGradient,
     border: theme.border,
-    textGlow: calm ? "none" : theme.textGlow,
+    textGlow: theme.textGlow,
     headerBg: calm
-      ? `linear-gradient(180deg, ${theme.surface}f5, ${theme.primary}ee)`
-      : `linear-gradient(180deg, ${theme.primary}ee, ${theme.primary}cc)`,
-    inputBg: calm ? "rgba(0, 0, 0, 0.18)" : "rgba(0, 0, 0, 0.28)",
+      ? `linear-gradient(180deg, color-mix(in srgb, ${theme.surface} 96%, transparent), color-mix(in srgb, ${theme.primary} 94%, transparent))`
+      : `linear-gradient(180deg, color-mix(in srgb, ${theme.primary} 93%, transparent), color-mix(in srgb, ${theme.primary} 80%, transparent))`,
+    inputBg: calm ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.3)",
+    surfaceShadow: theme.surfaceShadow,
+    ambientGlow: theme.ambientGlow,
+    ambientGlowAlt: theme.ambientGlowAlt,
   };
 }
 
 function lightVars(theme: Theme) {
-  const tint = theme.accent;
-  const calm = theme.family === "calm";
+  const light = theme.light;
   return {
-    primary: calm ? "#f6f4f1" : "#f8fafc",
-    surface: "#ffffff",
-    onSurface: calm ? "#2c2926" : "#0f172a",
-    textMuted: calm ? "#6b6560" : "#475569",
-    accentText: calm
-      ? `color-mix(in srgb, ${tint} 65%, #2c2926)`
-      : `color-mix(in srgb, ${tint} 52%, #0f172a)`,
-    bgGradient: calm
-      ? `linear-gradient(180deg, #f6f4f1 0%, color-mix(in srgb, ${tint} 5%, #f0eeea) 50%, #ebe8e4 100%)`
-      : `linear-gradient(165deg, #f8fafc 0%, color-mix(in srgb, ${tint} 6%, #f1f5f9) 45%, #e2e8f0 100%)`,
-    surfaceGradient: calm
-      ? "linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 246, 243, 0.96))"
-      : "linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95))",
-    border: calm
-      ? `color-mix(in srgb, ${tint} 18%, #d6d0c8)`
-      : `color-mix(in srgb, ${tint} 28%, #cbd5e1)`,
-    textGlow: calm ? "none" : `0 0 12px color-mix(in srgb, ${tint} 35%, transparent)`,
-    headerBg: calm
-      ? "linear-gradient(180deg, #fffffffa, #f6f4f1ee)"
-      : "linear-gradient(180deg, #ffffffee, #f8fafccc)",
-    inputBg: calm ? "rgba(255, 255, 255, 0.96)" : "rgba(255, 255, 255, 0.92)",
+    primary: light.primary,
+    surface: light.surface,
+    onSurface: light.onSurface,
+    textMuted: light.textMuted,
+    accentText: light.accentText,
+    bgGradient: light.bgGradient,
+    surfaceGradient: light.surfaceGradient,
+    border: light.border,
+    textGlow: light.textGlow,
+    headerBg: light.headerBg,
+    inputBg: light.inputBg,
+    surfaceShadow: light.surfaceShadow,
+    ambientGlow: light.ambientGlow,
+    ambientGlowAlt: light.ambientGlowAlt,
   };
 }

@@ -17,11 +17,14 @@
   --color-text-glow: 0 0 18px rgba(0, 245, 255, 0.55), 0 0 36px rgba(255, 43, 214, 0.25);
   --color-header-bg: linear-gradient(180deg, #0a0614ee, #0a0614cc);
   --color-input-bg: rgba(0, 0, 0, 0.28);
+  --color-surface-shadow: none;
+  --color-ambient-glow: none;
+  --color-ambient-glow-alt: none;
   --font-display: "Orbitron", system-ui, sans-serif;
 }
 
 body {
-  background: var(--color-primary);
+  background: var(--color-bg-gradient);
   color: var(--color-on-surface);
   font-family: system-ui, -apple-system, sans-serif;
   min-height: 100dvh;
@@ -37,7 +40,7 @@ body::after {
     position: relative;
     isolation: isolate;
     min-height: 100dvh;
-    background: var(--color-primary);
+    background: var(--color-bg-gradient);
     color: var(--color-on-surface);
     overflow-x: clip;
   }
@@ -48,19 +51,31 @@ body::after {
     flex: 1;
     justify-content: center;
     min-height: 100dvh;
-    background: var(--color-primary);
+    background: transparent;
   }
 
   .codex-right-rail {
     position: sticky;
     top: 0;
     height: 100dvh;
-    background: var(--color-primary);
+    background: transparent;
   }
 
   .codex-bg::before,
   .codex-bg::after {
-    content: none;
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .codex-bg::before {
+    background: var(--color-ambient-glow, none);
+  }
+
+  .codex-bg::after {
+    background: var(--color-ambient-glow-alt, none);
   }
 
   .codex-bg > * {
@@ -98,31 +113,35 @@ body::after {
     background: var(--color-header-bg);
     border-bottom: 1px solid var(--color-border);
     backdrop-filter: blur(14px);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.12),
+      inset 0 1px 0 color-mix(in srgb, var(--color-accent) 8%, transparent);
   }
 
   .codex-nav-bar {
     background: var(--color-surface-gradient);
     border-top: 1px solid var(--color-border);
     backdrop-filter: blur(12px);
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
+    box-shadow:
+      0 -4px 24px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 color-mix(in srgb, var(--color-accent) 6%, transparent);
   }
 
   .codex-logo {
     font-family: var(--font-display);
     letter-spacing: 0.04em;
     color: var(--color-accent);
-    text-shadow: none;
+    text-shadow: var(--color-text-glow);
   }
 
   .codex-surface {
-    background: var(--color-surface);
+    background: var(--color-surface-gradient);
     border: 1px solid var(--color-border);
-    box-shadow: none;
+    box-shadow: var(--color-surface-shadow);
   }
 
   [data-color-mode="light"] .codex-surface {
-    box-shadow: none;
+    box-shadow: var(--color-surface-shadow);
   }
 
   .codex-surface-hover:hover {
@@ -171,7 +190,8 @@ body::after {
     flex-direction: column;
     overflow: hidden;
     border-right: 1px solid var(--color-border);
-    background: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 72%, transparent);
+    backdrop-filter: blur(16px);
   }
 
   .codex-sidebar-scroll {
@@ -286,7 +306,8 @@ body::after {
     flex: 1;
     border-left: 1px solid var(--color-border);
     border-right: 1px solid var(--color-border);
-    background: var(--color-primary);
+    background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+    backdrop-filter: blur(8px);
   }
 
   .codex-page-fill {
@@ -1096,11 +1117,11 @@ body::after {
       0 0 18px color-mix(in srgb, var(--color-accent) 40%, transparent);
   }
 
-  [data-theme="sage"] .codex-logo,
-  [data-theme="dusk"] .codex-logo,
-  [data-theme="sand"] .codex-logo,
-  [data-theme="mist"] .codex-logo,
-  [data-theme="linen"] .codex-logo {
+  [data-color-mode="light"][data-theme="sage"] .codex-logo,
+  [data-color-mode="light"][data-theme="dusk"] .codex-logo,
+  [data-color-mode="light"][data-theme="sand"] .codex-logo,
+  [data-color-mode="light"][data-theme="mist"] .codex-logo,
+  [data-color-mode="light"][data-theme="linen"] .codex-logo {
     text-shadow: none;
     filter: none;
   }
