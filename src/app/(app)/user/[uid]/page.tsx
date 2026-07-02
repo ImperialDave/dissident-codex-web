@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { BlockUserBanner } from "@/components/BlockUserBanner";
 import { FollowButton } from "@/components/FollowButton";
 import { UserRelationshipMenu } from "@/components/UserRelationshipMenu";
 import { ProfilePostsList } from "@/components/ProfilePostsList";
@@ -284,14 +285,13 @@ export default function UserProfilePage() {
         </div>
       )}
 
-      {blockStatus === "you_blocked" && (
-        <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4">
-          <p className="text-sm codex-text-muted">
-            You blocked {user.displayName}. Unblock them from the menu above to see their posts and
-            message them again.
-          </p>
-        </div>
-      )}
+      <BlockUserBanner
+        otherUid={uid}
+        displayName={user.displayName}
+        blockStatus={blockStatus}
+        onChanged={refreshRelationship}
+        onError={setError}
+      />
 
       {!interactionsBlocked && (
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] px-4 py-3">
